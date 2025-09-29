@@ -1,2 +1,15 @@
-node_modules
+# Node
+node_modules/
+npm-debug.log
+
+# Android
+*.iml
+.gradle/
+local.properties
+/.idea/
+.DS_Store
+build/
+app/build/
+
+# General
 .env
