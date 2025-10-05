@@ -11,5 +11,17 @@ local.properties
 build/
 app/build/
 
+# ignore python venvs anywhere
+**/.venv/
+**/venv/
+
+# node_modules for nms-web
+**/node_modules/
+
+# common
+__pycache__/
+*.pyc
+
 # General
 .env
+config
