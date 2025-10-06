@@ -1,0 +1,1 @@
+export type Response<T, E> = T | { error: E };
