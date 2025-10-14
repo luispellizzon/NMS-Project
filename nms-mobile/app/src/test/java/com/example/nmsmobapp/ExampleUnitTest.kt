@@ -1,4 +1,4 @@
-package com.example.nms_mobile
+package com.example.nmsmobapp
 
 import org.junit.Test
 
