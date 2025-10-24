@@ -22,7 +22,6 @@ vi.mock('next/navigation', () => ({
 }));
 
 const mockedSignIn = authService.signInWithEmail as Mock;
-const mockedSignInWithGoogle = authService.signInWithGoogle as Mock;
 
 describe('SignInForm', () => {
   beforeEach(() => {
@@ -34,7 +33,9 @@ describe('SignInForm', () => {
     render(<SignInForm />);
     expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^sign in$/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /^sign in$/i })
+    ).toBeInTheDocument();
   });
 
   it('successfully signs in and redirects on valid credentials', async () => {
@@ -44,13 +45,19 @@ describe('SignInForm', () => {
 
     render(<SignInForm />);
 
-    await user.type(screen.getByLabelText(/email address/i), 'doctor@example.com');
+    await user.type(
+      screen.getByLabelText(/email address/i),
+      'doctor@example.com'
+    );
     await user.type(screen.getByLabelText(/password/i), 'password123');
     await user.click(screen.getByRole('button', { name: /^sign in$/i }));
 
     // Verify the correct SDK function was called
     await waitFor(() => {
-      expect(mockedSignIn).toHaveBeenCalledWith('doctor@example.com', 'password123');
+      expect(mockedSignIn).toHaveBeenCalledWith(
+        'doctor@example.com',
+        'password123'
+      );
     });
 
     // Verify the user is redirected to the dashboard
@@ -61,10 +68,10 @@ describe('SignInForm', () => {
 
   it('displays a user-friendly error message on failed signin', async () => {
     const user = userEvent.setup();
-    const firebaseError = new Error('Invalid credentials.');
-    (firebaseError as any).code = 'auth/invalid-credential';
+    const firebaseError = Object.assign(new Error('Invalid credentials.'), {
+      code: 'auth/invalid-credential',
+    });
     mockedSignIn.mockRejectedValue(firebaseError);
-
 
     render(<SignInForm />);
 
@@ -79,7 +86,7 @@ describe('SignInForm', () => {
 
   it('shows the loading state when the form is submitting', async () => {
     const user = userEvent.setup();
-    mockedSignIn.mockImplementation(() => new Promise(() => { }));
+    mockedSignIn.mockImplementation(() => new Promise(() => {}));
 
     render(<SignInForm />);
 
@@ -88,7 +95,9 @@ describe('SignInForm', () => {
     await user.click(screen.getByRole('button', { name: /^sign in$/i }));
 
     // The button text should change and it should become disabled
-    const loadingButton = await screen.findByRole('button', { name: /signing in.../i });
+    const loadingButton = await screen.findByRole('button', {
+      name: /signing in.../i,
+    });
     expect(loadingButton).toBeInTheDocument();
     expect(loadingButton).toBeDisabled();
   });
@@ -103,7 +112,9 @@ describe('SignInForm', () => {
     await user.type(screen.getByLabelText(/password/i), 'anypassword');
     await user.click(screen.getByRole('button', { name: /^sign in$/i }));
 
-    const errorElement = await screen.findByText('An unexpected error occurred. Please try again.');
+    const errorElement = await screen.findByText(
+      'An unexpected error occurred. Please try again.'
+    );
     expect(errorElement).toBeInTheDocument();
   });
 });

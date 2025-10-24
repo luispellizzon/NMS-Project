@@ -1,18 +1,30 @@
 import { ReactNode } from 'react';
 
-interface DashboardCardProps {
-  title: string;
+type DashboardCardProps = {
+  title: ReactNode;
+  footer?: ReactNode;
   children: ReactNode;
-  className?: string; // To allow for custom grid spanning
-}
+  className?: string;
+};
 
-export default function DashboardCard({ title, children, className = '' }: DashboardCardProps) {
+export default function DashboardCard({ title, footer, children, className }: DashboardCardProps) {
   return (
-    <div className={`bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md ${className}`}>
-      <h3 className="text-lg font-semibold text-gray-700 dark:text-white mb-4">
-        {title}
-      </h3>
-      <div>{children}</div>
+    <div className={`bg-gray-800/20 dark:bg-gray-800/50 p-4 rounded-lg shadow-md flex flex-col ${className}`}>
+      {/* Card Header */}
+      <div className="flex justify-between items-center mb-4">
+        {typeof title === 'string' 
+          ? <h3 className="font-bold text-lg text-gray-800 dark:text-white">{title}</h3> 
+          : title
+        }
+      </div>
+
+      {/* Card Body - Stretches to fill available space */}
+      <div className="flex-grow h-full">
+        {children}
+      </div>
+
+      {/* Card Footer */}
+      {footer && <div className="mt-4">{footer}</div>}
     </div>
   );
 }

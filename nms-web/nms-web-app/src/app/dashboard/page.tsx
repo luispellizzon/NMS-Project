@@ -1,43 +1,97 @@
-import { Search } from 'lucide-react';
+'use client';
+
+import { useState } from 'react';
+import { PatientLocation, patientLocations, appointmentsListData } from '@/lib/mock_data';
+import GeographicDistributionCard from '@/components/ui/dashboard/GeographicDistributionCard';
 import DashboardCard from '@/components/ui/dashboard/DashboardCard';
+import NewsFeed from '@/components/ui/dashboard/News/NewsFeed';
+import ScoreRangeRadarChart from '@/components/ui/dashboard/ScoreRangeRadarChart';
+import AvgScores from '@/components/ui/dashboard/AvgScores';
+import PatientsDistributionChart from '@/components/ui/dashboard/PatientsDistributionChart';
+import AvgRiskAssessmentChart from '@/components/ui/dashboard/AvgRiskAssessmentChart';
+import OverallAppointmentsChart from '@/components/ui/dashboard/OverallAppointmentsChart';
+import AppointmentsList from '@/components/ui/dashboard/AppointmentsList';
+import GenericSearchBar from '@/components/ui/common/SearchBar';
 
 export default function DashboardPage() {
+  const [headerSearchTerm, setHeaderSearchTerm] = useState('');
+  const [locationSearchTerm, setLocationSearchTerm] = useState('');
+  const [targetLocation, setTargetLocation] = useState<PatientLocation | null>(null);
+
+  // --- Create clear functions for each state ---
+  const clearHeaderSearch = () => setHeaderSearchTerm('');
+  const clearLocationSearch = () => setLocationSearchTerm('');
+
+  const upcomingAppointments = appointmentsListData.filter(a => a.type === 'upcoming').sort((a, b) => a.date.getTime() - b.date.getTime());
+  const previousAppointments = appointmentsListData.filter(a => a.type === 'previous').sort((a, b) => b.date.getTime() - a.date.getTime());
+
+  const handleFilterClick = (location: PatientLocation) => {
+    setTargetLocation(location);
+    setLocationSearchTerm(location.city);
+  };
+  
+  const handleLocationSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setLocationSearchTerm(event.target.value);
+  };
+  
+  const handleLocationSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const foundLocation = patientLocations.find(
+      loc => loc.city.toLowerCase().includes(locationSearchTerm.toLowerCase())
+    );
+    if (foundLocation) {
+      setTargetLocation(foundLocation);
+    } else {
+        alert('Location not found.');
+    }
+  };
+
   return (
     <div className="w-full">
       <header className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
         <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
           Risk Dashboard
         </h1>
-        <div className="relative mt-4 md:mt-0">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-          <input
-            type="text"
+        <div className="mt-4 md:mt-0 md:w-64">
+          <GenericSearchBar
+            value={headerSearchTerm}
+            onChange={(e) => setHeaderSearchTerm(e.target.value)}
+            onClear={clearHeaderSearch}
             placeholder="Search test results"
-            className="w-full md:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d7377]"
+            className="border-gray-300/20 text-gray-300 focus:ring-[#0d7377]"
           />
         </div>
       </header>
 
-      {/* Grid for Dashboard Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          <DashboardCard title="Overall Appointments" className="md:col-span-2 lg:col-span-1">
-            <p className="text-gray-500">Appointment chart will go here...</p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <DashboardCard title="News">
+            <NewsFeed />
           </DashboardCard>
-          <DashboardCard title="News" className="md:col-span-2">
-             <p className="text-gray-500">News feed will go here...</p>
-          </DashboardCard>
-          <DashboardCard title="Geographic Distribution">
-            <p className="text-gray-500">Map will go here...</p>
-          </DashboardCard>
-          <DashboardCard title="Score Range">
-            <p className="text-gray-500">Score radar chart will go here...</p>
-          </DashboardCard>
-          <DashboardCard title="Avg Scores">
-            <p className="text-gray-500">Average score chart will go here...</p>
-          </DashboardCard>
-           <DashboardCard title="Avg Risk Assessment" className="md:col-span-2 lg:col-span-1">
-            <p className="text-gray-500">Risk chart will go here...</p>
-          </DashboardCard>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+            <GeographicDistributionCard
+              targetLocation={targetLocation}
+              searchTerm={locationSearchTerm}
+              handleSearchSubmit={handleLocationSearchSubmit}
+              handleSearchChange={handleLocationSearchChange}
+              handleClearSearch={clearLocationSearch} // Pass the new handler down
+              handleFilterClick={handleFilterClick}
+            />
+            <DashboardCard title="Score Range" className="md:col-span-2">
+              <ScoreRangeRadarChart />
+            </DashboardCard>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <DashboardCard title="Avg Scores"><AvgScores /></DashboardCard>
+            <DashboardCard title="Patients"><PatientsDistributionChart /></DashboardCard>
+            <DashboardCard title="Avg Risk Assessment"><AvgRiskAssessmentChart /></DashboardCard>
+          </div>
+        </div>
+        <div className="lg:col-span-1 space-y-6">
+          <DashboardCard title="Overall Appointments"><OverallAppointmentsChart /></DashboardCard>
+          <AppointmentsList title="Upcoming Appointments" appointments={upcomingAppointments} />
+          <AppointmentsList title="Previous Appointments" appointments={previousAppointments} showTimeFilter />
+        </div>
       </div>
     </div>
   );

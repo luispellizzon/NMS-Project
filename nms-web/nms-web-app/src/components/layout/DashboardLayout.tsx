@@ -17,7 +17,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'ml-20' : 'ml-64'
           }`}
       >
-        <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
+        <main className="flex-1 p-6 lg:p-8 overflow-x-hidden">
           {children}
         </main>
       </div>
