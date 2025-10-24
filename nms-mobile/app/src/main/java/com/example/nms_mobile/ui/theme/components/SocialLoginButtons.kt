@@ -1,8 +1,8 @@
 package com.example.nms_mobile.ui.components
 
-
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -17,120 +17,125 @@ fun SocialLoginButtons(
     onGoogleClick: () -> Unit,
     onAppleClick: () -> Unit,
     onFacebookClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showOrDivider: Boolean = true
 ) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        // Divider with "OR"
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Divider(modifier = Modifier.weight(1f), color = Color.Gray.copy(alpha = 0.3f))
-            Text(
-                text = "OR",
-                modifier = Modifier.padding(horizontal = 16.dp),
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray
-            )
-            Divider(modifier = Modifier.weight(1f), color = Color.Gray.copy(alpha = 0.3f))
-        }
+    Column() {
 
-        Spacer(modifier = Modifier.height(4.dp))
-
-        // Google Sign-In Button
         OutlinedButton(
             onClick = onGoogleClick,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
-            border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f)),
+                .height(52.dp)
+                .padding(top = 10.dp),
+            border = ButtonDefaults.outlinedButtonBorder.copy(width = 1.dp),
             colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = Color.White,
+                containerColor = Color(0xFFF2F2F2),
                 contentColor = Color.Black
-            )
+            ),
+            shape = MaterialTheme.shapes.medium
         ) {
+            val g = runCatching { painterResource(id = R.drawable.ic_google) }.getOrNull()
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_google),
-                    contentDescription = "Google logo",
-                    modifier = Modifier.size(24.dp),
-                    tint = Color.Unspecified
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = "Continue with Google",
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                if (g != null) {
+                    Icon(painter = g, contentDescription = "Google", tint = Color.Unspecified)
+                    Spacer(Modifier.width(12.dp))
+                }
+                Text("Continue With Google")
             }
         }
 
-        // Apple Sign-In Button
         OutlinedButton(
             onClick = onAppleClick,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
-            border = BorderStroke(1.dp, Color.Black),
+                .height(52.dp)
+                .padding(top = 10.dp),
+            border = ButtonDefaults.outlinedButtonBorder.copy(width = 1.dp),
             colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = Color.White,
+                containerColor = Color(0xFFF2F2F2),
                 contentColor = Color.Black
-            )
+            ),
+            shape = MaterialTheme.shapes.medium
         ) {
+            val a = runCatching { painterResource(id = R.drawable.ic_apple) }.getOrNull()
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_apple),
-                    contentDescription = "Apple logo",
-                    modifier = Modifier.size(24.dp),
-                    tint = Color.Black
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = "Continue with Apple",
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                if (a != null) {
+                    Icon(painter = a, contentDescription = "Apple", tint = Color.Black)
+                    Spacer(Modifier.width(12.dp))
+                }
+                Text("Continue With Apple")
             }
         }
 
-        // Facebook Sign-In Button
-        Button(
+        // Facebook
+        OutlinedButton(
             onClick = onFacebookClick,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF1877F2),
-                contentColor = Color.White
-            )
+                .height(52.dp)
+                .padding(top = 10.dp),
+            border = ButtonDefaults.outlinedButtonBorder.copy(width = 1.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = Color(0xFFF2F2F2),
+                contentColor = Color.Black
+            ),
+            shape = MaterialTheme.shapes.medium
         ) {
+            val a = runCatching { painterResource(id = R.drawable.ic_facebook) }.getOrNull()
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_facebook),
-                    contentDescription = "Facebook logo",
-                    modifier = Modifier.size(24.dp),
-                    tint = Color.White
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = "Continue with Facebook",
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                if (a != null) {
+                    Icon(painter = a, contentDescription = "Facebook", tint = Color.Blue)
+                    Spacer(Modifier.width(12.dp))
+                }
+                Text("Continue With Facebook")
             }
         }
     }
+}
+
+@Composable
+private fun SocialRow(
+    icon: androidx.compose.ui.graphics.painter.Painter?,
+    label: String,
+    iconTint: Color,
+    textColor: Color
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        if (icon != null) {
+            Icon(
+                painter = icon,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = iconTint
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = textColor
+        )
+    }
+}
+
+@Composable
+private fun safePainterOrNull(resId: Int): androidx.compose.ui.graphics.painter.Painter? {
+    return runCatching { painterResource(id = resId) }.getOrNull()
 }
