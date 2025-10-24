@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "316091399555",
+    "project_id": "nms-app-4aa89",
+    "storage_bucket": "nms-app-4aa89.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:316091399555:android:3c09769d6693132e838ab6",
+        "android_client_info": {
+          "package_name": "com.example.nms_mobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "316091399555-iggsa80hine0gtkcsej3tmmhgcdsf0er.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD1pq3DlmOf9oBjNlm4j88kSuNnU5Rxzuw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "316091399555-iggsa80hine0gtkcsej3tmmhgcdsf0er.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
