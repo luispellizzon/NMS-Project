@@ -19,5 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "NMSMobApp"
+rootProject.name = "NMS-mobile"
 include(":app")
+ 
