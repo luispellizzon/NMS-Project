@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SignInForm from './SignInForm';
-import * as authService from '@/lib/firebase/auth-service'; // Import our service
+import * as authService from '@/lib/firebase/auth-service';
 import { User } from 'firebase/auth';
 
 vi.mock('@/lib/firebase/auth-service');

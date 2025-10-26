@@ -1,23 +1,32 @@
+// src/components/layout/DashboardLayout.tsx
 'use client';
 
 import { useState, ReactNode } from 'react';
 import Sidebar from '@/components/layout/SideBar';
+import Header from './Header';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
-  const toggleSidebar = () => {
-    setIsSidebarCollapsed(!isSidebarCollapsed);
-  };
+  const toggleDesktopSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
+  const toggleMobileSidebar = () => setMobileSidebarOpen(!isMobileSidebarOpen);
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
-      <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
+    <div className="flex h-screen bg-muted/40 dark:bg-background">
+      <Sidebar
+        isCollapsed={isSidebarCollapsed}
+        toggleSidebar={toggleDesktopSidebar}
+        isMobileOpen={isMobileSidebarOpen}
+        setMobileOpen={setMobileSidebarOpen}
+      />
       <div
-        className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'ml-20' : 'ml-64'
-          }`}
+        className={`flex flex-1 flex-col min-w-0 transition-all duration-300 ease-in-out ${
+          isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+        }`}
       >
-        <main className="flex-1 p-6 lg:p-8 overflow-x-hidden">
+        <Header onToggleMobileSidebar={toggleMobileSidebar} />
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
           {children}
         </main>
       </div>

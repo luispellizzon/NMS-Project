@@ -1,3 +1,4 @@
+// src/components/ui/dashboard/DashboardCard.tsx
 import { ReactNode } from 'react';
 
 type DashboardCardProps = {
@@ -9,22 +10,17 @@ type DashboardCardProps = {
 
 export default function DashboardCard({ title, footer, children, className }: DashboardCardProps) {
   return (
-    <div className={`bg-gray-800/20 dark:bg-gray-800/50 p-4 rounded-lg shadow-md flex flex-col ${className}`}>
-      {/* Card Header */}
-      <div className="flex justify-between items-center mb-4">
+    <div className={`bg-card border rounded-lg shadow-sm flex flex-col ${className}`}>
+      <div className="flex justify-between items-center p-4 border-b">
         {typeof title === 'string' 
-          ? <h3 className="font-bold text-lg text-gray-800 dark:text-white">{title}</h3> 
+          ? <h3 className="font-semibold text-lg text-card-foreground">{title}</h3> 
           : title
         }
       </div>
-
-      {/* Card Body - Stretches to fill available space */}
-      <div className="flex-grow h-full">
+      <div className="flex-grow h-fit p-4">
         {children}
       </div>
-
-      {/* Card Footer */}
-      {footer && <div className="mt-4">{footer}</div>}
+      {footer && <div className="p-4 pt-0 mt-auto">{footer}</div>}
     </div>
   );
 }

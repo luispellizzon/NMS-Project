@@ -7,7 +7,7 @@ import SignInForm from '@/components/auth/SignInForm';
 import * as authService from '@/lib/firebase/auth-service';
 import { User } from 'firebase/auth';
 
-// FIX: Mock the service layer, not the low-level firebase SDKs.
+// Mock the service layer.
 vi.mock('@/lib/firebase/auth-service');
 
 // Mock for Firebase Functions (used by SignUpForm)
@@ -26,7 +26,7 @@ vi.mock('firebase/functions', async (importOriginal) => {
   };
 });
 
-// FIX: Mock for Firebase Auth SDK (used by SignInForm)
+// Mock for Firebase Auth SDK (used by SignInForm)
 vi.mock('firebase/auth', () => ({
   signInWithEmailAndPassword: vi.fn(),
   getAuth: vi.fn(() => ({
@@ -44,7 +44,6 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
-// FIX: Cast the mocked import to a Mock type for control in tests
 const mockedSignIn = authService.signInWithEmail as Mock;
 
 describe('Authentication Flow Integration Tests', () => {
@@ -121,7 +120,7 @@ describe('Authentication Flow Integration Tests', () => {
     });
   });
 
-  // NOTE: Social Sign In flows still use the auth-service, so their mocks are different and correct.
+  // NOTE: Social Sign In flows still use the auth-service, so their mocks are different.
   describe('Social Sign In Flows', () => {
     it('completes Google sign-in flow', async () => {
       const user = userEvent.setup();

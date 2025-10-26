@@ -1,6 +1,8 @@
+// src/components/ui/dashboard/OverallAppointmentsChart.tsx
 'use client';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { appointmentsChartData } from '@/lib/mock_data';
+import { useTheme } from 'next-themes';
 
 const legendLabels = {
   assessment: 'Assessment',
@@ -9,29 +11,57 @@ const legendLabels = {
   followUp: 'Follow-up',
 };
 
+const themeColors = {
+  light: {
+    assessment: '#6b7280',
+    screening: '#3b82f6',
+    consultation: '#f59e0b',
+    followUp: '#ef4444',
+    tick: '#6b7280',
+    grid: '#e5e7eb'
+  },
+  dark: {
+    assessment: '#4b5563',
+    screening: '#1e40af',
+    consultation: '#b45309',
+    followUp: '#991b1b',
+    tick: '#9ca3af',
+    grid: '#374151'
+  }
+};
+
 export default function OverallAppointmentsChart() {
+  const { resolvedTheme } = useTheme();
+  const colors = resolvedTheme === 'dark' ? themeColors.dark : themeColors.light;
+
   return (
-    <div className="h-64">
+    <div className="h-full min-h-[270px]">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={appointmentsChartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-          <YAxis tick={{ fontSize: 12 }} />
+        <BarChart
+          data={appointmentsChartData}
+          margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
+          barCategoryGap="20%"
+        >
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={colors.grid} />
+          <XAxis dataKey="month" tick={{ fontSize: 12, fill: colors.tick }} />
+          <YAxis tick={{ fontSize: 12, fill: colors.tick }} />
           <Tooltip
+            cursor={{ fill: 'var(--accent)' }}
             contentStyle={{
-              backgroundColor: 'rgba(255, 255, 255, 0.8)',
-              border: '1px solid #ccc',
-              borderRadius: '0.5rem',
+              backgroundColor: 'var(--card)',
+              borderColor: 'var(--border)',
+              color: 'var(--card-foreground)',
+              borderRadius: 'var(--radius)',
             }}
           />
           <Legend
             iconSize={10}
             formatter={(value) => legendLabels[value as keyof typeof legendLabels]}
           />
-          <Bar dataKey="assessment" stackId="a" fill="#8884d8" name={legendLabels.assessment} />
-          <Bar dataKey="screening" stackId="a" fill="#82ca9d" name={legendLabels.screening} />
-          <Bar dataKey="consultation" stackId="a" fill="#ffc658" name={legendLabels.consultation} />
-          <Bar dataKey="followUp" stackId="a" fill="#ff8042" name={legendLabels.followUp} radius={[4, 4, 0, 0]} />
+          <Bar dataKey="assessment" stackId="a" fill={colors.assessment} name={legendLabels.assessment} />
+          <Bar dataKey="screening" stackId="a" fill={colors.screening} name={legendLabels.screening} />
+          <Bar dataKey="consultation" stackId="a" fill={colors.consultation} name={legendLabels.consultation} />
+          <Bar dataKey="followUp" stackId="a" fill={colors.followUp} name={legendLabels.followUp} radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>

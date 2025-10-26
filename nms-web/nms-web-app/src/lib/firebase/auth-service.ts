@@ -67,3 +67,11 @@ export const resetPassword = async (email: string): Promise<void> => {
 export const getCurrentUser = (): User | null => {
   return auth.currentUser;
 };
+
+/**
+ * Sends a password reset email to the specified email address.
+ * @param email The user's email address.
+ */
+export const sendPasswordReset = async (email: string): Promise<void> => {
+  return sendPasswordResetEmail(auth, email);
+};

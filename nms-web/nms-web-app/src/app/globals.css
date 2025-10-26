@@ -1,64 +1,74 @@
 @import "tailwindcss";
 
-:root {
-  /* Base colors - light mode */
-  --background: #ffffff;
-  --foreground: #171717;
-  
-  /* Brand colors */
-  --brand-primary: #3b82f6;
-  --brand-secondary: #8b5cf6;
-  --brand-accent: #10b981;
-  
-  /* Semantic colors */
-  --success: #10b981;
-  --warning: #f59e0b;
-  --error: #ef4444;
-  --info: #3b82f6;
-  
-  /* UI colors */
-  --border: #e5e5e5;
-  --input: #e5e5e5;
-  --ring: #3b82f6;
-  --muted: #f5f5f5;
-  --muted-foreground: #737373;
+/*
+  SECTION 1: THEME VARIABLE DEFINITIONS
+*/
+@layer base {
+  :root {
+    --background: #ffffff;
+    --foreground: #020817;
+    --card: #ffffff;
+    --card-foreground: #020817;
+    --popover: #ffffff;
+    --popover-foreground: #020817;
+    --primary: #0a7ea4; /* NMS Teal */
+    --primary-foreground: #f8fafc;
+    --secondary: #f1f5f9;
+    --secondary-foreground: #0f172a;
+    --muted: #f1f5f9;
+    --muted-foreground: #64748b;
+    --accent: #f1f5f9;
+    --accent-foreground: #0f172a;
+    --destructive: #ef4444;
+    --destructive-foreground: #f8fafc;
+    --border: #e2e8f0;
+    --input: #e2e8f0;
+    --ring: #0a7ea4; /* NMS Teal for focus */
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: #020817;
+    --foreground: #f8fafc;
+    --card: #020817;
+    --card-foreground: #f8fafc;
+    --popover: #020817;
+    --popover-foreground: #f8fafc;
+    --primary: #1a9ec7; /* NMS Teal (slightly brighter for dark) */
+    --primary-foreground: #f8fafc;
+    --secondary: #1e293b;
+    --secondary-foreground: #f8fafc;
+    --muted: #1e293b;
+    --muted-foreground: #94a3b8;
+    --accent: #1e293b;
+    --accent-foreground: #f8fafc;
+    --destructive: #7f1d1d;
+    --destructive-foreground: #f8fafc;
+    --border: #1e293b;
+    --input: #1e293b;
+    --ring: #1a9ec7; /* NMS Teal for focus */
+  }
 }
 
-@theme inline {
-  /* Map your CSS variables to Tailwind utilities */
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  
-  /* Brand colors accessible as bg-brand-primary, text-brand-primary, etc. */
-  --color-brand-primary: var(--brand-primary);
-  --color-brand-secondary: var(--brand-secondary);
-  --color-brand-accent: var(--brand-accent);
-  
-  /* Semantic colors */
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-error: var(--error);
-  --color-info: var(--info);
-  
-  /* UI colors */
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  
-  /* Fonts */
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  
-  /* Optional: Custom spacing, shadows, etc. */
-  --radius-base: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-sm: 0.25rem;
-}
+/*
+  SECTION 2: BASE ELEMENT STYLES & ACCESSIBILITY FIXES
+*/
+@layer base {
+  * {
+    border-color: var(--border);
+  }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+  
+  *:focus {
+    outline: none;
+  }
+
+  *:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+  }
 }

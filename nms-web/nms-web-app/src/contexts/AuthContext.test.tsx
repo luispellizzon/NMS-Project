@@ -1,4 +1,4 @@
-// src/contexts/AuthContext.test.tsx (Corrected)
+// src/contexts/AuthContext.test.tsx
 
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, Mock, beforeEach } from 'vitest';
@@ -98,8 +98,7 @@ describe('AuthProvider', () => {
       useAuth(); // This will throw the error
       return null;
     };
-    
-    // --- THE FIX: Update the expected error message to match the implementation ---
+
     // We expect the render to throw an error with the correct message.
     expect(() => render(<BrokenComponent />)).toThrow('useAuth must be used within an AuthProvider');
 

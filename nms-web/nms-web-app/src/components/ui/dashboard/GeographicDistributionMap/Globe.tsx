@@ -29,11 +29,8 @@ export default function Globe({ targetLocation, onHover }: GlobeProps) {
   const targetPositionRef = useRef<THREE.Vector3 | null>(null);
   const mousePosRef = useRef({ x: 0, y: 0 });
 
-  // FIX: Create a ref to hold the latest onHover callback.
-  // This allows the main effect to not depend on onHover, preventing re-initialization.
   const onHoverRef = useRef(onHover);
 
-  // FIX: Keep the ref updated with the latest onHover function from props.
   useEffect(() => {
     onHoverRef.current = onHover;
   }, [onHover]);
@@ -131,11 +128,9 @@ export default function Globe({ targetLocation, onHover }: GlobeProps) {
 
       if (intersects.length > 0) {
         const loc = intersects[0].object.userData as PatientLocation;
-        // FIX: Use the ref to call the latest onHover function.
         onHoverRef.current(loc, mousePosRef.current);
         controls.autoRotate = false;
       } else {
-        // FIX: Use the ref here too.
         onHoverRef.current(null, mousePosRef.current);
         controls.autoRotate = true;
       }

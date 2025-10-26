@@ -43,6 +43,15 @@ export const richNewsFeedData: NewsArticle[] = [
     readTime: '8 min',
     agentSummary: 'Researchers have developed a new deep learning model that can predict the likelihood of Alzheimer\'s disease with 92% accuracy by analyzing retinal fundus images. The model identifies subtle microvascular changes in the retina that are correlated with the buildup of amyloid-beta plaques in the brain, offering a non-invasive and cost-effective screening method.'
   },
+  {
+    id: 'news3',
+    topic: 'Neurology',
+    title: 'AI in Early Diagnosis of Alzheimer\'s: Retinal Scan Analysis',
+    sourceUrl: 'https://www.nature.com/articles/s41598-023-34567-x',
+    publishedDate: Timestamp.fromDate(new Date('2025-10-19T15:30:00Z')),
+    readTime: '8 min',
+    agentSummary: 'Researchers have developed a new deep learning model that can predict the likelihood of Alzheimer\'s disease with 92% accuracy by analyzing retinal fundus images. The model identifies subtle microvascular changes in the retina that are correlated with the buildup of amyloid-beta plaques in the brain, offering a non-invasive and cost-effective screening method.'
+  },
   // Add more articles as needed
 ];
   
