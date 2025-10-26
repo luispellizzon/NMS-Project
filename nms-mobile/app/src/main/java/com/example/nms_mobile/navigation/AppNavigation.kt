@@ -62,8 +62,8 @@ fun AppNavigation(
         // SIGN UP
         composable(Screen.SignUp.route) {
             SignUpRoute(
-                onNavigateToPersonalInfo = {
-                    navController.navigate(Screen.PersonalInfo.route) {
+                onNavigateToDashboard = {
+                    navController.navigate(Screen.Dashboard.route) {
                         popUpTo(Screen.SignUp.route) { inclusive = true }
                         launchSingleTop = true
                     }
@@ -88,7 +88,13 @@ fun AppNavigation(
         // DASHBOARD
         composable(Screen.Dashboard.route) {
             DashboardRoute(
-                onOpenQuestionnaire = { navController.navigate(Screen.QuestionnaireIntro.route) }
+                onOpenQuestionnaire = { navController.navigate(Screen.QuestionnaireIntro.route) },
+                onLoggedOut = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Home.route.substringBefore("/{")) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
             )
         }
 
@@ -106,6 +112,9 @@ fun AppNavigation(
                         popUpTo(Screen.Questionnaire.route) { inclusive = true }
                         launchSingleTop = true
                     }
+                },
+                onBack ={
+                    navController.navigate(Screen.Dashboard.route)
                 }
             )
         }
@@ -139,3 +148,5 @@ private fun NavHostController.navigateAndClearToHome(hasProfile: Boolean) {
         launchSingleTop = true
     }
 }
+
+

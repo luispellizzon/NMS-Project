@@ -7,6 +7,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -15,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.nms_mobile.ui.theme.TealPrimary
 
@@ -26,15 +29,60 @@ fun DashboardScreen(
     onOpenRiskAssessment: () -> Unit,
     onOpenSpeech: () -> Unit,
     onOpenMemory: () -> Unit,
-    onOpenCognitive: () -> Unit
+    onOpenCognitive: () -> Unit,
+    onLogoutClick: () -> Unit,
 ) {
     Scaffold(
         topBar = {
-            // Minimal chrome; the mock shows the header *inside* the content.
             TopAppBar(
-                title = {},
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        // Avatar
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(Color.Gray),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Profile",
+                                tint = Color.White
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                text = "Good morning, ${state.displayName ?: "User"}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray
+                            )
+                            Text(
+                                text = "Welcome NMS",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = TealPrimary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        // Logout button
+                        IconButton(onClick = onLogoutClick) {
+                            Icon(
+                                imageVector = Icons.Default.Logout,
+                                contentDescription = "Logout",
+                                tint = TealPrimary
+                            )
+                        }
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             )
         }
@@ -46,34 +94,6 @@ fun DashboardScreen(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            // Header with avatar, greeting, and "Welcome NMS"
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFBDBDBD)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Person, contentDescription = "Avatar", tint = Color.White)
-                }
-                Spacer(Modifier.width(12.dp))
-                Column {
-                    Text(
-                        text = state.greeting,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                    Text(
-                        text = "Welcome ${state.displayName}",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = TealPrimary
-                    )
-                }
-            }
 
             Spacer(Modifier.height(16.dp))
 
@@ -99,8 +119,10 @@ fun DashboardScreen(
             Spacer(Modifier.height(16.dp))
 
             Text(
-                text = "score & Tests",
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold)
+                text = "Assessments and Scores",
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(Modifier.height(12.dp))

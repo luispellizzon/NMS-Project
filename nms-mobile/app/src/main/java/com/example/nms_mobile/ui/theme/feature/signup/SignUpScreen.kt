@@ -37,9 +37,11 @@ import com.example.nms_mobile.ui.theme.TextSecondary
 fun SignUpScreen(
     state: SignUpUiState,
     onFullNameChange: (String) -> Unit,
+    onDobChange: (String) -> Unit,                 // NEW
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onConfirmPasswordChange: (String) -> Unit,
+    onRoleChange: (String) -> Unit,                // NEW
     onSignUpClick: () -> Unit,
     onLoginClick: () -> Unit,
     onGoogleClick: () -> Unit = {},
@@ -101,6 +103,28 @@ fun SignUpScreen(
             placeholder = { Text("Full Name", color = TextHint) },
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Next
+            ),
+            keyboardActions = KeyboardActions(onNext = { focus.moveFocus(FocusDirection.Down) }),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = BorderActive,
+                focusedLabelColor = TealPrimary,
+                cursorColor = TealPrimary
+            )
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        // DOB (YYYY-MM-DD)
+        OutlinedTextField(
+            value = state.dob,
+            onValueChange = onDobChange,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            label = { Text("Date of Birth") },
+            placeholder = { Text("DD/MM/YYYY", color = TextHint) },
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
                 imeAction = ImeAction.Next
             ),
             keyboardActions = KeyboardActions(onNext = { focus.moveFocus(FocusDirection.Down) }),
@@ -191,6 +215,30 @@ fun SignUpScreen(
             )
         )
 
+        Spacer(Modifier.height(16.dp))
+
+        // Role radio group
+        Text("Choose Your Role", style = MaterialTheme.typography.bodyLarge, color = TextSecondary, fontWeight =
+        FontWeight.Bold)
+        Spacer(Modifier.height(6.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            RoleOption(
+                label = "Patient",
+                selected = state.role == "patient",
+                onClick = { onRoleChange("patient") }
+            )
+            Spacer(Modifier.width(24.dp))
+            RoleOption(
+                label = "Caregiver",
+                selected = state.role == "caregiver",
+                onClick = { onRoleChange("caregiver") }
+            )
+        }
+
         // Error (if any)
         if (state.error != null) {
             Text(
@@ -263,5 +311,13 @@ fun SignUpScreen(
                 .fillMaxWidth()
                 .padding(top = 14.dp, bottom = 6.dp)
         )
+    }
+}
+
+@Composable
+private fun RoleOption(label: String, selected: Boolean, onClick: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        RadioButton(selected = selected, onClick = onClick)
+        Text(label)
     }
 }

@@ -18,17 +18,20 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import com.example.nms_mobile.ui.dashboard.DashboardEvent
 import com.example.nms_mobile.ui.dashboard.DashboardScreen
 import com.example.nms_mobile.ui.dashboard.DashboardViewModel
+import com.example.nms_mobile.ui.home.HomeEvent
 import com.example.nms_mobile.ui.login.LoginScreen
 import com.example.nms_mobile.ui.login.LoginViewModel
 import com.example.nms_mobile.ui.home.HomeScreen
+import com.example.nms_mobile.ui.home.HomeViewModel
 import com.example.nms_mobile.ui.personaldetails.PersonalInfoEvent
 import com.example.nms_mobile.ui.personaldetails.PersonalInfoScreen
 import com.example.nms_mobile.ui.personaldetails.PersonalInfoViewModel
-import com.example.nms_mobile.ui.questionnaire.QuestionnaireEvent
-import com.example.nms_mobile.ui.questionnaire.QuestionnaireScreen
-import com.example.nms_mobile.ui.questionnaire.QuestionnaireViewModel
+import com.example.nms_mobile.ui.questionnaire.SectionedQuestionnaireEvent
+import com.example.nms_mobile.ui.questionnaire.SectionedQuestionnaireScreen
+import com.example.nms_mobile.ui.questionnaire.SectionedQuestionnaireViewModel
 import com.example.nms_mobile.ui.signup.SignUpScreen
 import com.example.nms_mobile.ui.signup.SignUpViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -52,7 +55,7 @@ fun StartRoute(
 
         // Check Firestore: has the user completed profile?
         val db = FirebaseFirestore.getInstance()
-        val details = db.collection("user_details").document(user.uid).get().await()
+        val details = db.collection("users").document(user.uid).get().await()
         val hasProfile = details.exists()
 
         if (hasProfile) onGoDashboard()
@@ -99,7 +102,7 @@ fun LoginRoute(
  */
 @Composable
 fun SignUpRoute(
-    onNavigateToPersonalInfo: () -> Unit,
+    onNavigateToDashboard: () -> Unit,
     onBack: () -> Unit,
     onLoginInstead: () -> Unit
 ) {
@@ -107,7 +110,7 @@ fun SignUpRoute(
     val state by vm.uiState.collectAsState()
 
     LaunchedEffect(state.success) {
-        if (state.success) onNavigateToPersonalInfo()
+        if (state.success) onNavigateToDashboard()
     }
 
     SignUpScreen(
@@ -120,7 +123,9 @@ fun SignUpRoute(
         onLoginClick = onLoginInstead,
         onGoogleClick = { /* TODO: Google sign-in */ },
         onFacebookClick = { /* TODO: Google sign-in */ },
-        onAppleClick  = { /* TODO: Apple sign-in */ }
+        onAppleClick = { /* TODO: Apple sign-in */ },
+        onDobChange = vm::onDobChange,
+        onRoleChange = vm::onRoleChange
     )
 }
 
@@ -151,10 +156,6 @@ fun PersonalInfoRoute(
         state = state,
         onFullNameChange = vm::onFullNameChange,
         onDateOfBirthChange = vm::onDateOfBirthChange,
-        onBiologicalSexChange = vm::onBiologicalSexChange,
-        onEducationLevelChange = vm::onEducationLevelChange,
-        onAgeChange = vm::onAgeChange,
-        onWeightChange = vm::onWeightChange,
         onSubmit = vm::submit
     )
 }
@@ -169,7 +170,7 @@ fun HomeRoute(
     onLoggedOut: () -> Unit,
     onCompleteProfile: () -> Unit
 ) {
-    val vm = remember { com.example.nms_mobile.ui.home.HomeViewModel() }
+    val vm = remember { HomeViewModel() }
     val ui by vm.ui.collectAsState()
 
     // Keep VM in sync with the arg coming from navigation
@@ -181,7 +182,7 @@ fun HomeRoute(
     LaunchedEffect(Unit) {
         vm.events.collect { e ->
             when (e) {
-                com.example.nms_mobile.ui.home.HomeEvent.LoggedOut -> onLoggedOut()
+                HomeEvent.LoggedOut -> onLoggedOut()
             }
         }
     }
@@ -199,10 +200,20 @@ fun DashboardRoute(
     onOpenNews: () -> Unit = {},
     onOpenSpeech: () -> Unit = {},
     onOpenMemory: () -> Unit = {},
-    onOpenCognitive: () -> Unit = {}
+    onOpenCognitive: () -> Unit = {},
+    onLoggedOut : () -> Unit = {}
 ) {
-    val vm = androidx.compose.runtime.remember { DashboardViewModel() }
+    val vm = remember { DashboardViewModel() }
     val state by vm.ui.collectAsState()
+
+    // Collect events and navigate after logout
+    LaunchedEffect(Unit) {
+        vm.events.collect { ev ->
+            when (ev) {
+                DashboardEvent.LoggedOut -> onLoggedOut()
+            }
+        }
+    }
 
     DashboardScreen(
         state = state,
@@ -212,38 +223,56 @@ fun DashboardRoute(
         },
         onOpenSpeech = onOpenSpeech,
         onOpenMemory = onOpenMemory,
-        onOpenCognitive = onOpenCognitive
+        onOpenCognitive = onOpenCognitive,
+        onLogoutClick = vm::logout
     )
 }
-
 @Composable
 fun QuestionnaireRoute(
-    onFinishedAll: () -> Unit
+    onFinishedAll: () -> Unit,
+    onBack: () -> Unit
 ) {
-    val vm = remember { QuestionnaireViewModel() }
+    val vm = remember { SectionedQuestionnaireViewModel() }
     val state by vm.ui.collectAsState()
 
-    LaunchedEffect(Unit) {
-        vm.events.collect { e ->
-            if (e is QuestionnaireEvent.Saved) onFinishedAll()
+    // lifecycle-aware one-shot event collection
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(vm) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            vm.events.collect { e ->
+                if (e is SectionedQuestionnaireEvent.Submitted) onFinishedAll()
+            }
         }
     }
 
-    QuestionnaireScreen(
+    SectionedQuestionnaireScreen(
         state = state,
+        onBackClick = onBack,
+        onPrev = {
+            if (vm.validateCurrentSection()) vm.prevSection() else Unit
+        },
+        onNext = {
+            if (vm.validateCurrentSection()) vm.nextSection()
+        },
+        onSubmit = {
+            if (vm.validateCurrentSection()) vm.submit()
+        },
+        onAge = vm::onAge,
+        onWeight = vm::onWeight,
         onDominantHand = vm::onDominantHand,
-        onSmokingStatus = vm::onSmokingStatus,
-        onAlcoholUse = vm::onAlcoholUse,
-        onPhysicalActivity = vm::onPhysicalActivity,
-        onNutritionDiet = vm::onNutritionDiet,
-        onSleepQuality = vm::onSleepQuality,
+        onGender = vm::onGender,
+        onEducation = vm::onEducation,
+        onSmoking = vm::onSmoking,
+        onAlcohol = vm::onAlcohol,
+        onPhysical = vm::onPhysicalActivity,
+        onNutrition = vm::onNutrition,
+        onSleep = vm::onSleep,
         onDiabetic = vm::onDiabetic,
         onFamilyHistory = vm::onFamilyHistory,
         onDepression = vm::onDepression,
-        onApoe = vm::onApoe,
+        onGenetic = vm::onGenetic,
         onMedication = vm::onMedication,
-        onChronic = vm::onChronic,
-        onFinish = vm::save
+        onChronic = vm::onChronic
     )
 }
 

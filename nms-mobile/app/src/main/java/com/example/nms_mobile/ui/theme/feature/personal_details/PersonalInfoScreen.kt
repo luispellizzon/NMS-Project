@@ -18,17 +18,8 @@ fun PersonalInfoScreen(
     state: PersonalInfoUiState,
     onFullNameChange: (String) -> Unit,
     onDateOfBirthChange: (String) -> Unit,
-    onBiologicalSexChange: (String) -> Unit,
-    onEducationLevelChange: (String) -> Unit,
-    onAgeChange: (String) -> Unit,
-    onWeightChange: (String) -> Unit,
     onSubmit: () -> Unit
 ) {
-    val sexOptions = listOf("Male", "Female", "Prefer not to say")
-    val educationOptions = listOf("High School", "College", "University", "Postgraduate", "Doctorate", "Other")
-
-    var sexExpanded by remember { mutableStateOf(false) }
-    var educationExpanded by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -71,82 +62,15 @@ fun PersonalInfoScreen(
             Spacer(Modifier.height(16.dp))
 
             OutlinedTextField(
-                value = state.age,
-                onValueChange = onAgeChange,
-                label = { Text("Age") },
+                value = state.dateOfBirth,
+                onValueChange = onDateOfBirthChange,
+                label = { Text("Data of Birth") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = TealPrimary)
             )
 
             Spacer(Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = state.weight,
-                onValueChange = onWeightChange,
-                label = { Text("Weight (kg)") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = TealPrimary)
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            ExposedDropdownMenuBox(
-                expanded = sexExpanded,
-                onExpandedChange = { sexExpanded = it }
-            ) {
-                OutlinedTextField(
-                    value = state.biologicalSex,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Biological Sex") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = sexExpanded) },
-                    modifier = Modifier.fillMaxWidth().menuAnchor(),
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = TealPrimary)
-                )
-                ExposedDropdownMenu(expanded = sexExpanded, onDismissRequest = { sexExpanded = false }) {
-                    sexOptions.forEach { option ->
-                        DropdownMenuItem(
-                            text = { Text(option) },
-                            onClick = {
-                                onBiologicalSexChange(option)
-                                sexExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            ExposedDropdownMenuBox(
-                expanded = educationExpanded,
-                onExpandedChange = { educationExpanded = it }
-            ) {
-                OutlinedTextField(
-                    value = state.educationLevel,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Highest Level of Education") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = educationExpanded) },
-                    modifier = Modifier.fillMaxWidth().menuAnchor(),
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = TealPrimary)
-                )
-                ExposedDropdownMenu(expanded = educationExpanded, onDismissRequest = { educationExpanded = false }) {
-                    educationOptions.forEach { option ->
-                        DropdownMenuItem(
-                            text = { Text(option) },
-                            onClick = {
-                                onEducationLevelChange(option)
-                                educationExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(24.dp))
 
             if (state.error != null) {
                 Text(state.error, color = MaterialTheme.colorScheme.error)

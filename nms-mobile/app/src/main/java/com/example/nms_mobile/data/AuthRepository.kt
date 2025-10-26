@@ -2,6 +2,7 @@ package com.example.nms_mobile.data
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.userProfileChangeRequest
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.tasks.await
@@ -13,7 +14,8 @@ data class UserSession(
 )
 
 class AuthRepository private constructor(
-    private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance(),
+    private val db: FirestoreRepository = FirestoreRepository.instance
 ) {
 
     // ---- Global, in-memory session ----
@@ -35,7 +37,13 @@ class AuthRepository private constructor(
      * Also pushes the provided 'name' into the in-memory session immediately
      * so the UI can show it without waiting for Firebase to reflect it.
      */
-    suspend fun signUp(name: String, email: String, password: String) {
+    suspend fun signUp(
+        name: String,
+        email: String,
+        password: String,
+        dob: String,
+        role: String // "patient" | "caregiver"
+    )  {
         val result = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
         val user = result.user ?: firebaseAuth.currentUser ?: return
 
@@ -45,6 +53,17 @@ class AuthRepository private constructor(
         // Persist displayName to Firebase profile (fire-and-forget from UI perspective)
         val updates = userProfileChangeRequest { displayName = name.trim() }
         user.updateProfile(updates).await()
+
+        // Create Firestore profile
+        db.createUserProfile(
+            UserProfile(
+                uid = user.uid,
+                fullName = name.trim(),
+                dateOfBirth = dob,
+                email = email,
+                role = role
+            )
+        )
         // Optional: ensure future reads from Firebase match the in-memory session
         runCatching { user.reload().await() }
     }
