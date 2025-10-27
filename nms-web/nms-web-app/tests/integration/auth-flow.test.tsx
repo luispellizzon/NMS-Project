@@ -10,22 +10,6 @@ import { User } from 'firebase/auth';
 // Mock the service layer.
 vi.mock('@/lib/firebase/auth-service');
 
-// Mock for Firebase Functions (used by SignUpForm)
-const mockRegisterCallable = vi.fn();
-vi.mock('firebase/functions', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('firebase/functions')>();
-  return {
-    ...actual,
-    getFunctions: vi.fn(),
-    httpsCallable: vi.fn(() => mockRegisterCallable),
-    FunctionsError: class FunctionsError extends Error {
-      constructor(public code: string, public message: string) {
-        super(message);
-      }
-    },
-  };
-});
-
 // Mock for Firebase Auth SDK (used by SignInForm)
 vi.mock('firebase/auth', () => ({
   signInWithEmailAndPassword: vi.fn(),
@@ -49,14 +33,14 @@ const mockedSignIn = authService.signInWithEmail as Mock;
 describe('Authentication Flow Integration Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockRegisterCallable.mockClear();
     mockedSignIn.mockClear();
   });
 
   describe('Complete Sign Up Flow', () => {
     it('completes full signup flow from form submission to redirect', async () => {
       const user = userEvent.setup();
-      mockRegisterCallable.mockResolvedValue({ data: { success: true } });
+
+      const mockedSignUp = vi.spyOn(authService, 'signUpWithEmail').mockResolvedValue({} as any);
 
       render(<SignUpForm />);
 
@@ -67,18 +51,20 @@ describe('Authentication Flow Integration Tests', () => {
       await user.click(screen.getByRole('button', { name: /signup/i }));
 
       await waitFor(() => {
-        expect(mockRegisterCallable).toHaveBeenCalledWith({
-          displayName: 'New User',
-          email: 'newuser@example.com',
-          password: 'SecurePass123!',
-        });
+        expect(mockedSignUp).toHaveBeenCalledWith(
+          'newuser@example.com', // 1st argument
+          'SecurePass123!',     // 2nd argument
+          'New User'            // 3rd argument
+        );
       });
 
+      // This assertion is still correct
       await waitFor(() => {
         expect(mockPush).toHaveBeenCalledWith('/dashboard');
       });
     });
   });
+
 
   describe('Complete Sign In Flow', () => {
     it('completes full signin flow and redirects', async () => {

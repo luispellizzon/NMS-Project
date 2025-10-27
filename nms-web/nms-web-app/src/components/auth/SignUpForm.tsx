@@ -4,8 +4,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { signInWithGoogle, signInWithApple } from '@/lib/firebase/auth-service';
-import { FunctionsError, getFunctions, httpsCallable } from 'firebase/functions';
+import { signUpWithEmail, signInWithGoogle, signInWithApple } from '@/lib/firebase/auth-service';
+import { FirebaseError } from 'firebase/app';
 
 export default function SignUpForm() {
   const router = useRouter();
@@ -28,21 +28,33 @@ export default function SignUpForm() {
     setLoading(true);
 
     try {
-      const functions = getFunctions();
-      const register = httpsCallable(functions, 'register');
-      await register({
-        email: formData.email,
-        password: formData.password,
-        displayName: formData.displayName,
-      });
+      await signUpWithEmail(
+        formData.email,
+        formData.password,
+        formData.displayName
+      );
+
       router.push('/dashboard');
+
     } catch (err) {
       console.error('Registration Error:', err);
       let errorMessage = 'An unexpected error occurred during registration.';
-      if (err instanceof FunctionsError) {
-        errorMessage = err.message;
-      } else if (err instanceof Error) {
-        errorMessage = err.message;
+      
+      if (err instanceof FirebaseError) {
+        switch (err.code) {
+          case 'auth/email-already-in-use':
+            errorMessage = 'This email is already registered. Please sign in.';
+            break;
+          case 'auth/weak-password':
+            errorMessage = 'The password is too weak. Please use at least 6 characters.';
+            break;
+          case 'auth/invalid-email':
+            errorMessage = 'Please enter a valid email address.';
+            break;
+          default:
+            errorMessage = 'Failed to register. Please try again.';
+            break;
+        }
       }
       setError(errorMessage);
     } finally {
