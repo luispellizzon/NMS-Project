@@ -7,23 +7,17 @@ import SignUpForm from './SignUpForm';
 import * as authService from '@/lib/firebase/auth-service';
 import { FirebaseError } from 'firebase/app';
 
-// NEW: Mock the entire auth-service module
-// This is the correct module to mock now.
 vi.mock('@/lib/firebase/auth-service');
-
-// REMOVED: The firebase/functions mock is no longer needed.
 
 const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
-// Cast the mocked module to get type safety on our mock functions
 const mockedAuthService = vi.mocked(authService);
 
 describe('SignUpForm', () => {
   beforeEach(() => {
-    // Reset all mocks before each test to ensure they are clean
     vi.clearAllMocks();
   });
 
@@ -35,11 +29,10 @@ describe('SignUpForm', () => {
     expect(screen.getByRole('button', { name: /signup/i })).toBeInTheDocument();
   });
 
-  // FIXED TEST: Test the success case
   it('successfully signs up and redirects on valid submission', async () => {
     const user = userEvent.setup();
     // Mock the successful resolution of the client-side function
-    mockedAuthService.signUpWithEmail.mockResolvedValue({} as any); // The return value doesn't matter for this test
+    mockedAuthService.signUpWithEmail.mockResolvedValue({} as any);
     
     render(<SignUpForm />);
 
@@ -67,11 +60,9 @@ describe('SignUpForm', () => {
     });
   });
 
-  // FIXED TEST: Test for a specific Firebase error
   it('displays a user-friendly error message when email is already in use', async () => {
     const user = userEvent.setup();
     const errorMessage = 'This email is already registered. Please sign in.';
-    // Mock the rejection with a specific FirebaseError
     const firebaseError = new FirebaseError('auth/email-already-in-use', 'Firebase: Error (auth/email-already-in-use).');
     mockedAuthService.signUpWithEmail.mockRejectedValue(firebaseError);
 
@@ -90,7 +81,6 @@ describe('SignUpForm', () => {
     expect(mockPush).not.toHaveBeenCalled();
   });
 
-  // FIXED TEST: Test for a generic/unhandled error
   it('displays a generic error for non-Firebase errors', async () => {
     const user = userEvent.setup();
     // Mock rejection with a generic Error to trigger the fallback message
@@ -104,13 +94,11 @@ describe('SignUpForm', () => {
     await user.click(screen.getByLabelText(/i agree to the/i));
     await user.click(screen.getByRole('button', { name: /signup/i }));
 
-    // Assert that the component's FALLBACK error message is displayed
     const errorElement = await screen.findByText('An unexpected error occurred during registration.');
     expect(errorElement).toBeInTheDocument();
     expect(mockPush).not.toHaveBeenCalled();
   });
 
-  // These tests were already correct as they mocked the same service
   it('handles Google sign-in failure', async () => {
     const user = userEvent.setup();
     const errorMessage = 'Google sign-in failed.';
