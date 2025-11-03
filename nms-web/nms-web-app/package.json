@@ -2,6 +2,7 @@
   "name": "nms-web-app",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
@@ -35,7 +36,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "^4.1.16",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
@@ -53,7 +54,7 @@
     "eslint-config-next": "15.5.4",
     "jsdom": "^27.0.0",
     "playwright": "^1.55.1",
-    "tailwindcss": "^4",
+    "tailwindcss": "^4.1.16",
     "typescript": "^5",
     "vitest": "^3.2.4"
   }

@@ -1,5 +1,114 @@
 // src/lib/mock-data.ts
 import { Timestamp } from 'firebase/firestore'; // Import Firestore Timestamp
+import { Patient, RiskLevel, Trend } from '@/types/patient';
+
+export const mockPatients: Patient[] = [
+  {
+    id: 'P001',
+    name: 'Jenny Wilson',
+    age: 72,
+    gender: 'Female',
+    avatarUrl: '/images/Avatar.jpg',
+    riskScore: 7.6,
+    riskLevel: 'High',
+    trend: 'Down',
+    assessments: { cognitive: 2, speech: 1 },
+    lastCheck: '2025-09-28',
+    nextAppointment: '2025-11-15',
+  },
+  {
+    id: 'P002',
+    name: 'Robert Fox',
+    age: 68,
+    gender: 'Male',
+    avatarUrl: '/images/Avatar.jpg',
+    riskScore: 8.1,
+    riskLevel: 'High',
+    trend: 'Down',
+    assessments: { cognitive: 1, speech: 2 },
+    lastCheck: '2025-10-01',
+    nextAppointment: '2025-11-20',
+  },
+  {
+    id: 'P003',
+    name: 'Esther Howard',
+    age: 75,
+    gender: 'Female',
+    avatarUrl: '/images/Avatar.jpg',
+    riskScore: 5.5,
+    riskLevel: 'Moderate',
+    trend: 'Stable',
+    assessments: { cognitive: 4, speech: 4 },
+    lastCheck: '2025-09-15',
+    nextAppointment: '2025-12-01',
+  },
+  {
+    id: 'P004',
+    name: 'John Doe',
+    age: 65,
+    gender: 'Male',
+    avatarUrl: '/images/Avatar.jpg',
+    riskScore: 9.3,
+    riskLevel: 'High',
+    trend: 'Down',
+    assessments: { cognitive: 2, speech: 1 },
+    lastCheck: '2025-10-05',
+    nextAppointment: '2026-01-10',
+  },
+  // ... Add 4 more mock patients to make a total of 8 for pagination
+  {
+    id: 'P005',
+    name: 'Jane Cooper',
+    age: 78,
+    gender: 'Female',
+    avatarUrl: '/images/Avatar.jpg',
+    riskScore: 6.8,
+    riskLevel: 'Moderate',
+    trend: 'Stable',
+    assessments: { cognitive: 4, speech: 5 },
+    lastCheck: '2025-09-22',
+    nextAppointment: '2025-11-18',
+  },
+  {
+    id: 'P006',
+    name: 'Wade Warren',
+    age: 71,
+    gender: 'Male',
+    avatarUrl: '/images/Avatar.jpg',
+    riskScore: 9.2,
+    riskLevel: 'High',
+    trend: 'Up',
+    assessments: { cognitive: 2, speech: 2 },
+    lastCheck: '2025-10-11',
+    nextAppointment: '2025-11-05',
+  },
+  {
+    id: 'P007',
+    name: 'Annette Black',
+    age: 69,
+    gender: 'Female',
+    avatarUrl: '/images/Avatar.jpg',
+    riskScore: 2.1,
+    riskLevel: 'Low',
+    trend: 'Up',
+    assessments: { cognitive: 5, speech: 5 },
+    lastCheck: '2025-08-30',
+    nextAppointment: '2025-12-12',
+  },
+  {
+    id: 'P008',
+    name: 'Jacob Jones',
+    age: 74,
+    gender: 'Male',
+    avatarUrl: '/images/Avatar.jpg',
+    riskScore: 4.9,
+    riskLevel: 'Moderate',
+    trend: 'Stable',
+    assessments: { cognitive: 3, speech: 2 },
+    lastCheck: '2025-09-29',
+    nextAppointment: '2025-11-25',
+  },
+];
 
 // Updated Type to match our Firestore model
 export type NewsArticle = {
@@ -131,5 +240,58 @@ export const avgScoresData = {
     { label: 'Speech', value: 4.8, color: '#8b5cf6' },
     { label: 'Cognition', value: 5.2, color: '#3b82f6' },
     { label: 'Memory', value: 4.9, color: '#10b981' },
+  ],
+};
+
+export type TestHistoryItem = {
+  id: string;
+  date: string;
+  test: string;
+  timeTaken: string;
+  score: string;
+  totalPlays: number;
+};
+
+export type PatientProfile = Patient & {
+  email: string;
+  smoker: 'Yes' | 'No';
+  lastPlayed: string;
+  gameScores: {
+    speech: number;
+    cognitive: number;
+    memory: number;
+    avg: number;
+  };
+  testHistory: TestHistoryItem[];
+};
+
+export const mockPatientProfile: PatientProfile = {
+  // Inherit from mockPatients
+  id: 'P001',
+  name: 'Jenny Wilson',
+  age: 72,
+  gender: 'Female',
+  avatarUrl: '/images/Avatar.jpg',
+  riskScore: 7.6,
+  riskLevel: 'High',
+  trend: 'Up',
+  assessments: { cognitive: 4, speech: 3 },
+  lastCheck: '2025-09-28',
+  nextAppointment: '2025-11-15',
+  // New detailed fields
+  email: 'jen.wilson@example.com',
+  smoker: 'No',
+  lastPlayed: '2025-10-28',
+  gameScores: {
+    speech: 5,
+    cognitive: 5,
+    memory: 5,
+    avg: 5,
+  },
+  testHistory: [
+    { id: 'h1', date: '2025-10-28', test: 'Cognitive Recall', timeTaken: '45 sec', score: '5/5', totalPlays: 3 },
+    { id: 'h2', date: '2025-10-21', test: 'Verbal Fluency', timeTaken: '52 sec', score: '4/5', totalPlays: 2 },
+    { id: 'h3', date: '2025-10-14', test: 'Pattern Recognition', timeTaken: '38 sec', score: '5/5', totalPlays: 4 },
+    { id: 'h4', date: '2025-10-07', test: 'Cognitive Recall', timeTaken: '48 sec', score: '4/5', totalPlays: 3 },
   ],
 };

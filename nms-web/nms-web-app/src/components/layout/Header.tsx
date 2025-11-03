@@ -35,7 +35,7 @@ export default function Header({ onToggleMobileSidebar }: HeaderProps) {
         </div>
       </div>
       
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 pr-4">
         <ThemeSwitcher />
         <button className="p-2 rounded-full hover:bg-accent">
           <Bell className="h-5 w-5 text-muted-foreground" />
