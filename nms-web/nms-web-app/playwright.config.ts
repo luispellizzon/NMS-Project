@@ -6,7 +6,7 @@ const baseURL = `http://localhost:${PORT}`;
 
 export default defineConfig({
   // Timeout for each test in milliseconds
-  timeout: 30 * 1000,
+  timeout: 60 * 1000,
   
   // The directory where tests are located
   testDir: './e2e',

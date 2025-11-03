@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { logOut } from '@/lib/firebase/auth-service';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -77,11 +77,11 @@ export default function Sidebar({ isCollapsed, toggleSidebar, isMobileOpen, setM
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
               className="fixed top-0 left-0 h-full w-64 bg-background border-r flex flex-col z-40 lg:hidden"
             >
-              <SidebarContent 
-                isCollapsed={false} 
-                toggleSidebar={toggleSidebar} 
-                isMobile={true} 
-                setMobileOpen={setMobileOpen} 
+              <SidebarContent
+                isCollapsed={false}
+                toggleSidebar={toggleSidebar}
+                isMobile={true}
+                setMobileOpen={setMobileOpen}
               />
             </motion.aside>
           </>
@@ -99,18 +99,19 @@ export default function Sidebar({ isCollapsed, toggleSidebar, isMobileOpen, setM
   );
 }
 
-const SidebarContent = ({ 
-  isCollapsed, 
+const SidebarContent = ({
+  isCollapsed,
   toggleSidebar,
   isMobile = false,
-  setMobileOpen 
-}: { 
-  isCollapsed: boolean, 
+  setMobileOpen
+}: {
+  isCollapsed: boolean,
   toggleSidebar: () => void,
   isMobile?: boolean,
-  setMobileOpen?: (isOpen: boolean) => void 
+  setMobileOpen?: (isOpen: boolean) => void
 }) => {
   const router = useRouter();
+  const pathname = usePathname(); // Get the current path
   const { user } = useAuth(); // Get the currently logged-in user
 
   // --- 4. Create the logout handler ---
@@ -129,8 +130,8 @@ const SidebarContent = ({
   <>
     <div className="flex items-center justify-between p-4 border-b h-16 shrink-0">
         <div className="flex items-center gap-2 overflow-hidden">
-          <div className="bg-primary p-2 rounded-lg">
-              <Image src="/images/logo.png" alt="NeuroMind Logo" width={24} height={24} />
+          <div className="">
+              <Image src="/images/logo.png" alt="NeuroMind Logo" width={44} height={44} />
           </div>
           {(!isCollapsed || isMobile) && (
             <span className="text-xl font-bold text-foreground whitespace-nowrap">
@@ -152,15 +153,15 @@ const SidebarContent = ({
 
     <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
       <p className={`px-4 pt-2 pb-2 text-xs font-semibold text-muted-foreground/80 uppercase transition-opacity duration-200 ${isCollapsed ? 'opacity-0 h-0 pointer-events-none' : 'opacity-100'}`}>Menu</p>
-      <NavLink href="/dashboard" icon={LayoutGrid} text="Dashboard" isCollapsed={isCollapsed} isSelected />
-      <NavLink href="/patients" icon={Users} text="Patients" isCollapsed={isCollapsed} />
-      <NavLink href="/training" icon={ClipboardList} text="Training" isCollapsed={isCollapsed} />
+      <NavLink href="/dashboard" icon={LayoutGrid} text="Dashboard" isCollapsed={isCollapsed} isSelected={pathname === '/dashboard'} />
+      <NavLink href="/patients" icon={Users} text="Patients" isCollapsed={isCollapsed} isSelected={pathname === '/patients'} />
+      <NavLink href="/training" icon={ClipboardList} text="Training" isCollapsed={isCollapsed} isSelected={pathname === '/training'} />
     </nav>
 
     <div className="p-4 border-t shrink-0">
       <div className="space-y-2">
-        <NavLink href="/notifications" icon={Bell} text="Notifications" isCollapsed={isCollapsed} />
-        <NavLink href="/settings" icon={Settings} text="Settings" isCollapsed={isCollapsed} />
+        <NavLink href="/notifications" icon={Bell} text="Notifications" isCollapsed={isCollapsed} isSelected={pathname === '/notifications'} />
+        <NavLink href="/settings" icon={Settings} text="Settings" isCollapsed={isCollapsed} isSelected={pathname === '/settings'} />
       </div>
       <div className="mt-6">
         <div className="flex items-center p-2">

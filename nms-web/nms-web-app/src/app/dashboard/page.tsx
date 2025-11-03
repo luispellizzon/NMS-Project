@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { motion, Variants } from 'framer-motion';
 import { PatientLocation, patientLocations, appointmentsListData } from '@/lib/mock_data';
 import GeographicDistributionCard from '@/components/ui/dashboard/GeographicDistributionCard';
 import DashboardCard from '@/components/ui/dashboard/DashboardCard';
@@ -11,6 +12,29 @@ import PatientsDistributionChart from '@/components/ui/dashboard/PatientsDistrib
 import AvgRiskAssessmentChart from '@/components/ui/dashboard/AvgRiskAssessmentChart';
 import OverallAppointmentsChart from '@/components/ui/dashboard/OverallAppointmentsChart';
 import AppointmentsList from '@/components/ui/dashboard/AppointmentsList';
+
+// Animation variants for orchestrating the load animation
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08, // Time delay between each child animating in
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 100,
+    },
+  },
+};
 
 export default function DashboardPage() {
   const [locationSearchTerm, setLocationSearchTerm] = useState('');
@@ -43,53 +67,64 @@ export default function DashboardPage() {
   };
 
   return (
-    // The main container for the dashboard content.
-    <div className="w-full">
+    // Wrap the entire page content in a motion.div to control animations
+    <motion.div 
+      className="w-full"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* --- PRIMARY CONTENT COLUMN (LEFT) --- */}
         <div className="lg:col-span-2 flex flex-col gap-6">
           
-          {/* News Card: Full width within this column */}
-          <DashboardCard title="News">
+          {/* News Card: Pass the itemVariants */}
+          <DashboardCard title="News" variants={itemVariants}>
             <NewsFeed />
           </DashboardCard>
 
           {/* Geo-distribution and Score Range Section */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-            <GeographicDistributionCard
-              targetLocation={targetLocation}
-              searchTerm={locationSearchTerm}
-              handleSearchSubmit={handleLocationSearchSubmit}
-              handleSearchChange={handleLocationSearchChange}
-              handleClearSearch={clearLocationSearch}
-              handleFilterClick={handleFilterClick}
-            />
-            <DashboardCard title="Score Range" className="md:col-span-2">
+            <motion.div className="md:col-span-3" variants={itemVariants}>
+              <GeographicDistributionCard
+                targetLocation={targetLocation}
+                searchTerm={locationSearchTerm}
+                handleSearchSubmit={handleLocationSearchSubmit}
+                handleSearchChange={handleLocationSearchChange}
+                handleClearSearch={clearLocationSearch}
+                handleFilterClick={handleFilterClick}
+              />
+            </motion.div>
+            <DashboardCard title="Score Range" className="md:col-span-2" variants={itemVariants}>
               <ScoreRangeRadarChart />
             </DashboardCard>
           </div>
 
           {/* Key Statistics Section */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <DashboardCard title="Avg Scores"><AvgScores /></DashboardCard>
-            <DashboardCard title="Patients"><PatientsDistributionChart /></DashboardCard>
-            <DashboardCard title="Avg Risk Assessment"><AvgRiskAssessmentChart /></DashboardCard>
+            <DashboardCard title="Avg Scores" variants={itemVariants}><AvgScores /></DashboardCard>
+            <DashboardCard title="Patients" variants={itemVariants}><PatientsDistributionChart /></DashboardCard>
+            <DashboardCard title="Avg Risk Assessment" variants={itemVariants}><AvgRiskAssessmentChart /></DashboardCard>
           </div>
         </div>
 
         {/* --- SECONDARY CONTENT COLUMN (RIGHT) --- */}
         <div className="lg:col-span-1 flex flex-col gap-6">
-          <DashboardCard title="Overall Appointments">
+          <DashboardCard title="Overall Appointments" variants={itemVariants}>
             <OverallAppointmentsChart />
           </DashboardCard>
 
           <div className="flex flex-col gap-6">
-            <AppointmentsList title="Upcoming Appointments" appointments={upcomingAppointments} />
-            <AppointmentsList title="Previous Appointments" appointments={previousAppointments} showTimeFilter />
+            <motion.div variants={itemVariants}>
+              <AppointmentsList title="Upcoming Appointments" appointments={upcomingAppointments} />
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <AppointmentsList title="Previous Appointments" appointments={previousAppointments} showTimeFilter />
+            </motion.div>
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

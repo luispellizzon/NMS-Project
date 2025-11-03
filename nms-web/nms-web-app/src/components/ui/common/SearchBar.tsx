@@ -18,7 +18,7 @@ export default function GenericSearchBar({
   onClear,
   placeholder = 'Search...',
   className = '',
-  iconClassName = 'h-5 w-5 text-gray-400',
+  iconClassName = 'h-4 w-5 text-gray-400',
 }: GenericSearchBarProps) {
   return (
     <div className="relative w-full">
