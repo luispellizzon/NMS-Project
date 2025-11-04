@@ -28,10 +28,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.nms_mobile.R
 import com.example.nms_mobile.ui.components.SocialLoginButtons
-import com.example.nms_mobile.ui.theme.BorderActive
-import com.example.nms_mobile.ui.theme.TealPrimary
-import com.example.nms_mobile.ui.theme.TextHint
-import com.example.nms_mobile.ui.theme.TextSecondary
+import com.example.nms_mobile.ui.BorderActive
+import com.example.nms_mobile.ui.TealPrimary
+import com.example.nms_mobile.ui.TextHint
+import com.example.nms_mobile.ui.TextSecondary
+
+
 @Composable
 fun LoginScreen(
     state: LoginUiState,
@@ -44,18 +46,20 @@ fun LoginScreen(
     onFacebookClick: () -> Unit = {},
     onAppleClick: () -> Unit = {}
 ) {
+    // Controls whether the password text is visible or hidden.
     var pwVisible by remember { mutableStateOf(false) }
+    // Tool to move focus between text fields.
     val focus = LocalFocusManager.current
 
-    // Scroll so nothing overlaps on small screens
+    // Main layout is scrollable to prevent overlapping on small screens.
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .padding(horizontal = 24.dp, vertical = 50.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Header
+        // --- Header ---
         Text(
             text = "Welcome Back",
             style = MaterialTheme.typography.titleMedium,
@@ -75,11 +79,12 @@ fun LoginScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // Logo (safe fallback)
+        // --- Logo ---
         val logo: Painter? = runCatching { painterResource(id = R.drawable.nms_logo) }.getOrNull()
         if (logo != null) {
             Image(painter = logo, contentDescription = "NMS Logo", modifier = Modifier.size(84.dp))
         } else {
+            // Text fallback if the image is missing.
             Text(
                 "nms",
                 style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
@@ -89,7 +94,7 @@ fun LoginScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        // Email
+        // --- Email Input ---
         OutlinedTextField(
             value = state.email,
             onValueChange = onEmailChange,
@@ -99,7 +104,7 @@ fun LoginScreen(
             placeholder = { Text("Email", color = TextHint) },
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Email,
-                imeAction = ImeAction.Next
+                imeAction = ImeAction.Next // 'Enter' key moves to the next field.
             ),
             keyboardActions = KeyboardActions(onNext = { focus.moveFocus(FocusDirection.Down) }),
             colors = OutlinedTextFieldDefaults.colors(
@@ -111,7 +116,7 @@ fun LoginScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // Password w/ eye toggle
+        // --- Password Input ---
         OutlinedTextField(
             value = state.password,
             onValueChange = onPasswordChange,
@@ -119,8 +124,10 @@ fun LoginScreen(
             singleLine = true,
             label = { Text("Password") },
             placeholder = { Text("Password", color = TextHint) },
+            // Show dots or plain text based on the toggle state.
             visualTransformation = if (pwVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
+                // The eye icon button.
                 val icon: ImageVector = if (pwVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
                 IconButton(onClick = { pwVisible = !pwVisible }) {
                     Icon(icon, contentDescription = null, tint = TextSecondary)
@@ -128,7 +135,7 @@ fun LoginScreen(
             },
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Done
+                imeAction = ImeAction.Done // 'Enter' key closes the keyboard.
             ),
             keyboardActions = KeyboardActions(onDone = { focus.clearFocus() }),
             colors = OutlinedTextFieldDefaults.colors(
@@ -138,18 +145,18 @@ fun LoginScreen(
             )
         )
 
-        // Forgot Password aligned right on its own row
+        // --- Forgot Password Link ---
         TextButton(
             onClick = onForgotPasswordClick,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 6.dp)
-                .wrapContentWidth(Alignment.End)
+                .wrapContentWidth(Alignment.End) // Align to the right
         ) {
             Text("Forgot Password?", color = TealPrimary)
         }
 
-        // Error (if any)
+        // --- Error Message ---
         if (state.error != null) {
             Text(
                 state.error,
@@ -161,16 +168,18 @@ fun LoginScreen(
             )
         }
 
-        // Login button full width, its own row
+        // --- Login Button ---
         Button(
             onClick = onLoginClick,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp)
                 .padding(top = 8.dp),
+            // Disable button while loading.
             enabled = !state.isLoading,
             colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
         ) {
+            // Show a loading circle or the "Login" text.
             if (state.isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
@@ -182,7 +191,7 @@ fun LoginScreen(
             }
         }
 
-        // Sign up link centered
+        // --- Sign Up Link ---
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -194,7 +203,7 @@ fun LoginScreen(
             TextButton(onClick = onSignUpClick) { Text("Sign Up", color = TealPrimary) }
         }
 
-        // Divider "or"
+        // --- 'OR' Divider ---
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -206,13 +215,14 @@ fun LoginScreen(
             Divider(modifier = Modifier.weight(1f), color = Color.Gray.copy(alpha = 0.3f))
         }
 
-        // Social buttons (optional)
+        // --- Social Buttons ---
         SocialLoginButtons(
             onGoogleClick = onGoogleClick,
             onFacebookClick = onFacebookClick,
             onAppleClick = onAppleClick,
         )
 
+        // --- Terms and Privacy Notice ---
         Text(
             text = "By clicking continue, you agree to our Terms of Service and Privacy Policy",
             style = MaterialTheme.typography.bodySmall,

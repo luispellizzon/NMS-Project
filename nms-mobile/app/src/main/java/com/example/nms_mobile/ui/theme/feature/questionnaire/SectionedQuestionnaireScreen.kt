@@ -1,4 +1,3 @@
-// ui/questionnaire/SectionedQuestionnaireScreen.kt
 package com.example.nms_mobile.ui.questionnaire
 
 import androidx.compose.foundation.background
@@ -21,18 +20,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.nms_mobile.ui.theme.TealPrimary
+import com.example.nms_mobile.ui.TealPrimary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SectionedQuestionnaireScreen(
     state: SectionedQuestionnaireUiState,
     onBackClick: () -> Unit,
-    // navigation
+    // Navigation handlers
     onPrev: () -> Unit,
     onNext: () -> Unit,
     onSubmit: () -> Unit,
-    // setters
+    // Data setters (one for each field)
     onAge: (String) -> Unit,
     onWeight: (String) -> Unit,
     onDominantHand: (String) -> Unit,
@@ -52,6 +51,7 @@ fun SectionedQuestionnaireScreen(
 ) {
     Scaffold(
         topBar = {
+            // App bar with title and back button.
             TopAppBar(
                 title = { Text("Lifestyle Questionnaire", color = MaterialTheme.colorScheme.onPrimary) },
                 navigationIcon = {
@@ -67,9 +67,9 @@ fun SectionedQuestionnaireScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(Color(0xFFF5F5F5))
+                .background(Color(0xFFF5F5F5)) // Light gray background for contrast.
         ) {
-            // Progress header
+            // --- Progress Header ---
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -77,8 +77,10 @@ fun SectionedQuestionnaireScreen(
                     .padding(16.dp)
             ) {
                 Text("Section ${state.currentSection}:", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                // Displays title and step count (e.g., "Basic Information (Step 1 of 5)").
                 Text(getSectionTitle(state.currentSection), fontSize = 14.sp, color = Color.Gray)
                 Spacer(Modifier.height(8.dp))
+                // Visual progress bar.
                 LinearProgressIndicator(
                     progress = { state.currentSection.toFloat() / state.totalSections },
                     modifier = Modifier.fillMaxWidth().height(8.dp),
@@ -87,12 +89,14 @@ fun SectionedQuestionnaireScreen(
                 )
             }
 
+            // --- Main Content Area (Scrollable) ---
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
+                // Displays the current section based on the state.
                 when (state.currentSection) {
                     1 -> Section1BasicInfo(
                         age = state.age, onAgeChange = onAge,
@@ -122,13 +126,14 @@ fun SectionedQuestionnaireScreen(
                     )
                 }
 
+                // Display error message if present.
                 if (state.error != null) {
                     Spacer(Modifier.height(8.dp))
                     Text(state.error, color = MaterialTheme.colorScheme.error)
                 }
             }
 
-            // Footer actions
+            // --- Footer Actions (Navigation Buttons) ---
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -136,6 +141,7 @@ fun SectionedQuestionnaireScreen(
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                // Previous button (only visible from Section 2 onwards).
                 if (state.currentSection > 1) {
                     OutlinedButton(
                         onClick = onPrev,
@@ -144,14 +150,17 @@ fun SectionedQuestionnaireScreen(
                     ) { Text("Previous") }
                     Spacer(Modifier.width(16.dp))
                 }
+                // Next/Submit button.
                 Button(
                     onClick = {
+                        // Go to next section, or submit if it's the last section.
                         if (state.currentSection < state.totalSections) onNext() else onSubmit()
                     },
                     modifier = Modifier.weight(1f),
                     enabled = !state.isSubmitting,
                     colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
                 ) {
+                    // Show loading indicator or button text.
                     if (state.isSubmitting)
                         CircularProgressIndicator(
                             modifier = Modifier.size(20.dp),
@@ -166,11 +175,13 @@ fun SectionedQuestionnaireScreen(
     }
 }
 
+// --- Section Composable Functions ---
+
 @Composable
 fun Section1BasicInfo(
     age: String,
     onAgeChange: (String) -> Unit,
-    userWeight: String, // ✅ Updated
+    userWeight: String,
     onWeightChange: (String) -> Unit,
     dominantHand: String,
     onDominantHandChange: (String) -> Unit,
@@ -187,7 +198,7 @@ fun Section1BasicInfo(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Age
+            // Age Input
             OutlinedTextField(
                 value = age,
                 onValueChange = onAgeChange,
@@ -199,9 +210,9 @@ fun Section1BasicInfo(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Weight
+            // Weight Input
             OutlinedTextField(
-                value = userWeight, // ✅ Updated
+                value = userWeight,
                 onValueChange = onWeightChange,
                 label = { Text("Weight (kg)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -211,7 +222,7 @@ fun Section1BasicInfo(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Dominant Hand
+            // Dominant Hand Selection
             Text(
                 text = "Dominant Hand",
                 fontSize = 14.sp,
@@ -227,7 +238,7 @@ fun Section1BasicInfo(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Gender
+            // Gender Selection
             Text(
                 text = "Gender",
                 fontSize = 14.sp,
@@ -264,7 +275,7 @@ fun Section2Education(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Education Level
+            // Education Level Selection
             Text(
                 text = "Education Level",
                 fontSize = 14.sp,
@@ -280,7 +291,7 @@ fun Section2Education(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Smoking Status
+            // Smoking Status Selection
             Text(
                 text = "Smoking Status",
                 fontSize = 14.sp,
@@ -296,7 +307,7 @@ fun Section2Education(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Alcohol Use
+            // Alcohol Use Selection
             Text(
                 text = "Alcohol Use",
                 fontSize = 14.sp,
@@ -333,7 +344,7 @@ fun Section3HealthHabits(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Physical Activity
+            // Physical Activity Selection
             Text(
                 text = "Physical Activity",
                 fontSize = 14.sp,
@@ -349,7 +360,7 @@ fun Section3HealthHabits(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Nutrition Diet
+            // Nutrition Diet Selection
             Text(
                 text = "Nutrition Diet",
                 fontSize = 14.sp,
@@ -365,7 +376,7 @@ fun Section3HealthHabits(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Sleep Quality
+            // Sleep Quality Selection
             Text(
                 text = "Sleep Quality",
                 fontSize = 14.sp,
@@ -404,7 +415,7 @@ fun Section4MedicalHistory(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Diabetic
+            // Diabetic Selection (Yes/No as cards)
             Text(
                 text = "Diabetic",
                 fontSize = 14.sp,
@@ -415,26 +426,28 @@ fun Section4MedicalHistory(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .selectableGroup(),
+                    .selectableGroup(), // Grouping for accessibility
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Yes option (1)
                 YesNoOption(
                     text = "Yes",
                     selected = diabetic == 1,
                     onClick = { onDiabeticChange(1) },
-                    modifier = Modifier.weight(1f)  // ✅ Pass weight as parameter
+                    modifier = Modifier.weight(1f)
                 )
+                // No option (0)
                 YesNoOption(
                     text = "No",
                     selected = diabetic == 0,
                     onClick = { onDiabeticChange(0) },
-                    modifier = Modifier.weight(1f)  // ✅ Pass weight as parameter
+                    modifier = Modifier.weight(1f)
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Family History of Dementia
+            // Family History of Dementia Selection
             Text(
                 text = "Family History of Dementia",
                 fontSize = 14.sp,
@@ -450,7 +463,7 @@ fun Section4MedicalHistory(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Depression Diagnosis
+            // Depression Diagnosis Selection
             Text(
                 text = "Depression Diagnosis",
                 fontSize = 14.sp,
@@ -466,7 +479,7 @@ fun Section4MedicalHistory(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // APOE ε4 Gene (Fixes the 'apoe' typo warning)
+            // APOE ε4 Gene Status Selection
             Text(
                 text = "APOE ε4 Gene",
                 fontSize = 14.sp,
@@ -501,7 +514,7 @@ fun Section5Medication(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Currently Taking Medication
+            // Currently Taking Medication Selection
             Text(
                 text = "Currently Taking Medication",
                 fontSize = 14.sp,
@@ -517,7 +530,7 @@ fun Section5Medication(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Chronic Health Condition
+            // Chronic Health Condition Selection
             Text(
                 text = "Chronic Health Condition",
                 fontSize = 14.sp,
@@ -534,7 +547,9 @@ fun Section5Medication(
     }
 }
 
-// Reusable Components
+// --- Reusable Component Functions ---
+
+// Card container for each question section.
 @Composable
 fun QuestionCard(content: @Composable () -> Unit) {
     Card(
@@ -549,6 +564,7 @@ fun QuestionCard(content: @Composable () -> Unit) {
     }
 }
 
+// Standard vertical radio button group.
 @Composable
 fun RadioButtonGroup(
     options: List<String>,
@@ -570,7 +586,7 @@ fun RadioButtonGroup(
             ) {
                 RadioButton(
                     selected = (option == selectedOption),
-                    onClick = null,
+                    onClick = null, // Handled by the Row's selectable modifier.
                     colors = RadioButtonDefaults.colors(
                         selectedColor = TealPrimary
                     )
@@ -585,7 +601,7 @@ fun RadioButtonGroup(
     }
 }
 
-
+// Custom Yes/No option styled as a Card.
 @Composable
 fun YesNoOption(
     text: String,
@@ -603,6 +619,7 @@ fun YesNoOption(
         colors = CardDefaults.cardColors(
             containerColor = if (selected) TealPrimary else Color.White
         ),
+        // Add a border if not selected.
         border = if (!selected) CardDefaults.outlinedCardBorder() else null
     ) {
         Box(
@@ -620,6 +637,7 @@ fun YesNoOption(
     }
 }
 
+// Helper function to get the section title and step count for the progress bar.
 fun getSectionTitle(section: Int): String {
     return when (section) {
         1 -> "Basic Information (Step 1 of 5)"
@@ -630,4 +648,3 @@ fun getSectionTitle(section: Int): String {
         else -> ""
     }
 }
-

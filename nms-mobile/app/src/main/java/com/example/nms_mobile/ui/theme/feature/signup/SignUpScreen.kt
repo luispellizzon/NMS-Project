@@ -28,20 +28,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.nms_mobile.R
 import com.example.nms_mobile.ui.components.SocialLoginButtons
-import com.example.nms_mobile.ui.theme.BorderActive
-import com.example.nms_mobile.ui.theme.TealPrimary
-import com.example.nms_mobile.ui.theme.TextHint
-import com.example.nms_mobile.ui.theme.TextSecondary
+import com.example.nms_mobile.ui.BorderActive
+import com.example.nms_mobile.ui.TealPrimary
+import com.example.nms_mobile.ui.TextHint
+import com.example.nms_mobile.ui.TextSecondary
 
 @Composable
 fun SignUpScreen(
     state: SignUpUiState,
-    onFullNameChange: (String) -> Unit,
-    onDobChange: (String) -> Unit,                 // NEW
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onConfirmPasswordChange: (String) -> Unit,
-    onRoleChange: (String) -> Unit,                // NEW
     onSignUpClick: () -> Unit,
     onLoginClick: () -> Unit,
     onGoogleClick: () -> Unit = {},
@@ -56,7 +53,7 @@ fun SignUpScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .padding(horizontal = 24.dp, vertical = 50.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Header
@@ -93,50 +90,6 @@ fun SignUpScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        // Full name
-        OutlinedTextField(
-            value = state.fullName,
-            onValueChange = onFullNameChange,
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            label = { Text("Full Name") },
-            placeholder = { Text("Full Name", color = TextHint) },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Text,
-                imeAction = ImeAction.Next
-            ),
-            keyboardActions = KeyboardActions(onNext = { focus.moveFocus(FocusDirection.Down) }),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = BorderActive,
-                focusedLabelColor = TealPrimary,
-                cursorColor = TealPrimary
-            )
-        )
-
-        Spacer(Modifier.height(12.dp))
-
-        // DOB (YYYY-MM-DD)
-        OutlinedTextField(
-            value = state.dob,
-            onValueChange = onDobChange,
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            label = { Text("Date of Birth") },
-            placeholder = { Text("DD/MM/YYYY", color = TextHint) },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Number,
-                imeAction = ImeAction.Next
-            ),
-            keyboardActions = KeyboardActions(onNext = { focus.moveFocus(FocusDirection.Down) }),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = BorderActive,
-                focusedLabelColor = TealPrimary,
-                cursorColor = TealPrimary
-            )
-        )
-
-        Spacer(Modifier.height(12.dp))
-
         // Email
         OutlinedTextField(
             value = state.email,
@@ -144,7 +97,7 @@ fun SignUpScreen(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             label = { Text("Email") },
-            placeholder = { Text("Email", color = TextHint) },
+            placeholder = { Text("your@email.com", color = TextHint) },
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Email,
                 imeAction = ImeAction.Next
@@ -166,7 +119,7 @@ fun SignUpScreen(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             label = { Text("Password") },
-            placeholder = { Text("Password", color = TextHint) },
+            placeholder = { Text("At least 6 characters", color = TextHint) },
             visualTransformation = if (pwVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
                 val icon: ImageVector = if (pwVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
@@ -195,7 +148,7 @@ fun SignUpScreen(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             label = { Text("Confirm Password") },
-            placeholder = { Text("Confirm Password", color = TextHint) },
+            placeholder = { Text("Re-enter your password", color = TextHint) },
             visualTransformation = if (confirmVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
                 val icon: ImageVector = if (confirmVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
@@ -216,28 +169,6 @@ fun SignUpScreen(
         )
 
         Spacer(Modifier.height(16.dp))
-
-        // Role radio group
-        Text("Choose Your Role", style = MaterialTheme.typography.bodyLarge, color = TextSecondary, fontWeight =
-        FontWeight.Bold)
-        Spacer(Modifier.height(6.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            RoleOption(
-                label = "Patient",
-                selected = state.role == "patient",
-                onClick = { onRoleChange("patient") }
-            )
-            Spacer(Modifier.width(24.dp))
-            RoleOption(
-                label = "Caregiver",
-                selected = state.role == "caregiver",
-                onClick = { onRoleChange("caregiver") }
-            )
-        }
 
         // Error (if any)
         if (state.error != null) {
@@ -295,7 +226,7 @@ fun SignUpScreen(
             Divider(modifier = Modifier.weight(1f), color = Color.Gray.copy(alpha = 0.3f))
         }
 
-        // Social Buttons (Google / Apple)
+        // Social Buttons (Google / Apple / Facebook)
         SocialLoginButtons(
             onGoogleClick = onGoogleClick,
             onFacebookClick = onFacebookClick,
@@ -311,13 +242,5 @@ fun SignUpScreen(
                 .fillMaxWidth()
                 .padding(top = 14.dp, bottom = 6.dp)
         )
-    }
-}
-
-@Composable
-private fun RoleOption(label: String, selected: Boolean, onClick: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        RadioButton(selected = selected, onClick = onClick)
-        Text(label)
     }
 }

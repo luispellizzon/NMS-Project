@@ -108,4 +108,17 @@ class FirestoreRepository private constructor(
     companion object {
         val instance: FirestoreRepository by lazy { FirestoreRepository() }
     }
+    suspend fun getLifestyleQuestionaryStatus(userId: String): Boolean {
+        return try {
+            // 💡 Cambio CLAVE: Usamos la ruta donde se guarda el cuestionario.
+            val snapshot = questionnaireCombinedDoc(userId).get().await()
+
+            // El cuestionario está "completado" si el documento existe.
+            snapshot.exists()
+
+        } catch (e: Exception) {
+            println("Firestore error fetching lifestyle status: $e")
+            false
+        }
+    }
 }

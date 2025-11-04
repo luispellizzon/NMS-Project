@@ -1,4 +1,3 @@
-// ui/questionnaire/SectionedQuestionnaireViewModel.kt
 package com.example.nms_mobile.ui.questionnaire
 
 import androidx.lifecycle.ViewModel
@@ -14,40 +13,42 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+// Data model for the Questionnaire screen's state.
 data class SectionedQuestionnaireUiState(
     val currentSection: Int = 1,
     val totalSections: Int = 5,
 
-    // Section 1
+    // Section 1: Basic Info
     val age: String = "",
     val weight: String = "",
     val dominantHand: String = "",
     val gender: String = "",
 
-    // Section 2
+    // Section 2: Education & Lifestyle
     val educationLevel: String = "",
     val smokingStatus: String = "",
     val alcoholUse: String = "",
 
-    // Section 3
+    // Section 3: Health Habits
     val physicalActivity: String = "",
     val nutritionDiet: String = "",
     val sleepQuality: String = "",
 
-    // Section 4
-    val diabetic: Int = -1,                       // 0/1
+    // Section 4: Medical History
+    val diabetic: Int = -1,                       // Stores 0 (No) or 1 (Yes).
     val familyHistoryDementia: String = "",
     val depressionDiagnosis: String = "",
-    val genetic: String = "",                 // Positive/Negative
+    val genetic: String = "",                 // Stores "Positive" or "Negative".
 
-    // Section 5
+    // Section 5: Medication & Chronic Conditions
     val currentlyTakingMedication: String = "",  // Yes/No
-    val chronicHealthCondition: String = "",     // None/Diabetes/Heart Disease/Hypertension
+    val chronicHealthCondition: String = "",     // e.g., None/Diabetes/Hypertension
 
-    val isSubmitting: Boolean = false,
-    val error: String? = null
+    val isSubmitting: Boolean = false, // True while saving data.
+    val error: String? = null // Stores validation or submission error.
 )
 
+// Single events for the UI (like navigation command).
 sealed class SectionedQuestionnaireEvent {
     data object Submitted : SectionedQuestionnaireEvent()
 }
@@ -63,15 +64,19 @@ class SectionedQuestionnaireViewModel(
     private val _events = Channel<SectionedQuestionnaireEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
-    // --- section nav
+    // --- Section Navigation ---
+
+    // Moves to the next section, limited by totalSections.
     fun nextSection() = _ui.update {
         it.copy(currentSection = (it.currentSection + 1).coerceAtMost(it.totalSections), error = null)
     }
+    // Moves to the previous section, limited by 1.
     fun prevSection() = _ui.update {
         it.copy(currentSection = (it.currentSection - 1).coerceAtLeast(1), error = null)
     }
 
-    // --- setters
+    // --- Setters (Input Handlers) ---
+    // Filters input to only allow digits for age/weight.
     fun onAge(v: String) = _ui.update { it.copy(age = v.filter(Char::isDigit)) }
     fun onWeight(v: String) = _ui.update { it.copy(weight = v.filter(Char::isDigit)) }
     fun onDominantHand(v: String) = _ui.update { it.copy(dominantHand = v) }
@@ -93,7 +98,9 @@ class SectionedQuestionnaireViewModel(
     fun onMedication(v: String) = _ui.update { it.copy(currentlyTakingMedication = v) }
     fun onChronic(v: String) = _ui.update { it.copy(chronicHealthCondition = v) }
 
-    // --- validation per section
+    // --- Validation ---
+
+    // Validates the inputs ONLY for the currently visible section.
     fun validateCurrentSection(): Boolean {
         val s = _ui.value
         val err = when (s.currentSection) {
@@ -131,12 +138,15 @@ class SectionedQuestionnaireViewModel(
             else -> null
         }
         _ui.update { it.copy(error = err) }
-        return err == null
+        return err == null // True if validation passed.
     }
+
+    // --- Submission ---
 
     fun submit() {
         val s = _ui.value
-        // Final guard
+
+        // Final comprehensive validation before submission.
         val err = when {
             s.age.isBlank() || s.weight.isBlank() -> "Age and weight are required"
             s.dominantHand.isBlank() || s.gender.isBlank() -> "Basic info missing"
@@ -151,7 +161,12 @@ class SectionedQuestionnaireViewModel(
         val uid = auth.currentUser()?.uid
         if (uid == null) { _ui.update { it.copy(error = "User not logged in") }; return }
 
+        // Create the final data object (payload).
         val payload = CombinedQuestionnaire(
+            age = s.age.toIntOrNull(),
+            weight = s.weight.toIntOrNull(),
+            gender = s.gender,
+            education_level = s.educationLevel,
             dominant_hand = s.dominantHand,
             smoking_status = s.smokingStatus,
             alcohol_use = s.alcoholUse,
@@ -169,9 +184,13 @@ class SectionedQuestionnaireViewModel(
         viewModelScope.launch {
             _ui.update { it.copy(isSubmitting = true, error = null) }
             try {
+                // Save the complete questionnaire data to Firestore.
                 db.saveCombinedQuestionnaire(payload)
+                _ui.update { it.copy(isSubmitting = false) }
+                // Send event to trigger successful navigation.
                 _events.send(SectionedQuestionnaireEvent.Submitted)
             } catch (e: Exception) {
+                // Handle submission errors.
                 _ui.update { it.copy(isSubmitting = false, error = e.localizedMessage ?: "Failed to save") }
             }
         }

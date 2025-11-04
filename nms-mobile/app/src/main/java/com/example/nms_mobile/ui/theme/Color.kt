@@ -1,4 +1,4 @@
-package com.example.nms_mobile.ui.theme
+package com.example.nms_mobile.ui
 
 import androidx.compose.ui.graphics.Color
 
@@ -14,7 +14,7 @@ val TextSecondary  = Color(0xFF414040)
 val TextHint       = Color(0xFFD1C2C2)
 val BorderNormal   = Color(0xFFA9A3A3)
 val BorderActive   = Color(0xFF006F72)
-val BackgroundColor = Color(0xFFFFFFFF) // fixed (was 0xFFFFFFF)
+val BackgroundColor = Color(0xFFFFFFFF)
 
 // Optional surfaces (used by the theme below)
 val SurfaceLight   = Color(0xFFFFFFFF)

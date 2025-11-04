@@ -13,4 +13,7 @@ sealed class Screen(val route: String) {
     object QuestionnaireIntro : Screen("questionnaire_intro")
     object Questionnaire : Screen("questionnaire")
 
+    object SpeechAssessment : Screen("speech_assessment")
+
+
 }
