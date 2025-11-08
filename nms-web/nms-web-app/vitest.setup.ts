@@ -8,3 +8,10 @@ import { testLogger } from './tests/utils/logger';
 dotenv.config({ path: '.env.local' });
 
 globalThis.testLogger = testLogger;
+
+// Mock ResizeObserver for Recharts components
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};

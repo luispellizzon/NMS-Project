@@ -39,7 +39,7 @@ export default function ThemeSwitcher() {
     <div ref={dropdownRef} className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-center sm:justify-between w-10 h-10 sm:w-[120px] p-2 sm:px-3 sm:py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+        className="flex items-center justify-center sm:justify-between w-10 h-10 sm:w-[120px] p-2 sm:px-3 sm:py-2 bg-accent border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         aria-haspopup="true"
         aria-expanded={isOpen}
       >

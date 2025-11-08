@@ -9,7 +9,7 @@ import {
   logOut,
   resetPassword,
   getCurrentUser,
-} from './auth-service';
+} from '../auth-service';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -22,7 +22,7 @@ import {
   User,
   UserCredential,
 } from 'firebase/auth';
-import { auth } from './config';
+import { auth } from '../config';
 
 // Mock the entire firebase/auth module
 vi.mock('firebase/auth', () => ({
@@ -38,7 +38,7 @@ vi.mock('firebase/auth', () => ({
 }));
 
 // Mock the auth object from config
-vi.mock('./config', () => ({
+vi.mock('../config', () => ({
   auth: { currentUser: null }, // Start with no user logged in
 }));
 

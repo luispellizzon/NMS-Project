@@ -2,7 +2,7 @@
 
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, Mock, beforeEach } from 'vitest';
-import { AuthProvider, useAuth } from './AuthContext';
+import { AuthProvider, useAuth } from '../AuthContext';
 import { User } from 'firebase/auth';
 
 // Mock 'firebase/auth' to control onAuthStateChanged
