@@ -1,3 +1,4 @@
+# services/transcription/requirements.txt
 fastapi
 uvicorn[standard]
 openai-whisper

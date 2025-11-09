@@ -1,0 +1,230 @@
+# services/agents/tasks.yaml
+
+# Medical News Generation Tasks
+medical_research_task:
+  description: >
+    Search arXiv for the {max_articles} most recent and relevant 
+    research papers on: {topic}
+    
+    Focus on papers from the last 6 months that present novel findings, 
+    methodologies, or clinical insights related to dementia, Alzheimer's disease,
+    and cognitive decline.
+    
+    For each paper, extract:
+    - Title (clear and complete)
+    - arXiv URL (full link to the paper)
+    - Abstract (complete abstract text)
+    - Publication date (when it was submitted)
+    - Authors (list of author names)
+    
+    Prioritize papers that:
+    - Use AI/ML techniques for diagnosis or prediction
+    - Present new biomarkers or detection methods
+    - Offer clinical insights or treatment approaches
+    - Have strong methodological rigor
+    
+    Return the results as a structured list with all required information.
+  expected_output: >
+    A list of {max_articles} relevant research papers with complete information:
+    title, arXiv URL, abstract, publication date, and authors. Each entry should
+    be well-structured and include all metadata needed for summarization.
+  agent: medical_researcher
+
+medical_summary_task:
+  description: >
+    For each research paper provided by the researcher, create a professional summary 
+    suitable for healthcare professionals. Each summary should be approximately 100-150 words
+    and follow this structure:
+    
+    1. **Key Findings**: Highlight the main discoveries and their clinical significance (2-3 sentences)
+    2. **Methodology**: Briefly explain the research approach and data used (1 sentence)
+    3. **Implications**: Note the practical implications and any limitations (1 sentence)
+    
+    Use professional medical terminology appropriate for doctors and healthcare professionals.
+    Maintain scientific accuracy while being concise and clear.
+    
+    Also estimate the reading time (typically 5-8 minutes for research papers).
+    
+    Derive an appropriate topic category from the paper content such as:
+    - "Neurology"
+    - "Machine Learning in Medicine"
+    - "Cognitive Assessment"
+    - "Biomarkers"
+    - "Clinical Research"
+    
+    Format each article as a JSON object:
+    {{
+      "topic": "<derived category>",
+      "title": "<paper title>",
+      "sourceUrl": "<arxiv url>",
+      "readTime": "<X min>",
+      "agentSummary": "<your professional summary>"
+    }}
+    
+    Return ALL summaries as a valid JSON array.
+  expected_output: >
+    A valid JSON array containing {max_articles} article summaries. Each summary
+    should be professionally written, scientifically accurate, and formatted as
+    specified. The entire output must be valid JSON that can be parsed.
+  agent: summarizer
+  context:
+    - medical_research_task
+
+# Patient News Generation Tasks
+patient_research_task:
+  description: >
+    Search for the {max_articles} most recent, trustworthy, 
+    patient-friendly articles about: {topic}
+    
+    Focus on content from reputable health sources including:
+    - Alzheimer's Association (alz.org)
+    - National Institute on Aging (nia.nih.gov)
+    - Mayo Clinic (mayoclinic.org)
+    - Alzheimer's Society UK (alzheimers.org.uk)
+    - Other established medical institutions
+    
+    Look for articles that cover:
+    - Early warning signs and symptoms
+    - Prevention strategies and lifestyle factors
+    - Treatment options and care approaches
+    - Support for patients and caregivers
+    - Latest research explained in accessible terms
+    
+    Avoid overly technical or academic sources. Prioritize content that:
+    - Uses clear, everyday language
+    - Provides actionable advice
+    - Includes patient stories or practical examples
+    - Addresses common concerns and questions
+    
+    For each article, extract:
+    - Title (patient-friendly and descriptive)
+    - Source URL (link to the original article)
+    - Main content or key points
+    - Publication or update date
+    - Source organization name
+    
+    Return the results as a structured list.
+  expected_output: >
+    A list of {max_articles} patient-friendly articles with complete information:
+    title, source URL, main content summary, date, and source. Each entry should
+    be accessible and relevant to patients and caregivers.
+  agent: patient_researcher
+
+patient_summary_task:
+  description: >
+    For each article provided by the researcher, create an accessible summary 
+    for patients and caregivers. Each summary should be approximately 80-120 words
+    and follow this structure:
+    
+    1. **Main Message**: Explain the key information in simple, clear language (2-3 sentences)
+    2. **Practical Takeaways**: Highlight what patients/caregivers can do or know (1-2 sentences)
+    3. **Encouragement**: Include a supportive or hopeful note when appropriate (1 sentence)
+    
+    Guidelines:
+    - Avoid medical jargon - use everyday language
+    - Be empathetic and encouraging in tone
+    - Focus on actionable information
+    - Make it easy to understand and remember
+    - Be sensitive to the concerns of patients and families
+    
+    Estimate reading time (typically 3-5 minutes for patient articles).
+    
+    Assign an appropriate topic category such as:
+    - "Cognitive Health"
+    - "Lifestyle & Prevention"
+    - "Treatment Options"
+    - "Support & Care"
+    - "Understanding Dementia"
+    
+    Format each article as a JSON object:
+    {{
+      "topic": "<appropriate category>",
+      "title": "<article title>",
+      "sourceUrl": "<article url>",
+      "readTime": "<X min>",
+      "agentSummary": "<your patient-friendly summary>"
+    }}
+    
+    Return ALL summaries as a valid JSON array.
+  expected_output: >
+    A valid JSON array containing {max_articles} article summaries. Each summary
+    should be written in accessible language, empathetic in tone, and formatted as
+    specified. The entire output must be valid JSON that can be parsed.
+  agent: summarizer
+  context:
+    - patient_research_task
+
+# Risk Assessment Task
+risk_assessment_task:
+  description: >
+    Analyze the following patient data comprehensively and provide a detailed 
+    dementia risk assessment:
+    
+    Patient Data:
+    {patient_data}
+    
+    Your assessment must include four components:
+    
+    1. **Risk Score**: 
+       - Calculate a numerical score from 0-100
+       - 0 = very low risk, 100 = very high risk
+       - Consider all available data points
+       - Be evidence-based in your scoring
+    
+    2. **Risk Level**: 
+       - Categorize as: "Low", "Moderate", "High", or "Very High"
+       - Low: 0-25
+       - Moderate: 26-50
+       - High: 51-75
+       - Very High: 76-100
+    
+    3. **Explanation**: 
+       Write 2-3 detailed paragraphs explaining:
+       - Key risk factors identified from the questionnaire
+         (age, family history, cardiovascular health, lifestyle factors)
+       - Insights from speech analysis if available
+         (vocabulary richness, hesitations, coherence, word-finding difficulties)
+       - Cognitive test performance if available
+         (memory, attention, executive function)
+       - How these factors contribute to the overall risk score
+       - What the risk level means for the patient
+    
+    4. **Recommendations**: 
+       Provide 3-5 specific, actionable recommendations:
+       - Lifestyle modifications (exercise, diet, sleep, social engagement)
+       - Medical follow-up suggestions (when to see a doctor, what tests to discuss)
+       - Cognitive exercises and brain health activities
+       - Risk reduction strategies based on identified factors
+       - When to seek professional help or re-assessment
+    
+    Base your assessment on established dementia risk factors:
+    - Age (risk increases with age, especially 65+)
+    - Family history of dementia
+    - Cardiovascular health (blood pressure, cholesterol, diabetes)
+    - Lifestyle factors (exercise, diet, smoking, alcohol, sleep)
+    - Cognitive performance (memory, attention, language)
+    - Speech patterns (vocabulary, fluency, word-finding)
+    - Education level and cognitive reserve
+    - Social engagement and mental stimulation
+    
+    Be thorough, evidence-based, and empathetic in your assessment.
+    
+    Format your response as a JSON object:
+    {{
+      "riskScore": <number between 0-100>,
+      "riskLevel": "<Low|Moderate|High|Very High>",
+      "explanation": "<detailed 2-3 paragraph explanation>",
+      "recommendations": [
+        "<specific recommendation 1>",
+        "<specific recommendation 2>",
+        "<specific recommendation 3>",
+        "<specific recommendation 4>",
+        "<specific recommendation 5>"
+      ]
+    }}
+  expected_output: >
+    A valid JSON object containing a complete risk assessment with all four
+    required components: riskScore (number), riskLevel (string), explanation
+    (detailed string), and recommendations (array of strings). The assessment
+    should be thorough, evidence-based, and formatted as valid JSON.
+  agent: risk_calculator

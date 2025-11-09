@@ -1,3 +1,5 @@
+# services/transcription/Dockerfile
+
 # Use a Python 3.11 slim base image
 FROM python:3.11-slim
 
@@ -5,8 +7,8 @@ FROM python:3.11-slim
 WORKDIR /usr/src/app
 
 # Set environment variables to prevent Python from writing .pyc files
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE = 1
+ENV PYTHONUNBUFFERED = 1
 
 # Copy the requirements file into the container
 COPY requirements.txt ./
