@@ -5,10 +5,12 @@ import userEvent from '@testing-library/user-event';
 import SignUpForm from '@/components/auth/SignUpForm';
 import SignInForm from '@/components/auth/SignInForm';
 import * as authService from '@/lib/firebase/auth-service';
+import * as firestoreService from '@/lib/firebase/firestore-service';
 import { User } from 'firebase/auth';
 
 // Mock the service layer.
 vi.mock('@/lib/firebase/auth-service');
+vi.mock('@/lib/firebase/firestore-service');
 
 // Mock for Firebase Auth SDK (used by SignInForm)
 vi.mock('firebase/auth', () => ({
@@ -29,24 +31,32 @@ vi.mock('next/navigation', () => ({
 }));
 
 const mockedSignIn = authService.signInWithEmail as Mock;
+const mockedFirestoreService = vi.mocked(firestoreService);
 
 describe('Authentication Flow Integration Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockedSignIn.mockClear();
+    // Mock createDoctorProfile to resolve successfully by default
+    mockedFirestoreService.createDoctorProfile.mockResolvedValue('test-uid-123');
   });
 
   describe('Complete Sign Up Flow', () => {
     it('completes full signup flow from form submission to redirect', async () => {
       const user = userEvent.setup();
 
-      const mockedSignUp = vi.spyOn(authService, 'signUpWithEmail').mockResolvedValue({} as any);
+      const mockedSignUp = vi.spyOn(authService, 'signUpWithEmail').mockResolvedValue({
+        user: { uid: 'test-uid-123' }
+      } as any);
 
       render(<SignUpForm />);
 
       await user.type(screen.getByLabelText(/name/i), 'New User');
       await user.type(screen.getByLabelText(/email address/i), 'newuser@example.com');
       await user.type(screen.getByLabelText(/password/i), 'SecurePass123!');
+      await user.type(screen.getByLabelText(/medical license number/i), 'ML12345');
+      await user.type(screen.getByLabelText(/specialization/i), 'Neurology');
+      await user.type(screen.getByLabelText(/hospital\/clinic affiliation/i), 'City Hospital');
       await user.click(screen.getByLabelText(/i agree to the/i));
       await user.click(screen.getByRole('button', { name: /signup/i }));
 
@@ -55,6 +65,17 @@ describe('Authentication Flow Integration Tests', () => {
           'newuser@example.com', // 1st argument
           'SecurePass123!',     // 2nd argument
           'New User'            // 3rd argument
+        );
+        expect(mockedFirestoreService.createDoctorProfile).toHaveBeenCalledWith(
+          'test-uid-123',
+          {
+            fullName: 'New User',
+            email: 'newuser@example.com',
+            medicalLicenseNumber: 'ML12345',
+            specialization: 'Neurology',
+            hospitalClinicAffiliation: 'City Hospital',
+            role: 'doctor',
+          }
         );
       });
 

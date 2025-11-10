@@ -6,6 +6,7 @@ import {
   sendPasswordResetEmail,
   updateProfile,
   User,
+  UserCredential,
   GoogleAuthProvider,
   signInWithPopup,
   OAuthProvider,
@@ -17,7 +18,7 @@ export const signUpWithEmail = async (
   email: string,
   password: string,
   displayName: string
-): Promise<User> => {
+): Promise<UserCredential> => {
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
   // Update display name
@@ -25,7 +26,7 @@ export const signUpWithEmail = async (
     await updateProfile(userCredential.user, { displayName });
   }
 
-  return userCredential.user;
+  return userCredential;
 };
 
 // Email/Password Sign In

@@ -5,9 +5,11 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SignUpForm from '../SignUpForm';
 import * as authService from '@/lib/firebase/auth-service';
+import * as firestoreService from '@/lib/firebase/firestore-service';
 import { FirebaseError } from 'firebase/app';
 
 vi.mock('@/lib/firebase/auth-service');
+vi.mock('@/lib/firebase/firestore-service');
 
 const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -15,10 +17,13 @@ vi.mock('next/navigation', () => ({
 }));
 
 const mockedAuthService = vi.mocked(authService);
+const mockedFirestoreService = vi.mocked(firestoreService);
 
 describe('SignUpForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Mock createDoctorProfile to resolve successfully by default
+    mockedFirestoreService.createDoctorProfile.mockResolvedValue('test-uid-123');
   });
 
   it('renders all form fields', () => {
@@ -32,8 +37,10 @@ describe('SignUpForm', () => {
   it('successfully signs up and redirects on valid submission', async () => {
     const user = userEvent.setup();
     // Mock the successful resolution of the client-side function
-    mockedAuthService.signUpWithEmail.mockResolvedValue({} as any);
-    
+    mockedAuthService.signUpWithEmail.mockResolvedValue({
+      user: { uid: 'test-uid-123' }
+    } as any);
+
     render(<SignUpForm />);
 
     // Fill out the form
@@ -45,12 +52,20 @@ describe('SignUpForm', () => {
     // Submit the form
     await user.click(screen.getByRole('button', { name: /signup/i }));
 
-    // Assert that the correct function was called with the correct data
+    // Assert that the correct functions were called
     await waitFor(() => {
       expect(mockedAuthService.signUpWithEmail).toHaveBeenCalledWith(
         'success@example.com',
         'Password123!',
         'Test User'
+      );
+      expect(mockedFirestoreService.createDoctorProfile).toHaveBeenCalledWith(
+        'test-uid-123',
+        {
+          fullName: 'Test User',
+          email: 'success@example.com',
+          role: 'doctor',
+        }
       );
     });
 
@@ -87,7 +102,7 @@ describe('SignUpForm', () => {
     mockedAuthService.signUpWithEmail.mockRejectedValue(new Error('Something went wrong'));
 
     render(<SignUpForm />);
-    
+
     await user.type(screen.getByLabelText(/name/i), 'Test User');
     await user.type(screen.getByLabelText(/email address/i), 'any@user.com');
     await user.type(screen.getByLabelText(/password/i), 'anypassword');
