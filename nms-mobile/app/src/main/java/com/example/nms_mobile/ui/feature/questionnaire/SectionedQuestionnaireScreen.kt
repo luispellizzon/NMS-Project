@@ -20,7 +20,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.nms_mobile.ui.BorderActive
 import com.example.nms_mobile.ui.TealPrimary
+import com.example.nms_mobile.ui.White
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,10 +55,10 @@ fun SectionedQuestionnaireScreen(
         topBar = {
             // App bar with title and back button.
             TopAppBar(
-                title = { Text("Lifestyle Questionnaire", color = MaterialTheme.colorScheme.onPrimary) },
+                title = { Text("Lifestyle Questionnaire", color = White) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onPrimary)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = TealPrimary)
@@ -76,7 +78,7 @@ fun SectionedQuestionnaireScreen(
                     .background(Color.White)
                     .padding(16.dp)
             ) {
-                Text("Section ${state.currentSection}:", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text("Section ${state.currentSection}:", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.Black)
                 // Displays title and step count (e.g., "Basic Information (Step 1 of 5)").
                 Text(getSectionTitle(state.currentSection), fontSize = 14.sp, color = Color.Gray)
                 Spacer(Modifier.height(8.dp))
@@ -158,7 +160,7 @@ fun SectionedQuestionnaireScreen(
                     },
                     modifier = Modifier.weight(1f),
                     enabled = !state.isSubmitting,
-                    colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+                    colors = ButtonDefaults.buttonColors(containerColor = TealPrimary,contentColor = White)
                 ) {
                     // Show loading indicator or button text.
                     if (state.isSubmitting)
@@ -196,7 +198,7 @@ fun Section1BasicInfo(
                 fontWeight = FontWeight.Bold,
                 color = TealPrimary
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Age Input
             OutlinedTextField(
@@ -205,7 +207,14 @@ fun Section1BasicInfo(
                 label = { Text("Age") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = BorderActive,
+                    focusedLabelColor = TealPrimary,
+                    cursorColor = TealPrimary,
+                    unfocusedTextColor = TealPrimary,
+                    focusedTextColor = TealPrimary
+                )
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -217,7 +226,14 @@ fun Section1BasicInfo(
                 label = { Text("Weight (kg)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = BorderActive,
+                    focusedLabelColor = TealPrimary,
+                    cursorColor = TealPrimary,
+                    unfocusedTextColor = TealPrimary,
+                    focusedTextColor = TealPrimary
+                )
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -226,10 +242,9 @@ fun Section1BasicInfo(
             Text(
                 text = "Dominant Hand",
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
-            Spacer(modifier = Modifier.height(8.dp))
             RadioButtonGroup(
                 options = listOf("Right", "Left", "Ambidextrous"),
                 selectedOption = dominantHand,
@@ -242,10 +257,9 @@ fun Section1BasicInfo(
             Text(
                 text = "Gender",
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
-            Spacer(modifier = Modifier.height(8.dp))
             RadioButtonGroup(
                 options = listOf("Male", "Female", "Other"),
                 selectedOption = gender,
@@ -273,16 +287,15 @@ fun Section2Education(
                 fontWeight = FontWeight.Bold,
                 color = TealPrimary
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Education Level Selection
             Text(
                 text = "Education Level",
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
-            Spacer(modifier = Modifier.height(8.dp))
             RadioButtonGroup(
                 options = listOf("Primary", "Secondary", "Tertiary"),
                 selectedOption = educationLevel,
@@ -295,10 +308,9 @@ fun Section2Education(
             Text(
                 text = "Smoking Status",
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
-            Spacer(modifier = Modifier.height(8.dp))
             RadioButtonGroup(
                 options = listOf("Never Smoking", "Former Smoker", "Current Smoker"),
                 selectedOption = smokingStatus,
@@ -311,10 +323,10 @@ fun Section2Education(
             Text(
                 text = "Alcohol Use",
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
-            Spacer(modifier = Modifier.height(8.dp))
+
             RadioButtonGroup(
                 options = listOf("No Drinker", "Occasional", "Regular"),
                 selectedOption = alcoholUse,
@@ -348,10 +360,10 @@ fun Section3HealthHabits(
             Text(
                 text = "Physical Activity",
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
-            Spacer(modifier = Modifier.height(8.dp))
+
             RadioButtonGroup(
                 options = listOf("Sedentary", "Mild Activity", "Moderate Activity", "High Activity"),
                 selectedOption = physicalActivity,
@@ -364,10 +376,10 @@ fun Section3HealthHabits(
             Text(
                 text = "Nutrition Diet",
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
-            Spacer(modifier = Modifier.height(8.dp))
+
             RadioButtonGroup(
                 options = listOf("Balanced Diet", "Low Carb Diet", "Mediterranean Diet"),
                 selectedOption = nutritionDiet,
@@ -380,10 +392,10 @@ fun Section3HealthHabits(
             Text(
                 text = "Sleep Quality",
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
-            Spacer(modifier = Modifier.height(8.dp))
+
             RadioButtonGroup(
                 options = listOf("Poor", "Average", "Good"),
                 selectedOption = sleepQuality,
@@ -419,7 +431,7 @@ fun Section4MedicalHistory(
             Text(
                 text = "Diabetic",
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -451,10 +463,10 @@ fun Section4MedicalHistory(
             Text(
                 text = "Family History of Dementia",
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
-            Spacer(modifier = Modifier.height(8.dp))
+
             RadioButtonGroup(
                 options = listOf("Yes", "No"),
                 selectedOption = familyHistoryDementia,
@@ -467,10 +479,10 @@ fun Section4MedicalHistory(
             Text(
                 text = "Depression Diagnosis",
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
-            Spacer(modifier = Modifier.height(8.dp))
+
             RadioButtonGroup(
                 options = listOf("Yes", "No"),
                 selectedOption = depressionDiagnosis,
@@ -483,10 +495,10 @@ fun Section4MedicalHistory(
             Text(
                 text = "APOE ε4 Gene",
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
-            Spacer(modifier = Modifier.height(8.dp))
+
             RadioButtonGroup(
                 options = listOf("Positive", "Negative"),
                 selectedOption = genetic,
@@ -518,10 +530,10 @@ fun Section5Medication(
             Text(
                 text = "Currently Taking Medication",
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
-            Spacer(modifier = Modifier.height(8.dp))
+
             RadioButtonGroup(
                 options = listOf("Yes", "No"),
                 selectedOption = currentlyTakingMedication,
@@ -534,10 +546,10 @@ fun Section5Medication(
             Text(
                 text = "Chronic Health Condition",
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
-            Spacer(modifier = Modifier.height(8.dp))
+
             RadioButtonGroup(
                 options = listOf("None", "Diabetes", "Heart Diseases", "Hypertension"),
                 selectedOption = chronicHealthCondition,
@@ -588,13 +600,14 @@ fun RadioButtonGroup(
                     selected = (option == selectedOption),
                     onClick = null, // Handled by the Row's selectable modifier.
                     colors = RadioButtonDefaults.colors(
-                        selectedColor = TealPrimary
+                        selectedColor = TealPrimary,
                     )
                 )
                 Text(
                     text = option,
                     modifier = Modifier.padding(start = 8.dp),
-                    fontSize = 14.sp
+                    fontSize = 14.sp,
+                    color = Color.DarkGray
                 )
             }
         }
@@ -625,7 +638,7 @@ fun YesNoOption(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(8.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(

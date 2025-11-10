@@ -32,6 +32,7 @@ import com.example.nms_mobile.ui.BorderActive
 import com.example.nms_mobile.ui.TealPrimary
 import com.example.nms_mobile.ui.TextHint
 import com.example.nms_mobile.ui.TextSecondary
+import com.example.nms_mobile.ui.White
 
 
 @Composable
@@ -110,8 +111,11 @@ fun LoginScreen(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = BorderActive,
                 focusedLabelColor = TealPrimary,
-                cursorColor = TealPrimary
-            )
+                cursorColor = TealPrimary,
+                unfocusedTextColor = TealPrimary,
+                focusedTextColor = TealPrimary
+            ),
+
         )
 
         Spacer(Modifier.height(12.dp))
@@ -141,7 +145,9 @@ fun LoginScreen(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = BorderActive,
                 focusedLabelColor = TealPrimary,
-                cursorColor = TealPrimary
+                cursorColor = TealPrimary,
+                unfocusedTextColor = TealPrimary,
+                focusedTextColor = TealPrimary
             )
         )
 
@@ -177,7 +183,7 @@ fun LoginScreen(
                 .padding(top = 8.dp),
             // Disable button while loading.
             enabled = !state.isLoading,
-            colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+            colors = ButtonDefaults.buttonColors(containerColor = TealPrimary, contentColor = White )
         ) {
             // Show a loading circle or the "Login" text.
             if (state.isLoading) {

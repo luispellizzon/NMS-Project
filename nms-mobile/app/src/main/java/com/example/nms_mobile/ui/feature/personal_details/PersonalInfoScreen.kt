@@ -18,6 +18,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.nms_mobile.ui.TealPrimary
+import com.example.nms_mobile.ui.White
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,7 +71,9 @@ fun PersonalInfoScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = TealPrimary,
-                    focusedLabelColor = TealPrimary
+                    focusedLabelColor = TealPrimary,
+                    unfocusedTextColor = TealPrimary,
+                    focusedTextColor = TealPrimary
                 )
             )
 
@@ -84,7 +87,7 @@ fun PersonalInfoScreen(
                 placeholder = { Text("DD/MM/YYYY") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number,
+                    keyboardType = KeyboardType.Text,
                     imeAction = ImeAction.Next
                 ),
                 keyboardActions = KeyboardActions(
@@ -93,7 +96,9 @@ fun PersonalInfoScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = TealPrimary,
-                    focusedLabelColor = TealPrimary
+                    focusedLabelColor = TealPrimary,
+                    unfocusedTextColor = TealPrimary,
+                    focusedTextColor = TealPrimary
                 )
             )
 
@@ -117,7 +122,8 @@ fun PersonalInfoScreen(
                     focusedLabelColor = TealPrimary,
                     // Style to indicate it's disabled/read-only.
                     disabledBorderColor = TealPrimary.copy(alpha = 0.5f),
-                    disabledLabelColor = TealPrimary.copy(alpha = 0.5f)
+                    disabledLabelColor = TealPrimary.copy(alpha = 0.5f),
+
                 ),
                 enabled = false // Visually grayed out.
             )
@@ -170,8 +176,9 @@ fun PersonalInfoScreen(
                 onClick = onSubmit,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = TealPrimary),
+                    .height(52.dp)
+                    .padding(top = 8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = TealPrimary, contentColor = White),
                 enabled = !state.isSubmitting // Disable button while loading.
             ) {
                 // Show a loading circle or the "Submit" text.

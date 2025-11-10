@@ -10,6 +10,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.nms_mobile.ui.TealPrimary
+import com.example.nms_mobile.ui.White
 
 @Composable
 fun QuestionnaireIntroScreen(
@@ -41,7 +42,7 @@ fun QuestionnaireIntroScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = TealPrimary),
+            colors = ButtonDefaults.buttonColors(containerColor = TealPrimary, contentColor = White),
             shape = MaterialTheme.shapes.large
         ) { Text("Start Now!") }
     }
