@@ -1,23 +1,18 @@
+# docker-compose.yml
 services:
-  # here for context.
-  backend:
-    container_name: nms_ai_backend
-    build:
-      context: ./services/backend
-    # ... other configurations for the backend service
-
+  # Transcription Service - Handles speech-to-text processing
   transcription:
     container_name: nms_transcription_service
     build:
       context: ./services/transcription
     ports:
-      - "8001:8000" # Expose container's port 8000 to your local machine's port 8001
+      - "8001:8000"  # Expose on port 8001
     volumes:
-      - ./services/transcription/serviceAccountKey.json:/app/secrets/serviceAccountKey.json:ro
+      # Mount serviceAccountKey.json from ROOT directory
+      - ./serviceAccountKey.json:/app/secrets/serviceAccountKey.json:ro
     environment:
       - FIREBASE_SERVICE_ACCOUNT_KEY_PATH=/app/secrets/serviceAccountKey.json
     restart: unless-stopped
-    # --- For GPU Acceleration ---
     deploy:
       resources:
         reservations:
@@ -25,3 +20,36 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+
+  # Agents Service - Handles news aggregation and risk assessment
+  agents:
+    container_name: nms_agents_service
+    build:
+      context: ./services/agents
+    ports:
+      - "8002:8000"  # Expose on port 8002
+    volumes:
+      # Mount serviceAccountKey.json from ROOT directory
+      - ./serviceAccountKey.json:/app/secrets/serviceAccountKey.json:ro
+    environment:
+      - FIREBASE_SERVICE_ACCOUNT_KEY_PATH=/app/secrets/serviceAccountKey.json
+      - GEMINI_API_KEY=${GEMINI_API_KEY}  # From .env file
+    restart: unless-stopped
+    depends_on:
+      - transcription
+
+  # Backend Service (placeholder for future development)
+  # backend:
+  #   container_name: nms_ai_backend
+  #   build:
+  #     context: ./services/backend
+  #   ports:
+  #     - "8003:8000"
+  #   volumes:
+  #     - ./serviceAccountKey.json:/app/secrets/serviceAccountKey.json:ro
+  #   environment:
+  #     - FIREBASE_SERVICE_ACCOUNT_KEY_PATH=/app/secrets/serviceAccountKey.json
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - transcription
+  #     - agents
