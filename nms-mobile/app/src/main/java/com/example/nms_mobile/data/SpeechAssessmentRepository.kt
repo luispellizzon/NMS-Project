@@ -7,6 +7,8 @@ import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.tasks.await
 import java.io.File
 import java.util.UUID
+import kotlin.getValue
+import com.example.nms_mobile.data.SpeechAssessment
 
 class SpeechAssessmentRepository private constructor(
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),

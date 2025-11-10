@@ -1,4 +1,4 @@
-package com.example.nms_mobile.ui.theme.speech
+package com.example.nms_mobile.ui.speech
 
 import android.content.Context
 import android.net.Uri
@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nms_mobile.data.*
 import com.example.nms_mobile.services.AudioRecorderService
+import com.example.nms_mobile.services.AudioPlayerService
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
@@ -20,7 +21,11 @@ data class SpeechAssessmentUiState(
     val duration: Long = 0, // in seconds
     val isUploading: Boolean = false,
     val uploadProgress: Int = 0,
-    val error: String? = null
+    val error: String? = null,
+    val isReviewMode: Boolean = false, // Are we reviewing the recording?
+    val isPlaying: Boolean = false,    // Is audio playing?
+    val playbackPosition: Int = 0,     // Current playback position in ms
+    val playbackDuration: Int = 0      // Total duration in ms
 )
 
 sealed class SpeechAssessmentEvent {
@@ -31,7 +36,7 @@ sealed class SpeechAssessmentEvent {
 
 class SpeechAssessmentViewModel(
     private val repository: SpeechAssessmentRepository = SpeechAssessmentRepository.instance,
-    private val storage: FirebaseStorage = FirebaseStorage.getInstance()
+    private val storage: StorageRepository = StorageRepository.instance
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SpeechAssessmentUiState())
@@ -41,6 +46,7 @@ class SpeechAssessmentViewModel(
     val events = _events.receiveAsFlow()
 
     private var audioRecorder: AudioRecorderService? = null
+    private var audioPlayer: AudioPlayerService? = null
     private var recordingStartTime: Long = 0
     private var audioFile: File? = null
 
@@ -68,7 +74,8 @@ class SpeechAssessmentViewModel(
                     it.copy(
                         recordingState = RecordingState.RECORDING,
                         duration = 0,
-                        error = null
+                        error = null,
+                        isReviewMode = false
                     )
                 }
 
@@ -91,7 +98,7 @@ class SpeechAssessmentViewModel(
     }
 
     /**
-     * Stops recording and uploads to Firebase
+     * Stops recording and enters REVIEW mode (does NOT upload yet)
      */
     fun stopRecording() {
         viewModelScope.launch {
@@ -109,14 +116,13 @@ class SpeechAssessmentViewModel(
                 _uiState.update {
                     it.copy(
                         recordingState = RecordingState.STOPPED,
-                        duration = duration / 1000
+                        duration = duration / 1000,
+                        isReviewMode = true, // Enter review mode
+                        playbackDuration = duration.toInt()
                     )
                 }
 
                 _events.send(SpeechAssessmentEvent.RecordingCompleted)
-
-                // Upload to Firebase
-                uploadAudioToFirebase(audioFile!!, duration)
 
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to stop recording", e)
@@ -132,6 +138,104 @@ class SpeechAssessmentViewModel(
     }
 
     /**
+     * Plays the recorded audio for review
+     */
+    fun playRecording(context: Context) {
+        viewModelScope.launch {
+            try {
+                if (audioFile == null || !audioFile!!.exists()) {
+                    throw Exception("No recording to play")
+                }
+
+                if (audioPlayer == null) {
+                    audioPlayer = AudioPlayerService(context)
+                }
+
+                val success = audioPlayer?.play(audioFile!!) ?: false
+
+                if (success) {
+                    _uiState.update {
+                        it.copy(
+                            isPlaying = true,
+                            playbackDuration = audioPlayer?.getDuration() ?: 0
+                        )
+                    }
+
+                    // Start position tracker
+                    startPlaybackTracker()
+
+                    // Set completion listener
+                    audioPlayer?.setOnCompletionListener {
+                        _uiState.update { it.copy(isPlaying = false, playbackPosition = 0) }
+                    }
+                }
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to play recording", e)
+                _uiState.update {
+                    it.copy(error = "Failed to play: ${e.localizedMessage}")
+                }
+            }
+        }
+    }
+
+    /**
+     * Pauses playback
+     */
+    fun pausePlayback() {
+        audioPlayer?.pause()
+        _uiState.update { it.copy(isPlaying = false) }
+    }
+
+    /**
+     * Resumes playback
+     */
+    fun resumePlayback() {
+        audioPlayer?.resume()
+        _uiState.update { it.copy(isPlaying = true) }
+        startPlaybackTracker()
+    }
+
+    /**
+     * Stops playback
+     */
+    fun stopPlayback() {
+        audioPlayer?.stop()
+        _uiState.update { it.copy(isPlaying = false, playbackPosition = 0) }
+    }
+
+    /**
+     * Restarts playback from beginning
+     */
+    fun restartPlayback(context: Context) {
+        stopPlayback()
+        playRecording(context)
+    }
+
+    /**
+     * Re-record: Delete current recording and start over
+     */
+    fun repeatRecording(context: Context) {
+        stopPlayback()
+        audioFile?.delete()
+        audioFile = null
+        _uiState.update {
+            SpeechAssessmentUiState() // Reset to initial state
+        }
+        startRecording(context)
+    }
+
+    /**
+     * Confirm and upload the recording
+     */
+    fun confirmRecording() {
+        if (audioFile != null && audioFile!!.exists()) {
+            val duration = _uiState.value.duration * 1000 // Convert back to ms
+            uploadAudioToFirebase(audioFile!!, duration)
+        }
+    }
+
+    /**
      * Cancels recording without saving
      */
     fun cancelRecording() {
@@ -143,7 +247,8 @@ class SpeechAssessmentViewModel(
             it.copy(
                 recordingState = RecordingState.IDLE,
                 duration = 0,
-                error = null
+                error = null,
+                isReviewMode = false
             )
         }
     }
@@ -154,61 +259,36 @@ class SpeechAssessmentViewModel(
     private fun uploadAudioToFirebase(file: File, duration: Long) {
         viewModelScope.launch {
             try {
-                Log.d(TAG, "Starting upload to Firebase...")
+                Log.d(TAG, "Starting upload...")
                 _uiState.update {
                     it.copy(
                         recordingState = RecordingState.PROCESSING,
                         isUploading = true,
-                        uploadProgress = 0
+                        uploadProgress = 0,
+                        isReviewMode = false
                     )
                 }
 
-                // Get current user ID
-                val userId = AuthRepository.instance.currentUser()?.uid
-                    ?: throw Exception("User not logged in")
-
-                // Create unique filename
-                val timestamp = System.currentTimeMillis()
-                val fileName = "${userId}_${timestamp}.m4a"
-                val storageRef = storage.reference
-                    .child("speech_assessments")
-                    .child(userId)
-                    .child(fileName)
-
-                Log.d(TAG, "Uploading to: ${storageRef.path}")
-
-                // Upload file with progress tracking
-                val uploadTask = storageRef.putFile(Uri.fromFile(file))
-
-                uploadTask.addOnProgressListener { taskSnapshot ->
-                    val progress = (100.0 * taskSnapshot.bytesTransferred / taskSnapshot.totalByteCount).toInt()
+                val downloadUrl = storage.uploadAudio(file) { progress ->
                     _uiState.update { it.copy(uploadProgress = progress) }
                     Log.d(TAG, "Upload progress: $progress%")
                 }
 
-                // Wait for upload to complete
-                uploadTask.await()
+                val userId = AuthRepository.instance.currentUser()?.uid
+                    ?: throw Exception("User not logged in")
 
-                // Get download URL
-                val downloadUrl = storageRef.downloadUrl.await()
-                Log.d(TAG, "Upload complete. Download URL: $downloadUrl")
-
-                // Save metadata to Firestore
                 val assessment = SpeechAssessment(
-                    id = userId,
+                    id = UUID.randomUUID().toString(),
                     userId = userId,
                     testType = "audio_recording",
-                    audioUrl = downloadUrl.toString(),
-                    transcription = "", // Empty - will be transcribed later
+                    audioUrl = downloadUrl,
+                    transcription = "",
                     duration = duration,
                     aiAnalysis = null,
                     score = null
                 )
 
                 repository.saveSpeechAssessment(assessment)
-                Log.d(TAG, "Successfully saved to Firestore")
-
-                // Clean up local file
                 file.delete()
 
                 _uiState.update {
@@ -235,6 +315,7 @@ class SpeechAssessmentViewModel(
         }
     }
 
+
     /**
      * Recording duration counter
      */
@@ -257,11 +338,31 @@ class SpeechAssessmentViewModel(
     }
 
     /**
-     * Reset state
+     * Playback position tracker
+     */
+    private fun startPlaybackTracker() {
+        viewModelScope.launch {
+            while (_uiState.value.isPlaying) {
+                kotlinx.coroutines.delay(100)
+                val position = audioPlayer?.getCurrentPosition() ?: 0
+                _uiState.update { it.copy(playbackPosition = position) }
+            }
+        }
+    }
+
+    /**
+     * Reset state and cleanup
      */
     fun reset() {
         audioRecorder = null
+        audioPlayer?.release()
+        audioPlayer = null
         audioFile = null
         _uiState.update { SpeechAssessmentUiState() }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        audioPlayer?.release()
     }
 }

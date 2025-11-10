@@ -1,6 +1,5 @@
 package com.example.nms_mobile.ui.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.*
@@ -8,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.nms_mobile.R
@@ -121,7 +121,7 @@ fun SocialLoginButtons(
 // Helper composable defined but not used in the main SocialLoginButtons function.
 @Composable
 private fun SocialRow(
-    icon: androidx.compose.ui.graphics.painter.Painter?,
+    icon: Painter?,
     label: String,
     iconTint: Color,
     textColor: Color
@@ -150,6 +150,6 @@ private fun SocialRow(
 
 // Helper function to safely load an image resource.
 @Composable
-private fun safePainterOrNull(resId: Int): androidx.compose.ui.graphics.painter.Painter? {
+private fun safePainterOrNull(resId: Int): Painter? {
     return runCatching { painterResource(id = resId) }.getOrNull()
 }

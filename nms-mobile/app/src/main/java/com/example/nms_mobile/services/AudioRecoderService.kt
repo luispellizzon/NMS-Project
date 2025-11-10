@@ -1,5 +1,6 @@
 package com.example.nms_mobile.services
 
+
 import android.content.Context
 import android.media.MediaRecorder
 import android.os.Build
@@ -9,7 +10,7 @@ import java.io.IOException
 
 /**
  * Service for recording audio to file
- * Records audio in AAC format (compatible with MP3 players)
+ * Records audio in M4A format (AAC codec)
  */
 class AudioRecorderService(private val context: Context) {
 

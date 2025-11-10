@@ -17,9 +17,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.example.nms_mobile.auth.Auth
+import com.example.nms_mobile.auth.*
 import com.example.nms_mobile.auth.ProvideAuth
-import com.example.nms_mobile.navigation.AppNavigation
+import com.example.nms_mobile.navigation.*
 import com.example.nms_mobile.ui.NMSmobileTheme
 import kotlinx.coroutines.delay
 

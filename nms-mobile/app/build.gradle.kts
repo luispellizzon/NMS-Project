@@ -79,10 +79,10 @@ dependencies {
     // FIREBASE (BOM approach - CLEANED)
     // ========================================
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
-    implementation("com.google.firebase:firebase-auth-ktx")
-    implementation("com.google.firebase:firebase-firestore-ktx")
-    implementation("com.google.firebase:firebase-functions-ktx")
-    implementation("com.google.firebase:firebase-storage-ktx")  // ← Solo una vez
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-functions")
+    implementation("com.google.firebase:firebase-storage")  // ← Solo una vez
     implementation("com.google.firebase:firebase-appcheck-playintegrity:17.1.1")
     // Firebase AppCheck
     implementation("com.google.firebase:firebase-appcheck-playintegrity:18.0.0")

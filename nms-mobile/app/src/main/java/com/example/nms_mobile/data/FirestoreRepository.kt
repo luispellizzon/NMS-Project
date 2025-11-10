@@ -43,9 +43,18 @@ class FirestoreRepository private constructor(
 ) {
 
     /* ---------- User Details ---------- */
-    suspend fun saveUserDetails(details: UserProfile ) {
+    suspend fun saveUserDetails(profile: UserProfile ) {
         val uid = uidOrThrow()
-        userDoc(uid).set(details).await()
+        userDoc(uid).set(
+            mapOf(
+                "uid" to uid,
+                "fullName" to profile.fullName,
+                "dateOfBirth" to profile.dateOfBirth,
+                "email" to profile.email,
+                "role" to profile.role,
+                "createdAt" to FieldValue.serverTimestamp()
+            )
+        ).await()
     }
 
     // Will be used to check users from google, facebook, apple signup.

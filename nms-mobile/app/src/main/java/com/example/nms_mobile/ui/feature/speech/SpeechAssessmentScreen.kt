@@ -1,4 +1,4 @@
-package com.example.nms_mobile.ui.theme.speech
+package com.example.nms_mobile.ui.speech
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import com.example.nms_mobile.R
 import com.example.nms_mobile.data.RecordingState
 import com.example.nms_mobile.ui.components.CustomTopAppBar
+import com.example.nms_mobile.ui.speech.SpeechAssessmentUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,11 +31,17 @@ fun SpeechAssessmentScreen(
     state: SpeechAssessmentUiState,
     onStartRecording: () -> Unit,
     onStopRecording: () -> Unit,
+    onPlayRecording: () -> Unit,
+    onPausePlayback: () -> Unit,
+    onResumePlayback: () -> Unit,
+    onRestartPlayback: () -> Unit,
+    onRepeatRecording: () -> Unit,
+    onConfirmRecording: () -> Unit,
     onBack: () -> Unit
 ) {
     Scaffold(
         topBar = {
-           CustomTopAppBar("Speech Assessment")
+            CustomTopAppBar("Speech Assessment", onBack)
         }
     ) { padding ->
         Column(
@@ -122,8 +129,81 @@ fun SpeechAssessmentScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Recording Status (only show when recording or processing)
-            if (state.recordingState != RecordingState.IDLE &&
+            // REVIEW MODE: Show playback controls
+            if (state.isReviewMode) {
+                AudioPlayerCard(
+                    isPlaying = state.isPlaying,
+                    playbackPosition = state.playbackPosition,
+                    playbackDuration = state.playbackDuration,
+                    onPlayPause = {
+                        if (state.isPlaying) {
+                            onPausePlayback()
+                        } else {
+                            if (state.playbackPosition > 0) {
+                                onResumePlayback()
+                            } else {
+                                onPlayRecording()
+                            }
+                        }
+                    },
+                    onRestart = onRestartPlayback
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Re-record button
+                OutlinedButton(
+                    onClick = onRepeatRecording,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color(0xFF00796B)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = null,
+                        tint = Color(0xFF00796B)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Re-record",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Submit button
+                Button(
+                    onClick = onConfirmRecording,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF00796B)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        tint = Color.White
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Submit Recording",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+            // RECORDING/PROCESSING STATE
+            else if (state.recordingState != RecordingState.IDLE &&
                 state.recordingState != RecordingState.COMPLETED) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -192,7 +272,7 @@ fun SpeechAssessmentScreen(
                 // Upload Progress
                 if (state.isUploading) {
                     LinearProgressIndicator(
-                        progress = state.uploadProgress / 100f,
+                        progress = { state.uploadProgress / 100f },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(6.dp)
@@ -204,42 +284,44 @@ fun SpeechAssessmentScreen(
                 }
             }
 
-            // Action Button
+            // Action Button (for initial recording)
             when (state.recordingState) {
                 RecordingState.IDLE, RecordingState.ERROR -> {
-                    Button(
-                        onClick = onStartRecording,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF00796B) // Teal
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Mic,
-                            contentDescription = null,
-                            tint = Color.White
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            "Start Recording",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    }
+                    if (!state.isReviewMode) {
+                        Button(
+                            onClick = onStartRecording,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF00796B) // Teal
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Mic,
+                                contentDescription = null,
+                                tint = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "Start Recording",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
 
-                    // Error message
-                    if (state.error != null) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = state.error,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color(0xFFD32F2F),
-                            textAlign = TextAlign.Center
-                        )
+                        // Error message
+                        if (state.error != null) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = state.error,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color(0xFFD32F2F),
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
                 RecordingState.RECORDING -> {
@@ -331,9 +413,6 @@ fun SpeechAssessmentScreen(
                         )
                     }
                 }
-                RecordingState.PROCESSING, RecordingState.STOPPED -> {
-                    // Show nothing or loading state
-                }
                 else -> {}
             }
 
@@ -343,9 +422,128 @@ fun SpeechAssessmentScreen(
 }
 
 /**
+ * Audio Player Card for reviewing recordings
+ */
+@Composable
+private fun AudioPlayerCard(
+    isPlaying: Boolean,
+    playbackPosition: Int,
+    playbackDuration: Int,
+    onPlayPause: () -> Unit,
+    onRestart: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFF5F5F5)
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Review Your Recording",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                // Restart button
+                IconButton(onClick = onRestart) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Restart",
+                        tint = Color(0xFF00796B)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Progress bar
+            val progress = if (playbackDuration > 0) {
+                playbackPosition.toFloat() / playbackDuration.toFloat()
+            } else 0f
+
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
+                color = Color(0xFF00796B),
+                trackColor = Color(0xFFE0E0E0)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Time labels
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = formatMillis(playbackPosition),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+                Text(
+                    text = formatMillis(playbackDuration),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Play/Pause button
+            Button(
+                onClick = onPlayPause,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF00796B)
+                ),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Icon(
+                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = if (isPlaying) "Pause" else "Play",
+                    tint = Color.White
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    if (isPlaying) "Pause" else "Play",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+/**
  * Formats duration in seconds to MM:SS format
  */
 private fun formatDuration(seconds: Long): String {
+    val mins = seconds / 60
+    val secs = seconds % 60
+    return String.format("%02d:%02d", mins, secs)
+}
+
+/**
+ * Formats milliseconds to MM:SS format
+ */
+private fun formatMillis(millis: Int): String {
+    val seconds = millis / 1000
     val mins = seconds / 60
     val secs = seconds % 60
     return String.format("%02d:%02d", mins, secs)

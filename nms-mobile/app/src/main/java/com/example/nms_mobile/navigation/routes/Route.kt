@@ -33,9 +33,9 @@ import com.example.nms_mobile.ui.questionnaire.SectionedQuestionnaireScreen
 import com.example.nms_mobile.ui.questionnaire.SectionedQuestionnaireViewModel
 import com.example.nms_mobile.ui.signup.SignUpScreen
 import com.example.nms_mobile.ui.signup.SignUpViewModel
-import com.example.nms_mobile.ui.theme.speech.SpeechAssessmentScreen
-import com.example.nms_mobile.ui.theme.speech.SpeechAssessmentEvent
-import com.example.nms_mobile.ui.theme.speech.SpeechAssessmentViewModel
+import com.example.nms_mobile.ui.speech.SpeechAssessmentScreen
+import com.example.nms_mobile.ui.speech.SpeechAssessmentEvent
+import com.example.nms_mobile.ui.speech.SpeechAssessmentViewModel
 
 // The starting screen: checks if the user is logged in and if they have a profile.
 @Composable
@@ -258,7 +258,6 @@ fun QuestionnaireRoute(
         onChronic = vm::onChronic
     )
 }
-
 // Handles the Speech Assessment screen
 @Composable
 fun SpeechAssessmentRoute(
@@ -275,14 +274,16 @@ fun SpeechAssessmentRoute(
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             vm.events.collect { event ->
                 when (event) {
-                    is SpeechAssessmentEvent.RecordingCompleted -> {
-                        // Show success message and navigate
+                    is SpeechAssessmentEvent.UploadCompleted -> {
+                        // Upload completed, navigate back
                         onCompleted()
+                    }
+                    is SpeechAssessmentEvent.RecordingCompleted -> {
+                        // Recording stopped, now in review mode (don't navigate yet)
                     }
                     is SpeechAssessmentEvent.Error -> {
                         // Error already shown in UI state
                     }
-                    else -> {}
                 }
             }
         }
@@ -309,6 +310,18 @@ fun SpeechAssessmentRoute(
             }
         },
         onStopRecording = vm::stopRecording,
+        onPlayRecording = { vm.playRecording(context) },
+        onPausePlayback = vm::pausePlayback,
+        onResumePlayback = vm::resumePlayback,
+        onRestartPlayback = { vm.restartPlayback(context) },
+        onRepeatRecording = { vm.repeatRecording(context) },
+        onConfirmRecording = vm::confirmRecording,
         onBack = onBack
     )
 }
+
+
+
+
+
+
