@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signUpWithEmail, signInWithGoogle, signInWithApple } from '@/lib/firebase/auth-service';
+import { createDoctorProfile } from '@/lib/firebase/firestore-service';
 import { FirebaseError } from 'firebase/app';
 
 export default function SignUpForm() {
@@ -28,18 +29,26 @@ export default function SignUpForm() {
     setLoading(true);
 
     try {
-      await signUpWithEmail(
+      // Create Firebase Auth user
+      const userCredential = await signUpWithEmail(
         formData.email,
         formData.password,
         formData.displayName
       );
+
+      // Create doctor profile in Firestore
+      await createDoctorProfile(userCredential.user.uid, {
+        fullName: formData.displayName,
+        email: formData.email,
+        role: 'doctor',
+      });
 
       router.push('/dashboard');
 
     } catch (err) {
       console.error('Registration Error:', err);
       let errorMessage = 'An unexpected error occurred during registration.';
-      
+
       if (err instanceof FirebaseError) {
         switch (err.code) {
           case 'auth/email-already-in-use':

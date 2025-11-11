@@ -56,11 +56,12 @@ describe('PatientTable', () => {
     expect(screen.getByText('Jane Smith')).toBeInTheDocument();
   });
 
-  it('renders patient IDs, ages, and genders', () => {
+  it('renders patient ages and genders', () => {
     render(<PatientTable patients={mockPatients} {...mockCallbacks} />);
 
-    expect(screen.getByText(/P001.*65Y.*Male/)).toBeInTheDocument();
-    expect(screen.getByText(/P002.*70Y.*Female/)).toBeInTheDocument();
+    // Age and gender are in format "65Y • Male"
+    expect(screen.getByText('65Y • Male')).toBeInTheDocument();
+    expect(screen.getByText('70Y • Female')).toBeInTheDocument();
   });
 
   it('renders risk score badges', () => {

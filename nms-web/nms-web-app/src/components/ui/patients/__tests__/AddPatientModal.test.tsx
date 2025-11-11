@@ -55,7 +55,7 @@ describe('AddPatientModal', () => {
     expect(screen.getByLabelText('Full Name')).toBeInTheDocument();
     expect(screen.getByLabelText('Email Address')).toBeInTheDocument();
     expect(screen.getByLabelText('Date of Birth')).toBeInTheDocument();
-    expect(screen.getByLabelText('Gender')).toBeInTheDocument();
+    // Gender is stored in risk_assessments, not collected here
   });
 
   it('renders Cancel and Add Patient buttons', () => {
@@ -105,22 +105,6 @@ describe('AddPatientModal', () => {
     expect(emailInput.value).toBe('jane@example.com');
   });
 
-  it('updates gender when user selects from dropdown', () => {
-    render(
-      <AddPatientModal
-        isOpen={true}
-        onClose={mockOnClose}
-        onPatientAdded={mockOnPatientAdded}
-      />
-    );
-
-    const genderSelect = screen.getByLabelText('Gender') as HTMLSelectElement;
-
-    fireEvent.change(genderSelect, { target: { value: 'Male' } });
-
-    expect(genderSelect.value).toBe('Male');
-  });
-
   it('successfully submits form and adds patient', async () => {
     const mockPatientId = 'patient-123';
     (addPatient as any).mockResolvedValue(mockPatientId);
@@ -133,11 +117,10 @@ describe('AddPatientModal', () => {
       />
     );
 
-    // Fill out the form
+    // Fill out the form (gender is no longer collected here, it's in risk_assessments)
     fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'Jane Doe' } });
     fireEvent.change(screen.getByLabelText('Email Address'), { target: { value: 'jane@example.com' } });
     fireEvent.change(screen.getByLabelText('Date of Birth'), { target: { value: '1990-01-15' } });
-    fireEvent.change(screen.getByLabelText('Gender'), { target: { value: 'Female' } });
 
     // Submit the form
     const submitButton = screen.getByText('Add Patient');
@@ -148,7 +131,6 @@ describe('AddPatientModal', () => {
         fullName: 'Jane Doe',
         email: 'jane@example.com',
         dateOfBirth: '1990-01-15',
-        gender: 'Female',
         role: 'patient',
       });
     });
@@ -241,7 +223,7 @@ describe('AddPatientModal', () => {
     });
   });
 
-  it('creates patient with correct age calculation', async () => {
+  it('creates patient with default values until risk assessment completed', async () => {
     const mockPatientId = 'patient-123';
     (addPatient as any).mockResolvedValue(mockPatientId);
 
@@ -257,7 +239,6 @@ describe('AddPatientModal', () => {
     fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'Jane Doe' } });
     fireEvent.change(screen.getByLabelText('Email Address'), { target: { value: 'jane@example.com' } });
     fireEvent.change(screen.getByLabelText('Date of Birth'), { target: { value: '1990-01-15' } });
-    fireEvent.change(screen.getByLabelText('Gender'), { target: { value: 'Female' } });
 
     // Submit the form
     fireEvent.click(screen.getByText('Add Patient'));
@@ -266,7 +247,8 @@ describe('AddPatientModal', () => {
       expect(mockOnPatientAdded).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'Jane Doe',
-          gender: 'Female',
+          age: 0, // Will be updated from risk assessment
+          gender: 'Female', // Default, will be updated from risk assessment
           riskScore: 0,
           riskLevel: 'Low',
           trend: 'Stable',

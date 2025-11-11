@@ -25,7 +25,7 @@ interface PatientTableRowProps {
 const PatientTableRow = ({ patient, onView, onReport, onContact, onDelete }: PatientTableRowProps) => {
   const [isMenuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-
+  
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -50,7 +50,7 @@ const PatientTableRow = ({ patient, onView, onReport, onContact, onDelete }: Pat
           <Image src={patient.avatarUrl} alt={patient.name} width={40} height={40} className="rounded-full" />
           <div>
             <p className="font-medium text-foreground group-hover:text-primary transition-colors">{patient.name}</p>
-            <p className="text-sm text-muted-foreground">{`${patient.id} • ${patient.age}Y • ${patient.gender}`}</p>
+            <p className="text-sm text-muted-foreground">{`${patient.age}Y • ${patient.gender}`}</p>
           </div>
         </Link>
       </td>

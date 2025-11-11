@@ -1,9 +1,9 @@
 // src/app/patients/page.tsx
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Search, Plus } from 'lucide-react';
-import { mockPatients as initialMockPatients } from '@/lib/mock_data';
+import { useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Search, Plus, UserPlus, Loader2, Trash2 } from 'lucide-react';
 import { Patient, RiskLevel } from '@/types/patient';
 import StatCard from '@/components/ui/patients/StatCard';
 import PatientTable from '@/components/ui/patients/PatientTable';
@@ -12,10 +12,14 @@ import PatientDetailModal from '@/components/ui/patients/PatientDetailModal';
 import Modal from '@/components/ui/common/Modal';
 import { motion, Variants } from 'framer-motion';
 import AddPatientModal from '@/components/ui/patients/AddPatientModal';
+import AssignPatientModal from '@/components/ui/patients/AssignPatientModal';
+import { useAuth } from '@/contexts/AuthContext';
+import { getDoctorProfile, getDoctorPatients, removePatientFromDoctor, getPatientRiskAssessment } from '@/lib/firebase/firestore-service';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
 
 const ITEMS_PER_PAGE = 5;
 
-// ... (filters and animation variants remain the same)
 const filters: { label: string; value: 'All' | RiskLevel }[] = [
     { label: 'All', value: 'All' },
     { label: 'High Risk', value: 'High' },
@@ -47,17 +51,97 @@ const itemVariants: Variants = {
 
 
 export default function PatientsPage() {
-  const [allPatients, setAllPatients] = useState<Patient[]>(initialMockPatients);
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+
+  const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<'All' | RiskLevel>('All');
   const [currentPage, setCurrentPage] = useState(1);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [doctorId, setDoctorId] = useState<string>('');
 
   // --- STATE FOR ACTIONS ---
   const [patientToView, setPatientToView] = useState<Patient | null>(null);
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false); // <-- State for the new modal
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
-  // ... (riskCounts, filteredPatients, paginatedPatients memos remain the same)
+  // Check authentication and load data
+  useEffect(() => {
+    if (!authLoading) {
+      if (!user) {
+        router.push('/signin');
+      } else {
+        loadDoctorPatients();
+      }
+    }
+  }, [user, authLoading, router]);
+
+  const loadDoctorPatients = async () => {
+    if (!user) return;
+
+    setDataLoading(true);
+    setError('');
+
+    try {
+      // Fetch doctor profile
+      const doctorProfile = await getDoctorProfile(user.uid);
+
+      if (!doctorProfile) {
+        setError('Doctor profile not found. Please complete your signup.');
+        setDataLoading(false);
+        return;
+      }
+
+      setDoctorId(doctorProfile.id);
+
+      // Fetch doctor's patients
+      const patientIds = await getDoctorPatients(user.uid);
+
+      // Fetch patient details from users collection and risk assessments
+      const patientDetails: Patient[] = [];
+      for (const patientId of patientIds) {
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('__name__', '==', patientId));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          const patientData = querySnapshot.docs[0].data();
+
+          // Fetch risk assessment data for this patient
+          const riskAssessment = await getPatientRiskAssessment(patientId);
+
+          patientDetails.push({
+            id: patientId,
+            name: patientData.fullName || 'Unknown',
+            // Get age and gender from risk assessment
+            age: riskAssessment?.age || 0,
+            gender: riskAssessment?.gender || 'Female',
+            avatarUrl: '/images/Avatar.jpg',
+            // Use risk assessment data if available, otherwise use defaults
+            riskScore: riskAssessment?.riskScore || 0,
+            riskLevel: riskAssessment?.riskLevel || 'Low',
+            trend: riskAssessment?.trend || 'Stable',
+            assessments: {
+              cognitive: riskAssessment?.assessments?.cognitive || 0,
+              speech: riskAssessment?.assessments?.speech || 0,
+            },
+            lastCheck: riskAssessment?.lastCheck || new Date().toISOString().split('T')[0],
+            nextAppointment: riskAssessment?.nextAppointment || 'Not set',
+          });
+        }
+      }
+
+      setAllPatients(patientDetails);
+    } catch (err) {
+      console.error('Error loading doctor data:', err);
+      setError('Failed to load data. Please try again.');
+    } finally {
+      setDataLoading(false);
+    }
+  };
   const riskCounts = useMemo(() => {
     return allPatients.reduce(
       (acc, patient) => {
@@ -67,7 +151,7 @@ export default function PatientsPage() {
       { High: 0, Moderate: 0, Low: 0 }
     );
   }, [allPatients]);
-
+  
   const filteredPatients = useMemo(() => {
     return allPatients.filter((patient) => {
         if (activeFilter !== 'All' && patient.riskLevel !== activeFilter) return false;
@@ -75,14 +159,14 @@ export default function PatientsPage() {
         return true;
       });
   }, [searchTerm, activeFilter, allPatients]);
-  
+
   const totalPages = Math.ceil(filteredPatients.length / ITEMS_PER_PAGE);
 
   const paginatedPatients = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredPatients.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [filteredPatients, currentPage]);
-  
+
   // --- ACTION HANDLERS ---
   const handleGenerateReport = (patient: Patient) => {
     alert(`Generating report for ${patient.name}...`);
@@ -92,10 +176,16 @@ export default function PatientsPage() {
     alert(`Contacting ${patient.name}...`);
   };
 
-  const handleConfirmDelete = () => {
-    if (patientToDelete) {
-      setAllPatients(prev => prev.filter(p => p.id !== patientToDelete.id));
-      setPatientToDelete(null);
+  const handleConfirmDelete = async () => {
+    if (patientToDelete && doctorId) {
+      try {
+        await removePatientFromDoctor(doctorId, patientToDelete.id);
+        setAllPatients(prev => prev.filter(p => p.id !== patientToDelete.id));
+        setPatientToDelete(null);
+      } catch (err) {
+        console.error('Error removing patient:', err);
+        alert('Failed to remove patient. Please try again.');
+      }
     }
   };
 
@@ -108,6 +198,41 @@ export default function PatientsPage() {
   const handlePatientAdded = (newPatient: Patient) => {
     setAllPatients(prev => [newPatient, ...prev]);
   };
+
+  // --- Handler for patient assignment ---
+  const handlePatientAssigned = () => {
+    // Reload patient data to refresh the list
+    loadDoctorPatients();
+  };
+
+  // Loading state
+  if (authLoading || dataLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading your patients...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4">
+          <p className="text-red-500">{error}</p>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90"
+          >
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -152,13 +277,21 @@ export default function PatientsPage() {
               </button>
             ))}
           </div>
-          {/* --- Update Add Patient Button --- */}
-          <button 
-            onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors w-full sm:w-auto justify-center"
-          >
-            <Plus className="w-5 h-5" /> Add Patient
-          </button>
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              onClick={() => setIsAssignModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground border rounded-lg font-semibold hover:bg-secondary/90 transition-colors flex-1 sm:flex-none justify-center"
+            >
+              <UserPlus className="w-5 h-5" /> Assign Patient
+            </button>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors flex-1 sm:flex-none justify-center"
+            >
+              <Plus className="w-5 h-5" /> Add Patient
+            </button>
+          </div>
         </motion.div>
 
         {/* Patient Table */}
@@ -184,11 +317,19 @@ export default function PatientsPage() {
       </motion.div>
 
       {/* --- MODALS --- */}
-      {/* --- Render the new AddPatientModal --- */}
-      <AddPatientModal 
+      {/* --- Render the AddPatientModal --- */}
+      <AddPatientModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onPatientAdded={handlePatientAdded}
+      />
+
+      {/* --- Render the AssignPatientModal --- */}
+      <AssignPatientModal
+        isOpen={isAssignModalOpen}
+        onClose={() => setIsAssignModalOpen(false)}
+        doctorId={doctorId}
+        onPatientAssigned={handlePatientAssigned}
       />
 
       <PatientDetailModal

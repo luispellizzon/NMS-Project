@@ -33,12 +33,11 @@ export default function AddPatientModal({ isOpen, onClose, onPatientAdded }: Add
     fullName: '',
     email: '',
     dateOfBirth: '',
-    gender: 'Female' as 'Male' | 'Female',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setFormData(prev => ({ ...prev, [id]: value }));
   };
@@ -53,12 +52,13 @@ export default function AddPatientModal({ isOpen, onClose, onPatientAdded }: Add
       const newPatientId = await addPatient(newPatientData);
 
       // Create a complete Patient object to update the local UI state
+      // Gender and age will come from risk assessment later
       const newPatientForUI: Patient = {
         id: newPatientId,
         name: formData.fullName,
-        age: new Date().getFullYear() - new Date(formData.dateOfBirth).getFullYear(),
-        gender: formData.gender,
-        avatarUrl: '/images/Avatar.jpg', // Default avatar
+        age: 0, // Will be filled when risk assessment is completed
+        gender: 'Female', // Default, will be updated from risk assessment
+        avatarUrl: '/images/Avatar.jpg',
         riskScore: 0,
         riskLevel: 'Low',
         trend: 'Stable',
@@ -66,10 +66,10 @@ export default function AddPatientModal({ isOpen, onClose, onPatientAdded }: Add
         lastCheck: new Date().toISOString().split('T')[0],
         nextAppointment: 'Not set',
       };
-      
+
       onPatientAdded(newPatientForUI);
       onClose(); // Close the modal on success
-      
+
     } catch (err) {
       setError('Failed to add patient. Please try again.');
       console.error(err);
@@ -82,23 +82,10 @@ export default function AddPatientModal({ isOpen, onClose, onPatientAdded }: Add
     <Modal isOpen={isOpen} onClose={onClose} title="Add New Patient">
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <p className="text-sm text-red-500 bg-red-500/10 p-3 rounded-md">{error}</p>}
-        
+
         <InputField id="fullName" label="Full Name" type="text" value={formData.fullName} onChange={handleChange} />
         <InputField id="email" label="Email Address" type="email" value={formData.email} onChange={handleChange} />
         <InputField id="dateOfBirth" label="Date of Birth" type="date" value={formData.dateOfBirth} onChange={handleChange} />
-        
-        <div>
-          <label htmlFor="gender" className="block text-sm font-medium text-foreground mb-1.5">Gender</label>
-          <select
-            id="gender"
-            value={formData.gender}
-            onChange={handleChange}
-            className="w-full px-4 py-2.5 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="Female">Female</option>
-            <option value="Male">Male</option>
-          </select>
-        </div>
 
         <div className="flex justify-end gap-3 pt-4">
           <button type="button" onClick={onClose} className="px-4 py-2 border rounded-md font-medium hover:bg-accent">
