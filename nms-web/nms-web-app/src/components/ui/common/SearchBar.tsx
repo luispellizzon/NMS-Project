@@ -1,27 +1,30 @@
 'use client';
 
 import { Search, X } from 'lucide-react';
+import React from 'react'; // --> IMPORT React for FormEvent type
 
 // Define the props for our generic component
 interface GenericSearchBarProps {
   value: string;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onClear?: () => void; // Optional handler to clear the input
+  onSubmit?: (event: React.FormEvent<HTMLFormElement>) => void; // --> ADD THIS PROP
+  onClear?: () => void;
   placeholder?: string;
-  className?: string; // To allow for custom styling
+  className?: string;
   iconClassName?: string;
 }
 
 export default function GenericSearchBar({
   value,
   onChange,
+  onSubmit,
   onClear,
   placeholder = 'Search...',
   className = '',
   iconClassName = 'h-4 w-5 text-gray-400',
 }: GenericSearchBarProps) {
   return (
-    <div className="relative w-full">
+    <form onSubmit={onSubmit} className="relative w-full">
       {/* Search Icon on the left */}
       <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
         <Search className={iconClassName} aria-hidden="true" />
@@ -32,12 +35,10 @@ export default function GenericSearchBar({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        // Base styles with padding adjusted for both left and right icons
         className={`w-full pl-10 pr-10 py-2 border rounded-lg focus:outline-none focus:ring-2 ${className}`}
       />
 
       {/* Clear Button (X icon) on the right */}
-      {/* This button only appears if there is a value AND an onClear function is provided */}
       {value && onClear && (
         <div className="absolute inset-y-0 right-0 flex items-center pr-3">
           <button
@@ -50,6 +51,6 @@ export default function GenericSearchBar({
           </button>
         </div>
       )}
-    </div>
+    </form>
   );
 }

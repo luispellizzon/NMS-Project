@@ -110,17 +110,6 @@ export const mockPatients: Patient[] = [
   },
 ];
 
-// Updated Type to match our Firestore model
-export type NewsArticle = {
-  id: string; // Document ID from Firestore
-  topic: string;
-  title: string;
-  sourceUrl: string; // Link to the original article
-  publishedDate: Timestamp; // Use Firestore Timestamp for proper sorting
-  readTime: string;
-  agentSummary: string; // The full summary from the AI agent
-};
-
 // Data for the Overall Appointments bar chart
 export const appointmentsChartData = [
     { month: 'April', assessment: 8, screening: 12, consultation: 5, followUp: 9 },
@@ -131,38 +120,6 @@ export const appointmentsChartData = [
     { month: 'Sep', assessment: 18, screening: 20, consultation: 10, followUp: 15 },
     { month: 'Oct', assessment: 16, screening: 17, consultation: 11, followUp: 14 },
   ];
-  
-// Data for the News Feed
-export const richNewsFeedData: NewsArticle[] = [
-  {
-    id: 'news1',
-    topic: 'Cognitive Health',
-    title: 'New Study on Ginkgo Biloba Shows Promising Results for Memory Support',
-    sourceUrl: 'https://www.medicalnewstoday.com/articles/ginkgo-biloba-benefits',
-    publishedDate: Timestamp.fromDate(new Date('2025-10-20T10:00:00Z')),
-    readTime: '5 min',
-    agentSummary: 'A comprehensive 5-year, double-blind study involving 1,200 participants indicates that daily supplementation with Ginkgo Biloba extract can provide statistically significant support for short-term memory recall and executive function in adults over 60. The mechanism is believed to be related to improved cerebral blood flow. No major adverse effects were reported.'
-  },
-  {
-    id: 'news2',
-    topic: 'Neurology',
-    title: 'AI in Early Diagnosis of Alzheimer\'s: Retinal Scan Analysis',
-    sourceUrl: 'https://www.nature.com/articles/s41598-023-34567-x',
-    publishedDate: Timestamp.fromDate(new Date('2025-10-19T15:30:00Z')),
-    readTime: '8 min',
-    agentSummary: 'Researchers have developed a new deep learning model that can predict the likelihood of Alzheimer\'s disease with 92% accuracy by analyzing retinal fundus images. The model identifies subtle microvascular changes in the retina that are correlated with the buildup of amyloid-beta plaques in the brain, offering a non-invasive and cost-effective screening method.'
-  },
-  {
-    id: 'news3',
-    topic: 'Neurology',
-    title: 'AI in Early Diagnosis of Alzheimer\'s: Retinal Scan Analysis',
-    sourceUrl: 'https://www.nature.com/articles/s41598-023-34567-x',
-    publishedDate: Timestamp.fromDate(new Date('2025-10-19T15:30:00Z')),
-    readTime: '8 min',
-    agentSummary: 'Researchers have developed a new deep learning model that can predict the likelihood of Alzheimer\'s disease with 92% accuracy by analyzing retinal fundus images. The model identifies subtle microvascular changes in the retina that are correlated with the buildup of amyloid-beta plaques in the brain, offering a non-invasive and cost-effective screening method.'
-  },
-  // Add more articles as needed
-];
   
   // Data for the Appointments Lists
   export type Appointment = {

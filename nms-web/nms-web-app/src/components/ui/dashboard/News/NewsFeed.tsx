@@ -1,123 +1,188 @@
-// src/components/ui/dashboard/News/NewsFeed.tsx
 'use client';
 
-import { useState } from 'react';
-import { richNewsFeedData, NewsArticle } from '@/lib/mock_data';
-import { BookOpen, ArrowLeft, ExternalLink } from 'lucide-react';
+import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
+import { motion, Variants } from 'framer-motion';
+import { NewsArticle } from '@/types/news';
+import { fetchArticles, generateArticleWithStream } from '@/lib/services/newsService';
+import { AlertTriangle, LoaderCircle } from 'lucide-react';
 import GenericSearchBar from '../../common/SearchBar';
+import ArticleDetailView from './ArticleDetailView';
+import ArticleListView from './ArticleListView';
+import NewsHeader, { NewsMode } from './NewsHeader';
+import AgentArtifactsAccordion, { AgentArtifact } from './AgentArtifactsAccordion';
+import GenerationCompleteView from './GenerationCompleteView';
 
-const ArticleDetailView = ({ article, onGoBack }: { article: NewsArticle; onGoBack: () => void; }) => (
-    <div>
-      <div className="flex items-center gap-4 pb-4 border-b border-border">
-        <button onClick={onGoBack} className="p-2 rounded-full hover:bg-accent" aria-label="Go back to news list">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div className="flex-1">
-          <h3 className="font-bold text-card-foreground">{article.title}</h3>
-          <p className="text-sm text-primary font-semibold mt-1">{article.topic}</p>
-        </div>
-      </div>
-      <div className="py-4 space-y-3 max-h-[250px] overflow-y-auto">
-          <h4 className="font-semibold text-muted-foreground">AI Generated Summary</h4>
-          <p className="text-base leading-relaxed text-secondary-foreground/80 whitespace-pre-wrap">
-              {article.agentSummary}
-          </p>
-      </div>
-      <div className="flex items-center justify-between pt-4 border-t border-border">
-          <a href={article.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">
-              <ExternalLink className="w-4 h-4" />
-              View Original Source
-          </a>
-          <p className="text-xs text-muted-foreground">
-              Published: {article.publishedDate.toDate().toLocaleDateString()}
-          </p>
-      </div>
-    </div>
-);
+interface NewsFeedProps {
+  variants?: Variants;
+}
 
-const ArticleListView = ({ articles, onArticleSelect, searchTerm, onSearchChange, onClearSearch }: {
-  articles: NewsArticle[];
-  onArticleSelect: (article: NewsArticle) => void;
-  searchTerm: string;
-  onSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onClearSearch: () => void;
-}) => (
-  <div>
-    <div className="mb-4">
-      <GenericSearchBar
-        value={searchTerm}
-        onChange={onSearchChange}
-        onClear={onClearSearch}
-        placeholder="Search topics or title"
-        className="border-border focus:ring-primary"
-        iconClassName="h-4 w-4 text-muted-foreground"
-      />
-    </div>
-    <div className="space-y-2 max-h-[350px] overflow-y-auto pr-2">
-      {articles.map((article) => (
-        <div 
-          key={article.id} 
-          className="flex items-center justify-between gap-3 py-3 border-b border-border last:border-b-0 md:grid md:grid-cols-12"
-        >
-          {/* Left side container for Icon and Text */}
-          <div className="flex items-center gap-3 min-w-0 md:col-span-8">
-            <div className="flex-shrink-0 w-10 h-10 bg-muted rounded-full flex items-center justify-center md:col-span-1">
-              <BookOpen className="w-5 h-5 text-muted-foreground" />
-            </div>
-            
-            {/* Text container: Allows text to truncate correctly */}
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">{article.title}</p>
-              <p className="text-sm text-primary md:hidden">{article.topic}</p> 
-              <p className="hidden md:block text-sm text-muted-foreground md:col-span-2">{article.topic}</p>
-            </div>
-          </div>
-          
-          {/* Right side container for Read Time and Button */}
-          <div className="flex items-center gap-4 flex-shrink-0 md:col-span-4 md:justify-end">
-            <p className="hidden sm:block text-sm text-center text-muted-foreground md:col-span-2">{article.readTime}</p>
-            <div className="md:col-span-2 text-center">
-              <button onClick={() => onArticleSelect(article)} className="text-sm font-semibold text-primary hover:underline flex-shrink-0">
-                Read
-              </button>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
-
-// --- Main NewsFeed Component (Controller - No changes needed here) ---
-export default function NewsFeed() {
+export default function NewsFeed({ variants }: NewsFeedProps) {
+  const [allArticles, setAllArticles] = useState<NewsArticle[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationComplete, setGenerationComplete] = useState(false);
+  const [newsMode, setNewsMode] = useState<NewsMode>(NewsMode.FilterExisting);
+  const [artifacts, setArtifacts] = useState<AgentArtifact[]>([]);
+  const [generatedArticle, setGeneratedArticle] = useState<NewsArticle | null>(null);
+
+  const loadArticles = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchArticles();
+      setAllArticles(data);
+    } catch (err) {
+      setError("Could not load news feed. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadArticles();
+  }, []);
+
+  const handleSearchSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!searchTerm) return;
+
+    if (newsMode === NewsMode.QueryNewReport) {
+      setIsGenerating(true);
+      setGenerationComplete(false);
+      setArtifacts([]);
+      setError(null);
+      setGeneratedArticle(null);
+      const currentSearchTerm = searchTerm;
+
+      try {
+        // Use the streaming function with WebSocket
+        await generateArticleWithStream(
+          { topic: currentSearchTerm, save_to_firebase: true },
+          (artifact) => {
+            setArtifacts((prev) => {
+              // Update existing artifact or add new one
+              const existingIndex = prev.findIndex((a) => a.id === artifact.id);
+              if (existingIndex >= 0) {
+                const updated = [...prev];
+                updated[existingIndex] = artifact;
+                return updated;
+              }
+              return [...prev, artifact];
+            });
+          }
+        );
+
+        // Refresh articles after generation and wait for it to complete
+        const refreshedArticles = await fetchArticles();
+        setAllArticles(refreshedArticles);
+        setIsGenerating(false);
+
+        // Find the generated article
+        const newArticle = refreshedArticles.find((a) =>
+          a.title.toLowerCase().includes(currentSearchTerm.toLowerCase()) ||
+          a.category.toLowerCase().includes(currentSearchTerm.toLowerCase())
+        );
+
+        if (newArticle) {
+          setGeneratedArticle(newArticle);
+        } else {
+          // If we can't find by search term, use the most recent article
+          if (refreshedArticles.length > 0) {
+            setGeneratedArticle(refreshedArticles[0]);
+          }
+        }
+
+        // Show completion screen
+        setGenerationComplete(true);
+      } catch (err) {
+        setError("Failed to generate the new report. Please try again.");
+        setIsGenerating(false);
+        setGenerationComplete(false);
+      }
+    }
+  };
+
+  const handleViewReport = () => {
+    if (generatedArticle) {
+      setSelectedArticle(generatedArticle);
+      setGenerationComplete(false);
+    }
+  };
 
   const clearSearch = () => setSearchTerm('');
 
-  const filteredNews = richNewsFeedData.filter(
+  const filteredNews = allArticles.filter(
     (item) =>
       item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.topic.toLowerCase().includes(searchTerm.toLowerCase())
+      item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.summary.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  if (loading) {
+    return (
+      <motion.div
+        variants={variants}
+        className="bg-card text-card-foreground rounded-lg border shadow-sm p-6"
+      >
+        <div className="flex items-center justify-center h-[400px]">
+          <LoaderCircle className="w-8 h-8 animate-spin" />
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (error && !isGenerating) {
+    return (
+      <motion.div
+        variants={variants}
+        className="bg-card text-card-foreground rounded-lg border shadow-sm p-6"
+      >
+        <div className="flex flex-col items-center justify-center h-[400px] text-destructive">
+          <AlertTriangle className="w-8 h-8" />
+          <p className="mt-2">{error}</p>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
-    <div>
-      {selectedArticle ? (
-        <ArticleDetailView
-          article={selectedArticle}
-          onGoBack={() => setSelectedArticle(null)}
-        />
+    <motion.div
+      variants={variants}
+      className="bg-card text-card-foreground rounded-lg border shadow-sm p-4 min-h-[430px]"
+    >
+      <NewsHeader newsMode={newsMode} onModeChange={setNewsMode} />
+
+      {isGenerating ? (
+        <AgentArtifactsAccordion topic={searchTerm} artifacts={artifacts} />
+      ) : generationComplete ? (
+        <GenerationCompleteView topic={searchTerm} onViewReport={handleViewReport} />
+      ) : selectedArticle ? (
+        <ArticleDetailView article={selectedArticle} onGoBack={() => setSelectedArticle(null)} />
       ) : (
-        <ArticleListView
-          articles={filteredNews}
-          onArticleSelect={setSelectedArticle}
-          searchTerm={searchTerm}
-          onSearchChange={(e) => setSearchTerm(e.target.value)}
-          onClearSearch={clearSearch}
-        />
+        <>
+          <div className="mb-4">
+            <GenericSearchBar
+              value={searchTerm}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+              onSubmit={handleSearchSubmit}
+              onClear={clearSearch}
+              placeholder={
+                newsMode === NewsMode.FilterExisting
+                  ? "Filter by topic, title, or category..."
+                  : "Describe the research report you need..."
+              }
+            />
+          </div>
+          <ArticleListView
+            articles={filteredNews}
+            onArticleSelect={setSelectedArticle}
+            onRefresh={loadArticles}
+          />
+        </>
       )}
-    </div>
+    </motion.div>
   );
 }

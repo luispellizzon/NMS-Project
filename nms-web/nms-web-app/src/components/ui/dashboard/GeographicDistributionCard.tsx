@@ -27,16 +27,16 @@ export default function GeographicDistributionCard({
       className="md:col-span-3"
       title={
         <div className="flex justify-between items-center w-full">
-          <h3 className="font-bold text-lg text-card-foreground">Geographic Distribution</h3>
-          <form onSubmit={handleSearchSubmit} className="w-full max-w-xs">
+          <h3 className="font-bold text-xl text-card-foreground">Geographic Distribution</h3>
+          <div className="w-full max-w-xs">
             <GenericSearchBar
                 value={searchTerm}
                 onChange={handleSearchChange}
+                onSubmit={handleSearchSubmit}
                 onClear={handleClearSearch}
                 placeholder="Search location..."
-                className="py-1.5 mb-2 bg-gray-800/50 text-white border-gray-600 rounded-lg focus:ring-brand-primary backdrop-blur-sm"
             />
-          </form>
+          </div>
         </div>
       }
       footer={

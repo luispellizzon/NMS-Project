@@ -41,7 +41,6 @@ describe('DashboardPage Integration Test', () => {
     render(<DashboardPage />);
 
     // Verify that the simple card titles are present
-    expect(screen.getByRole('heading', { name: /News/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Score Range/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Avg Scores/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Patients/i })).toBeInTheDocument();
@@ -49,6 +48,7 @@ describe('DashboardPage Integration Test', () => {
     expect(screen.getByRole('heading', { name: /Overall Appointments/i })).toBeInTheDocument();
 
     expect(screen.getByTestId('geo-dist-card')).toBeInTheDocument();
+    expect(screen.getByTestId('news-feed')).toBeInTheDocument();
 
     // Verify the two appointment list components are rendered
     expect(screen.getByTestId('upcoming-appointments')).toBeInTheDocument();

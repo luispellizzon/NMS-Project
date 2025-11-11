@@ -54,9 +54,6 @@ describe('Authentication Flow Integration Tests', () => {
       await user.type(screen.getByLabelText(/name/i), 'New User');
       await user.type(screen.getByLabelText(/email address/i), 'newuser@example.com');
       await user.type(screen.getByLabelText(/password/i), 'SecurePass123!');
-      await user.type(screen.getByLabelText(/medical license number/i), 'ML12345');
-      await user.type(screen.getByLabelText(/specialization/i), 'Neurology');
-      await user.type(screen.getByLabelText(/hospital\/clinic affiliation/i), 'City Hospital');
       await user.click(screen.getByLabelText(/i agree to the/i));
       await user.click(screen.getByRole('button', { name: /signup/i }));
 
@@ -71,9 +68,6 @@ describe('Authentication Flow Integration Tests', () => {
           {
             fullName: 'New User',
             email: 'newuser@example.com',
-            medicalLicenseNumber: 'ML12345',
-            specialization: 'Neurology',
-            hospitalClinicAffiliation: 'City Hospital',
             role: 'doctor',
           }
         );

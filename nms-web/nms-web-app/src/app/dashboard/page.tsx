@@ -79,10 +79,7 @@ export default function DashboardPage() {
         {/* --- PRIMARY CONTENT COLUMN (LEFT) --- */}
         <div className="lg:col-span-2 flex flex-col gap-6">
           
-          {/* News Card: Pass the itemVariants */}
-          <DashboardCard title="News" variants={itemVariants}>
-            <NewsFeed />
-          </DashboardCard>
+          <NewsFeed variants={itemVariants} />
 
           {/* Geo-distribution and Score Range Section */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-6">

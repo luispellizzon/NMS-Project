@@ -55,7 +55,7 @@ describe('Auth Service', () => {
   });
 
   describe('signUpWithEmail', () => {
-    it('should create a user, update their profile, and return the user', async () => {
+    it('should create a user, update their profile, and return the user credential', async () => {
       const mockUser = { uid: 'new-user-123' } as User;
       const mockUserCredential = { user: mockUser } as UserCredential;
 
@@ -66,14 +66,14 @@ describe('Auth Service', () => {
       const password = 'password123';
       const displayName = 'Test User';
 
-      const user = await signUpWithEmail(email, password, displayName);
+      const userCredential = await signUpWithEmail(email, password, displayName);
 
       // Verify user creation was called correctly
       expect(createUserWithEmailAndPasswordMock).toHaveBeenCalledWith(auth, email, password);
       // Verify profile update was called correctly
       expect(updateProfileMock).toHaveBeenCalledWith(mockUser, { displayName });
-      // Verify the correct user object was returned
-      expect(user).toEqual(mockUser);
+      // Verify the correct user credential object was returned
+      expect(userCredential).toEqual(mockUserCredential);
     });
   });
 
