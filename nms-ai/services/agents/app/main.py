@@ -7,10 +7,13 @@ import warnings
 # Suppress Pydantic v2 deprecation warnings from CrewAI
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pydantic._internal._config")
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
-from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
+from pydantic import BaseModeyl
 from datetime import datetime
 from typing import Literal
+import json
+import asyncio
 
 # Firebase Admin SDK
 from firebase_admin import credentials, initialize_app, firestore
@@ -52,7 +55,13 @@ app = FastAPI(
     title="NMS Agents Service",
     description="AI agents for news aggregation and risk assessment using CrewAI"
 )
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # Initialize the crew manager once at startup
 crew_manager = NewsCrewManager()
 logging.info("CrewAI agents initialized successfully.")
@@ -203,6 +212,93 @@ def health_check():
     }
 
 
+@app.websocket("/ws/generate-news")
+async def websocket_generate_news(websocket: WebSocket):
+    """
+    WebSocket endpoint for real-time news generation with progress updates.
+    """
+    await websocket.accept()
+
+    try:
+        # Receive the generation request
+        data = await websocket.receive_text()
+        request_data = json.loads(data)
+
+        audience = request_data.get("audience", "patient")
+        topic = request_data.get("topic", "dementia alzheimer cognitive decline")
+        max_articles = request_data.get("max_articles", 5)
+
+        logging.info(f"WebSocket: Generating articles for {audience} on topic: {topic}")
+
+        # Send initial acknowledgment
+        await websocket.send_json({
+            "type": "started",
+            "message": f"Starting news generation for topic: {topic}"
+        })
+
+        # Determine collection
+        collection_name = "medical_news" if audience == "medical" else "patient_news"
+
+        # Generate articles with progress callbacks
+        async def progress_callback(artifact_data):
+            """Callback to send progress updates via WebSocket"""
+            await websocket.send_json(artifact_data)
+
+        # Run the crew with progress tracking
+        articles = await asyncio.get_event_loop().run_in_executor(
+            None,
+            lambda: crew_manager.generate_news_articles_with_progress(
+                audience=audience,
+                topic=topic,
+                max_articles=max_articles,
+                progress_callback=lambda data: asyncio.run(progress_callback(data))
+            )
+        )
+
+        # Store articles in Firestore
+        batch = db.batch()
+        for article in articles:
+            doc_ref = db.collection(collection_name).document()
+            batch.set(doc_ref, {
+                "topic": article["topic"],
+                "title": article["title"],
+                "sourceUrl": article["sourceUrl"],
+                "publishedDate": SERVER_TIMESTAMP,
+                "readTime": article["readTime"],
+                "agentSummary": article["agentSummary"],
+                "createdAt": SERVER_TIMESTAMP
+            })
+
+        batch.commit()
+
+        # Send completion message
+        await websocket.send_json({
+            "type": "complete",
+            "message": f"Successfully generated {len(articles)} articles",
+            "count": len(articles)
+        })
+
+        logging.info(f"WebSocket: Successfully completed news generation")
+
+    except WebSocketDisconnect:
+        logging.warning("WebSocket client disconnected")
+    except Exception as e:
+        error_message = f"Error in WebSocket news generation: {e}"
+        logging.error(error_message)
+        try:
+            await websocket.send_json({
+                "type": "error",
+                "message": str(e)
+            })
+        except:
+            pass
+    finally:
+        try:
+            await websocket.close()
+        except:
+            pass
+
+
 @app.get("/")
 def root():
     """Root endpoint with service information."""
@@ -211,6 +307,7 @@ def root():
         "version": "1.0.0",
         "endpoints": {
             "generate_news": "/generate-news",
+            "generate_news_ws": "/ws/generate-news",
             "assess_risk": "/assess-risk",
             "health": "/health"
         }
