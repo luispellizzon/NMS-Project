@@ -21,9 +21,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.nms_mobile.R
-import com.example.nms_mobile.data.RecordingState
 import com.example.nms_mobile.ui.components.CustomTopAppBar
-import com.example.nms_mobile.ui.speech.SpeechAssessmentUiState
+import com.example.nms_mobile.ui.feature.speech.SpeechAssessmentUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

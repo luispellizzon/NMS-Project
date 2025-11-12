@@ -1,5 +1,6 @@
 package com.example.nms_mobile.data
 
+import SpeechAssessment
 import android.net.Uri
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -8,7 +9,6 @@ import kotlinx.coroutines.tasks.await
 import java.io.File
 import java.util.UUID
 import kotlin.getValue
-import com.example.nms_mobile.data.SpeechAssessment
 
 class SpeechAssessmentRepository private constructor(
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
@@ -113,7 +113,7 @@ class SpeechAssessmentRepository private constructor(
             aiAnalysis = doc.getString("aiAnalysis"),
             score = doc.getDouble("score"),
             timestamp = doc.getTimestamp("timestamp") ?: com.google.firebase.Timestamp.now(),
-            status = doc.getString("status") ?: "pending"  // ← AÑADIDO
+            status = doc.getString("status") ?: "pending"
         )
     }
 
@@ -125,11 +125,11 @@ class SpeechAssessmentRepository private constructor(
         transcription: String,
         aiAnalysis: String? = null,
         score: Double? = null,
-        status: String = "transcribed"  // ← AÑADIDO
+        status: String = "transcribed"  // ←
     ) {
         val updates = hashMapOf<String, Any>(
             "transcription" to transcription,
-            "status" to status  // ← AÑADIDO
+            "status" to status  // ←
         )
 
         aiAnalysis?.let { updates["aiAnalysis"] = it }

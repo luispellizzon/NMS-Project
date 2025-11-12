@@ -5,6 +5,14 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.nms_mobile.navigation.routes.DashboardRoute
+import com.example.nms_mobile.navigation.routes.LoginRoute
+import com.example.nms_mobile.navigation.routes.PersonalInfoRoute
+import com.example.nms_mobile.navigation.routes.QuestionnaireRoute
+import com.example.nms_mobile.navigation.routes.SignUpRoute
+import com.example.nms_mobile.navigation.routes.SpeechAssessmentRoute
+import com.example.nms_mobile.navigation.routes.SpeechTaskRoute
+import com.example.nms_mobile.navigation.routes.StartRoute
 import com.example.nms_mobile.ui.questionnaire.QuestionnaireIntroScreen
 
 
@@ -99,7 +107,7 @@ fun AppNavigation(
                 },
                 // Open the Speech Assessment screen.
                 onOpenSpeech = {
-                    navController.navigate(Screen.SpeechAssessment.route)
+                    navController.navigate(Screen.SpeechTask.route)
                 },
                 // When the user logs out, go back to the Login screen and clear ALL history.
                 onLoggedOut = {
@@ -144,9 +152,17 @@ fun AppNavigation(
                 // Go back to Dashboard
                 onBack = { navController.popBackStack() },
                 // When completed, return to Dashboard
-                onCompleted = {
-                    navController.popBackStack()
-                }
+                onCompleted = {}
+            )
+        }
+
+        // SPEECH TASK (NEW: Word Recall, Localization, Repeat Action)
+        composable(Screen.SpeechTask.route) {
+            SpeechTaskRoute(
+                // Go back to Dashboard
+                onBack = { navController.popBackStack() },
+                // When all tasks completed, return to Dashboard
+                onCompleted = {}
             )
         }
     }

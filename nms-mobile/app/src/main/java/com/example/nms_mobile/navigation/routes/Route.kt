@@ -1,6 +1,7 @@
-package com.example.nms_mobile.navigation
+package com.example.nms_mobile.navigation.routes
 
 import DashboardViewModel
+import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,7 +23,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.nms_mobile.data.AuthRepository
 import com.example.nms_mobile.data.FirestoreRepository
-import com.example.nms_mobile.ui.dashboard.DashboardScreen
+import com.example.nms_mobile.ui.feature.dashboard.DashboardScreen
+import com.example.nms_mobile.ui.feature.speech.SpeechAssessmentEvent
+import com.example.nms_mobile.ui.feature.speech.SpeechAssessmentViewModel
+import com.example.nms_mobile.ui.feature.speech.SpeechTaskEvent
+import com.example.nms_mobile.ui.feature.speech.SpeechTaskScreen
+import com.example.nms_mobile.ui.feature.speech.SpeechTaskViewModel
 import com.example.nms_mobile.ui.login.LoginScreen
 import com.example.nms_mobile.ui.login.LoginViewModel
 import com.example.nms_mobile.ui.personaldetails.PersonalInfoEvent
@@ -34,8 +40,6 @@ import com.example.nms_mobile.ui.questionnaire.SectionedQuestionnaireViewModel
 import com.example.nms_mobile.ui.signup.SignUpScreen
 import com.example.nms_mobile.ui.signup.SignUpViewModel
 import com.example.nms_mobile.ui.speech.SpeechAssessmentScreen
-import com.example.nms_mobile.ui.speech.SpeechAssessmentEvent
-import com.example.nms_mobile.ui.speech.SpeechAssessmentViewModel
 
 // The starting screen: checks if the user is logged in and if they have a profile.
 @Composable
@@ -258,7 +262,69 @@ fun QuestionnaireRoute(
         onChronic = vm::onChronic
     )
 }
-// Handles the Speech Assessment screen
+//// Handles the Speech Assessment screen
+//@Composable
+//fun SpeechAssessmentRoute(
+//    onBack: () -> Unit,
+//    onCompleted: () -> Unit
+//) {
+//    val context = LocalContext.current
+//    val vm = remember { SpeechAssessmentViewModel() }
+//    val state by vm.uiState.collectAsState()
+//    val lifecycleOwner = LocalLifecycleOwner.current
+//
+//    // Handle events
+//    LaunchedEffect(vm) {
+//        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+//            vm.events.collect { event ->
+//                when (event) {
+//                    is SpeechAssessmentEvent.UploadCompleted -> {
+//                        // Upload completed, navigate back
+//                        onCompleted()
+//                    }
+//                    is SpeechAssessmentEvent.RecordingCompleted -> {
+//                        // Recording stopped, now in review mode (don't navigate yet)
+//                    }
+//                    is SpeechAssessmentEvent.Error -> {
+//                        // Error already shown in UI state
+//                    }
+//                }
+//            }
+//        }
+//    }
+//
+//    // Request audio permissions
+//    val audioPermission = android.Manifest.permission.RECORD_AUDIO
+//    val permissionLauncher = rememberLauncherForActivityResult(
+//        contract = ActivityResultContracts.RequestPermission()
+//    ) { isGranted ->
+//        if (isGranted) {
+//            vm.startRecording(context)
+//        }
+//    }
+//
+//    SpeechAssessmentScreen(
+//        state = state,
+//        onStartRecording = {
+//            // Check permission before recording
+//            if (context.checkSelfPermission(audioPermission) == PackageManager.PERMISSION_GRANTED) {
+//                vm.startRecording(context)
+//            } else {
+//                permissionLauncher.launch(audioPermission)
+//            }
+//        },
+//        onStopRecording = vm::stopRecording,
+//        onPlayRecording = { vm.playRecording(context) },
+//        onPausePlayback = vm::pausePlayback,
+//        onResumePlayback = vm::resumePlayback,
+//        onRestartPlayback = { vm.restartPlayback(context) },
+//        onRepeatRecording = { vm.repeatRecording(context) },
+//        onConfirmRecording = vm::confirmRecording,
+//        onBack = onBack
+//    )
+//}
+
+// Handles the Speech Assessment screen (OLD - Image Description Task)
 @Composable
 fun SpeechAssessmentRoute(
     onBack: () -> Unit,
@@ -290,7 +356,7 @@ fun SpeechAssessmentRoute(
     }
 
     // Request audio permissions
-    val audioPermission = android.Manifest.permission.RECORD_AUDIO
+    val audioPermission = Manifest.permission.RECORD_AUDIO
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -319,6 +385,77 @@ fun SpeechAssessmentRoute(
         onBack = onBack
     )
 }
+// NEW: Handles the Speech Task flow (Word Recall, Localization, Repeat Action)
+@Composable
+fun SpeechTaskRoute(
+    onBack: () -> Unit,
+    onCompleted: () -> Unit
+) {
+    val context = LocalContext.current
+    val vm = remember { SpeechTaskViewModel() }
+    val state by vm.uiState.collectAsState()
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Initialize assessment on first launch
+    LaunchedEffect(Unit) {
+        vm.initializeAssessment()
+    }
+
+    // Handle events
+    LaunchedEffect(vm) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            vm.events.collect { event ->
+                when (event) {
+                    is SpeechTaskEvent.TaskCompleted -> {
+                        // Task completed, stay on screen (VM will navigate to next task)
+                    }
+                    is SpeechTaskEvent.AssessmentCompleted -> {
+                        // All tasks completed, navigate back to dashboard
+                    }
+                    is SpeechTaskEvent.Error -> {
+                        // Error already shown in UI state
+                    }
+                    is SpeechTaskEvent.NavigateToTask -> {
+                        // Task navigation handled by VM, no action needed here
+                    }
+                }
+            }
+        }
+    }
+
+    // Request audio permissions
+    val audioPermission = Manifest.permission.RECORD_AUDIO
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            vm.startRecording(context)
+        }
+    }
+
+    SpeechTaskScreen(
+        state = state,
+        onPlayInstruction = { vm.playInstruction(context) },
+        onStartRecording = {
+            // Check permission before recording
+            if (context.checkSelfPermission(audioPermission) == PackageManager.PERMISSION_GRANTED) {
+                vm.startRecording(context)
+            } else {
+                permissionLauncher.launch(audioPermission)
+            }
+        },
+        onStopRecording = vm::stopRecording,
+        onPlayRecording = { vm.playRecording(context) },
+        onPausePlayback = vm::pausePlayback,
+        onResumePlayback = vm::resumePlayback,
+        onRestartPlayback = { vm.restartPlayback(context) },
+        onRepeatRecording = { vm.repeatRecording(context) },
+        onSubmitTask = { vm.submitTask(context) },
+        onBack = onBack
+    )
+}
+
+
 
 
 

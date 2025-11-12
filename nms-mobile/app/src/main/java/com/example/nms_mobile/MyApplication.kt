@@ -14,7 +14,6 @@ import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderF
 class MyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-
         // Initialize Firebase
         FirebaseApp.initializeApp(this)
 

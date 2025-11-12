@@ -1,4 +1,4 @@
-package com.example.nms_mobile.ui.dashboard
+package com.example.nms_mobile.ui.feature.dashboard
 
 import DashboardUiState
 import androidx.compose.foundation.layout.*

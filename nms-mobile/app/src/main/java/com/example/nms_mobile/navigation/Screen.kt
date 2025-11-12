@@ -14,6 +14,5 @@ sealed class Screen(val route: String) {
     object Questionnaire : Screen("questionnaire")
 
     object SpeechAssessment : Screen("speech_assessment")
-
-
+    object SpeechTask : Screen("speech_task") // NEW: Word Recall, Localization, Repeat Action
 }

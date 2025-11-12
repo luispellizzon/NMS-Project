@@ -1,18 +1,17 @@
-package com.example.nms_mobile.ui.speech
+package com.example.nms_mobile.ui.feature.speech
 
+import RecordingState
+import SpeechAssessment
 import android.content.Context
-import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nms_mobile.data.*
 import com.example.nms_mobile.services.AudioRecorderService
 import com.example.nms_mobile.services.AudioPlayerService
-import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import java.io.File
 import java.util.UUID
 
