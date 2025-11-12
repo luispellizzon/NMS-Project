@@ -129,6 +129,57 @@ export interface AgentArtifact {
 }
 
 /**
+ * Custom error types for better error handling
+ */
+export class NewsGenerationError extends Error {
+  constructor(
+    message: string,
+    public readonly code: 'OVERLOADED' | 'EMPTY_RESPONSE' | 'NETWORK' | 'UNKNOWN',
+    public readonly isRetryable: boolean = false
+  ) {
+    super(message);
+    this.name = 'NewsGenerationError';
+  }
+}
+
+/**
+ * Parse error message to determine error type
+ */
+function parseErrorMessage(message: string): NewsGenerationError {
+  const lowerMessage = message.toLowerCase();
+
+  if (lowerMessage.includes('overloaded') || lowerMessage.includes('503')) {
+    return new NewsGenerationError(
+      'The AI service is currently experiencing high demand. Please try again in a few moments.',
+      'OVERLOADED',
+      true
+    );
+  }
+
+  if (lowerMessage.includes('none or empty') || lowerMessage.includes('invalid response')) {
+    return new NewsGenerationError(
+      'The AI model returned an incomplete response. Please try a different search query or try again later.',
+      'EMPTY_RESPONSE',
+      true
+    );
+  }
+
+  if (lowerMessage.includes('websocket') || lowerMessage.includes('connection')) {
+    return new NewsGenerationError(
+      'Connection to the AI service failed. Please check your internet connection and try again.',
+      'NETWORK',
+      true
+    );
+  }
+
+  return new NewsGenerationError(
+    'An unexpected error occurred while generating the report. Please try again.',
+    'UNKNOWN',
+    false
+  );
+}
+
+/**
  * Generates a new article with real-time progress updates via WebSocket
  */
 export async function generateArticleWithStream(
@@ -180,7 +231,8 @@ export async function generateArticleWithStream(
           } else if (data.type === 'error') {
             console.error("❌ Agent generation error:", data.message);
             ws.close();
-            reject(new Error(data.message));
+            const parsedError = parseErrorMessage(data.message);
+            reject(parsedError);
           }
         } catch (parseError) {
           console.error("Error parsing WebSocket message:", parseError);
@@ -189,7 +241,12 @@ export async function generateArticleWithStream(
 
       ws.onerror = (error) => {
         console.error("WebSocket error:", error);
-        reject(new Error('WebSocket connection failed'));
+        const networkError = new NewsGenerationError(
+          'Connection to the AI service failed. Please check your internet connection and try again.',
+          'NETWORK',
+          true
+        );
+        reject(networkError);
       };
 
       ws.onclose = (event) => {

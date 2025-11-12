@@ -223,11 +223,87 @@ export const getPatientRiskAssessment = async (userId: string): Promise<any | nu
         ...assessmentSnapshot.data(),
       };
     }
-    
+
     console.warn(`No risk assessment found for user ID: ${userId}`);
     return null;
   } catch (error) {
     console.error("Error fetching patient risk assessment:", error);
     return null;
+  }
+};
+
+/**
+ * Gets a patient's basic information by their ID.
+ * @param patientId The patient's UID.
+ * @returns Patient basic info or null if not found.
+ */
+export const getPatientById = async (patientId: string): Promise<any | null> => {
+  try {
+    const patientDocRef = doc(db, 'users', patientId);
+    const patientSnapshot = await getDoc(patientDocRef);
+
+    if (patientSnapshot.exists()) {
+      const data = patientSnapshot.data();
+      return {
+        id: patientSnapshot.id,
+        fullName: data.fullName || 'Unknown',
+        email: data.email || '',
+        dateOfBirth: data.dateOfBirth || '',
+        role: data.role,
+        createdAt: data.createdAt?.toDate() || new Date(),
+      };
+    }
+
+    console.warn(`No patient found with ID: ${patientId}`);
+    return null;
+  } catch (error) {
+    console.error("Error fetching patient by ID:", error);
+    return null;
+  }
+};
+
+/**
+ * Gets a patient's game scores.
+ * @param patientId The patient's UID.
+ * @returns Game scores or null if not found.
+ */
+export const getPatientGameScores = async (patientId: string): Promise<any | null> => {
+  try {
+    const scoresDocRef = doc(db, 'game_scores', patientId);
+    const scoresSnapshot = await getDoc(scoresDocRef);
+
+    if (scoresSnapshot.exists()) {
+      return {
+        id: scoresSnapshot.id,
+        ...scoresSnapshot.data(),
+      };
+    }
+
+    console.warn(`No game scores found for patient ID: ${patientId}`);
+    return null;
+  } catch (error) {
+    console.error("Error fetching patient game scores:", error);
+    return null;
+  }
+};
+
+/**
+ * Gets a patient's test history.
+ * @param patientId The patient's UID.
+ * @returns Array of test history items.
+ */
+export const getPatientTestHistory = async (patientId: string): Promise<any[]> => {
+  try {
+    const historyRef = collection(db, 'test_history');
+    const q = query(historyRef, where('patientId', '==', patientId));
+    const querySnapshot = await getDocs(q);
+
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+  } catch (error) {
+    console.error("Error fetching patient test history:", error);
+    return [];
   }
 };

@@ -208,9 +208,9 @@ describe('PatientsPage Integration Test', () => {
     await waitFor(() => {
       const table = screen.getByTestId('patient-table');
       expect(table.children.length).toBe(1);
+      expect(screen.getByText('Robert Fox')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Robert Fox')).toBeInTheDocument();
     expect(screen.queryByText('Jenny Wilson')).not.toBeInTheDocument();
   });
 

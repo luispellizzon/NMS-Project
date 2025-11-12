@@ -1,13 +1,16 @@
 // src/app/patients/[id]/page.tsx
 'use client';
 
+import { use, useEffect, useState } from 'react';
 import Image from 'next/image';
-import { mockPatientProfile } from '@/lib/mock_data';
 import Breadcrumbs from '@/components/ui/common/Breadcrumbs';
 import ScoreCard from '@/components/ui/patients/ScoreCard';
-import { Download, ArrowLeft } from 'lucide-react';
+import QuestionnaireModal from '@/components/ui/patients/QuestionnaireModal';
+import { Download, ArrowLeft, Loader2 } from 'lucide-react';
 import { motion, Variants } from 'framer-motion';
 import Link from 'next/link';
+import { getPatientById, getPatientRiskAssessment, getPatientGameScores, getPatientTestHistory } from '@/lib/firebase/firestore-service';
+import { PatientProfile, TestHistoryItem } from '@/lib/mock_data';
 
 // Animation variants
 const containerVariants: Variants = {
@@ -27,9 +30,132 @@ const DetailItem = ({ label, value }: { label: string; value: string | number })
   </div>
 );
 
-export default function PatientProfilePage({ params }: { params: { id: string } }) {
-  // In a real app, you would fetch patient data based on params.id
-  const patient = mockPatientProfile;
+// Helper function to calculate age from date of birth
+const calculateAge = (dateOfBirth: string): number => {
+  if (!dateOfBirth) return 0;
+  const today = new Date();
+  const birthDate = new Date(dateOfBirth);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+};
+
+export default function PatientProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  // Unwrap params Promise using React.use()
+  const { id: patientId } = use(params);
+
+  const [patient, setPatient] = useState<PatientProfile | null>(null);
+  const [questionnaireData, setQuestionnaireData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [isQuestionnaireModalOpen, setIsQuestionnaireModalOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchPatientData = async () => {
+      try {
+        setLoading(true);
+        setError('');
+
+        // Fetch patient basic info
+        const patientData = await getPatientById(patientId);
+        if (!patientData) {
+          setError('Patient not found');
+          return;
+        }
+
+        // Fetch risk assessment data
+        const riskAssessment = await getPatientRiskAssessment(patientId);
+
+        // Store questionnaire data from risk assessment
+        setQuestionnaireData(riskAssessment);
+
+        // Fetch game scores (with fallback to defaults)
+        const gameScores = await getPatientGameScores(patientId);
+
+        // Fetch test history
+        const testHistory = await getPatientTestHistory(patientId);
+
+        // Calculate age from date of birth
+        const age = riskAssessment?.age || calculateAge(patientData.dateOfBirth);
+
+        // Combine all data into PatientProfile
+        const patientProfile: PatientProfile = {
+          id: patientData.id,
+          name: patientData.fullName,
+          email: patientData.email,
+          age,
+          gender: riskAssessment?.gender || 'Female',
+          avatarUrl: '/images/Avatar.jpg',
+          riskScore: riskAssessment?.riskScore || 0,
+          riskLevel: riskAssessment?.riskLevel || 'Low',
+          trend: riskAssessment?.trend || 'Stable',
+          assessments: {
+            cognitive: riskAssessment?.assessments?.cognitive || 0,
+            speech: riskAssessment?.assessments?.speech || 0,
+          },
+          lastCheck: riskAssessment?.lastCheck || new Date().toISOString().split('T')[0],
+          nextAppointment: riskAssessment?.nextAppointment || 'Not set',
+          smoker: riskAssessment?.smoker || 'No',
+          lastPlayed: riskAssessment?.lastPlayed || 'Never',
+          gameScores: {
+            speech: gameScores?.speech || 0,
+            cognitive: gameScores?.cognitive || 0,
+            memory: gameScores?.memory || 0,
+            avg: gameScores?.avg || 0,
+          },
+          testHistory: testHistory.map((item: any) => ({
+            id: item.id,
+            date: item.date || '',
+            test: item.test || '',
+            timeTaken: item.timeTaken || '',
+            score: item.score || '',
+            totalPlays: item.totalPlays || 0,
+          })) as TestHistoryItem[],
+        };
+
+        setPatient(patientProfile);
+      } catch (err) {
+        console.error('Error fetching patient data:', err);
+        setError('Failed to load patient data. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPatientData();
+  }, [patientId]);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading patient data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !patient) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4">
+          <p className="text-red-500">{error || 'Patient not found'}</p>
+          <Link
+            href="/patients"
+            className="inline-block px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90"
+          >
+            Back to Patients
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -55,8 +181,11 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
             <Image src={patient.avatarUrl} alt={patient.name} width={100} height={100} className="rounded-full mb-4" />
             <h2 className="text-2xl font-bold">{patient.name}</h2>
             <p className="text-muted-foreground">{patient.email}</p>
-            <button className="mt-4 w-full px-4 py-2 border rounded-lg font-semibold hover:bg-accent transition-colors">
-              View Questionare
+            <button
+              onClick={() => setIsQuestionnaireModalOpen(true)}
+              className="mt-4 w-full px-4 py-2 border rounded-lg font-semibold hover:bg-accent transition-colors"
+            >
+              View Questionnaire
             </button>
           </div>
           <div className="border-l border-border mx-6 hidden md:block"></div>
@@ -125,6 +254,14 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
           </table>
         </div>
       </motion.div>
+
+      {/* Questionnaire Modal */}
+      <QuestionnaireModal
+        isOpen={isQuestionnaireModalOpen}
+        onClose={() => setIsQuestionnaireModalOpen(false)}
+        questionnaireData={questionnaireData}
+        patientName={patient.name}
+      />
     </motion.div>
   );
 }
