@@ -135,6 +135,14 @@ curl http://localhost:8002/health  # Agents service
 }
 ```
 
+**POST `/process-assessment`**
+```json
+{
+  "userId": "userId from users collection",
+  "assessmentId": "assessmentId from users.user_id.speech_assessment.assessmentId"
+}
+```
+
 ### Agents Service (Port 8002)
 
 **POST `/generate-news`**
