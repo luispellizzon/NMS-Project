@@ -1,6 +1,7 @@
 // src/lib/mock-data.ts
 import { Timestamp } from 'firebase/firestore'; // Import Firestore Timestamp
 import { Patient, RiskLevel, Trend } from '@/types/patient';
+import { TestHistoryItem } from '@/types/testHistory';
 
 export const mockPatients: Patient[] = [
   {
@@ -200,15 +201,6 @@ export const avgScoresData = {
   ],
 };
 
-export type TestHistoryItem = {
-  id: string;
-  date: string;
-  test: string;
-  timeTaken: string;
-  score: string;
-  totalPlays: number;
-};
-
 export type PatientProfile = Patient & {
   email: string;
   smoker: 'Yes' | 'No';
@@ -246,9 +238,9 @@ export const mockPatientProfile: PatientProfile = {
     avg: 5,
   },
   testHistory: [
-    { id: 'h1', date: '2025-10-28', test: 'Cognitive Recall', timeTaken: '45 sec', score: '5/5', totalPlays: 3 },
-    { id: 'h2', date: '2025-10-21', test: 'Verbal Fluency', timeTaken: '52 sec', score: '4/5', totalPlays: 2 },
-    { id: 'h3', date: '2025-10-14', test: 'Pattern Recognition', timeTaken: '38 sec', score: '5/5', totalPlays: 4 },
-    { id: 'h4', date: '2025-10-07', test: 'Cognitive Recall', timeTaken: '48 sec', score: '4/5', totalPlays: 3 },
+    { id: 'h1', date: '2025-10-28', test: 'Cognitive Recall', testType: 'memory', timeTaken: '45 sec', score: '5/5', totalPlays: 3 },
+    { id: 'h2', date: '2025-10-21', test: 'Verbal Fluency', testType: 'speech', timeTaken: '52 sec', score: '4/5', totalPlays: 2 },
+    { id: 'h3', date: '2025-10-14', test: 'Pattern Recognition', testType: 'memory', timeTaken: '38 sec', score: '5/5', totalPlays: 4 },
+    { id: 'h4', date: '2025-10-07', test: 'Cognitive Recall', testType: 'memory', timeTaken: '48 sec', score: '4/5', totalPlays: 3 },
   ],
 };

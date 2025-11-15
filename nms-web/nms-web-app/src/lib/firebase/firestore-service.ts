@@ -9,11 +9,13 @@ import {
   query,
   where,
   getDoc,
-  deleteDoc
+  deleteDoc,
+  orderBy
 } from 'firebase/firestore';
 import { db } from './config';
 import { Patient } from '@/types/patient';
 import { Doctor, NewDoctorData, DoctorPatientRelationship } from '@/types/doctor';
+import { SpeechAssessment, MemoryTest, TestHistoryItem } from '@/types/testHistory';
 
 // Define the shape of the data we'll send to Firestore
 // This excludes fields that will be generated automatically
@@ -288,20 +290,157 @@ export const getPatientGameScores = async (patientId: string): Promise<any | nul
 };
 
 /**
- * Gets a patient's test history.
- * @param patientId The patient's UID.
- * @returns Array of test history items.
+ * Helper function to format date from Firestore timestamp string
  */
-export const getPatientTestHistory = async (patientId: string): Promise<any[]> => {
+const formatDate = (dateString: string): string => {
   try {
-    const historyRef = collection(db, 'test_history');
-    const q = query(historyRef, where('patientId', '==', patientId));
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch (error) {
+    return dateString;
+  }
+};
+
+/**
+ * Helper function to format time duration
+ */
+const formatDuration = (seconds: number): string => {
+  if (seconds < 60) {
+    return `${seconds}s`;
+  }
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
+};
+
+/**
+ * Gets a patient's speech assessments from subcollection.
+ * @param patientId The patient's UID.
+ * @returns Array of speech assessments.
+ */
+export const getPatientSpeechAssessments = async (patientId: string): Promise<SpeechAssessment[]> => {
+  try {
+    const speechAssessmentsRef = collection(db, 'users', patientId, 'speech_assessment');
+    const q = query(speechAssessmentsRef, orderBy('completedAt', 'desc'));
     const querySnapshot = await getDocs(q);
 
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        userId: data.userId,
+        aiAnalysis: data.aiAnalysis,
+        completedAt: data.completedAt,
+        startedAt: data.startedAt,
+        isCompleted: data.isCompleted,
+        totalScore: data.totalScore,
+        currentTaskId: data.currentTaskId,
+        content: data.content,
+      } as SpeechAssessment;
+    });
+  } catch (error) {
+    console.error("Error fetching patient speech assessments:", error);
+    return [];
+  }
+};
+
+/**
+ * Gets a patient's memory tests from subcollection.
+ * @param patientId The patient's UID.
+ * @returns Array of memory tests.
+ */
+export const getPatientMemoryTests = async (patientId: string): Promise<MemoryTest[]> => {
+  try {
+    const memoryTestsRef = collection(db, 'users', patientId, 'memory_tests');
+    const q = query(memoryTestsRef, orderBy('timestamp', 'desc'));
+    const querySnapshot = await getDocs(q);
+
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        userId: data.userId,
+        completionTime: data.completionTime,
+        score: data.score,
+        status: data.status,
+        testType: data.testType,
+        timestamp: data.timestamp,
+        totalQuestions: data.totalQuestions,
+      } as MemoryTest;
+    });
+  } catch (error) {
+    console.error("Error fetching patient memory tests:", error);
+    return [];
+  }
+};
+
+/**
+ * Gets a patient's complete test history (speech assessments + memory tests).
+ * @param patientId The patient's UID.
+ * @returns Array of unified test history items.
+ */
+export const getPatientTestHistory = async (patientId: string): Promise<TestHistoryItem[]> => {
+  try {
+    // Fetch both speech assessments and memory tests in parallel
+    const [speechAssessments, memoryTests] = await Promise.all([
+      getPatientSpeechAssessments(patientId),
+      getPatientMemoryTests(patientId),
+    ]);
+
+    // Convert speech assessments to unified format
+    const speechHistory: TestHistoryItem[] = speechAssessments
+      .filter(assessment => assessment.isCompleted)
+      .map(assessment => {
+        // Calculate total duration from all tasks
+        const totalDuration = Object.values(assessment.content).reduce(
+          (sum, task) => sum + (task.result?.duration || 0),
+          0
+        );
+        const durationInSeconds = Math.round(totalDuration / 1000);
+
+        // Calculate max score from all tasks
+        const maxScore = Object.values(assessment.content).reduce(
+          (sum, task) => sum + (task.maxScore || 0),
+          0
+        );
+
+        return {
+          id: assessment.id,
+          date: formatDate(assessment.completedAt),
+          test: 'Speech Assessment',
+          testType: 'speech' as const,
+          timeTaken: formatDuration(durationInSeconds),
+          score: `${assessment.totalScore}/${maxScore}`,
+          rawData: assessment,
+        };
+      });
+
+    // Convert memory tests to unified format
+    const memoryHistory: TestHistoryItem[] = memoryTests
+      .filter(test => test.status === 'completed')
+      .map(test => ({
+        id: test.id,
+        date: formatDate(test.timestamp),
+        test: test.testType === 'memory_mcq' ? 'Memory Test (MCQ)' : 'Memory Test',
+        testType: 'memory' as const,
+        timeTaken: formatDuration(test.completionTime),
+        score: `${test.score}/${test.totalQuestions}`,
+        rawData: test,
+      }));
+
+    // Combine and sort by date (most recent first)
+    const allHistory = [...speechHistory, ...memoryHistory];
+    allHistory.sort((a, b) => {
+      const dateA = a.testType === 'speech'
+        ? new Date((a.rawData as SpeechAssessment).completedAt)
+        : new Date((a.rawData as MemoryTest).timestamp);
+      const dateB = b.testType === 'speech'
+        ? new Date((b.rawData as SpeechAssessment).completedAt)
+        : new Date((b.rawData as MemoryTest).timestamp);
+      return dateB.getTime() - dateA.getTime();
+    });
+
+    return allHistory;
   } catch (error) {
     console.error("Error fetching patient test history:", error);
     return [];

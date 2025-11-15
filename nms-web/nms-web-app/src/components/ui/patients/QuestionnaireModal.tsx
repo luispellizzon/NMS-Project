@@ -73,7 +73,7 @@ export default function QuestionnaireModal({
         </div>
 
         {/* Questionnaire Details */}
-        <div className="w-full text-left max-h-[60vh] overflow-y-auto pr-2 
+        <div className="w-full text-left max-h-[60vh] overflow-y-auto pr-6 ml-4
                         [&::-webkit-scrollbar]:w-2
                         [&::-webkit-scrollbar-track]:rounded-full
                         [&::-webkit-scrollbar-track]:bg-gray-100

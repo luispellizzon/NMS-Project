@@ -6,11 +6,16 @@ import Image from 'next/image';
 import Breadcrumbs from '@/components/ui/common/Breadcrumbs';
 import ScoreCard from '@/components/ui/patients/ScoreCard';
 import QuestionnaireModal from '@/components/ui/patients/QuestionnaireModal';
-import { Download, ArrowLeft, Loader2 } from 'lucide-react';
+import TestHistory from '@/components/ui/patients/TestHistory';
+import Tooltip from '@/components/ui/common/Tooltip';
+import { Loader2, Download } from 'lucide-react';
 import { motion, Variants } from 'framer-motion';
 import Link from 'next/link';
+import { pdf } from '@react-pdf/renderer';
+import { PatientReportPDF } from '@/components/ui/patients/PatientReportPDF';
 import { getPatientById, getPatientRiskAssessment, getPatientGameScores, getPatientTestHistory } from '@/lib/firebase/firestore-service';
-import { PatientProfile, TestHistoryItem } from '@/lib/mock_data';
+import { PatientProfile } from '@/lib/mock_data';
+import { TestHistoryItem } from '@/types/testHistory';
 
 // Animation variants
 const containerVariants: Variants = {
@@ -52,6 +57,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isQuestionnaireModalOpen, setIsQuestionnaireModalOpen] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     const fetchPatientData = async () => {
@@ -106,14 +112,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
             memory: gameScores?.memory || 0,
             avg: gameScores?.avg || 0,
           },
-          testHistory: testHistory.map((item: any) => ({
-            id: item.id,
-            date: item.date || '',
-            test: item.test || '',
-            timeTaken: item.timeTaken || '',
-            score: item.score || '',
-            totalPlays: item.totalPlays || 0,
-          })) as TestHistoryItem[],
+          testHistory: testHistory,
         };
 
         setPatient(patientProfile);
@@ -127,6 +126,38 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
 
     fetchPatientData();
   }, [patientId]);
+
+  // Handle PDF download
+  const handleDownloadReport = async () => {
+    if (!patient) return;
+
+    try {
+      setIsDownloading(true);
+
+      // Generate PDF document
+      const doc = <PatientReportPDF patient={patient} questionnaireData={questionnaireData} />;
+      const blob = await pdf(doc).toBlob();
+
+      // Create download link
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${patient.name.replace(/\s+/g, '_')}_Medical_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+      alert('Failed to generate PDF report. Please try again.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   // Loading state
   if (loading) {
@@ -188,6 +219,21 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
               View Questionnaire
             </button>
           </div>
+          <div className="hidden md:flex items-start pt-2">
+            <Tooltip content="Download Patient Report">
+              <button
+                onClick={handleDownloadReport}
+                disabled={isDownloading}
+                className="p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDownloading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Download className="w-5 h-5" />
+                )}
+              </button>
+            </Tooltip>
+          </div>
           <div className="border-l border-border mx-6 hidden md:block"></div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-8 gap-y-6 flex-1">
             <DetailItem label="Sex" value={patient.gender} />
@@ -220,39 +266,9 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
       <motion.div variants={itemVariants}>
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold">Test History</h3>
-          <p className="text-sm text-muted-foreground">Total Games {patient.testHistory.length}</p>
+          <p className="text-sm text-muted-foreground">Total Tests: {patient.testHistory.length}</p>
         </div>
-        <div className="bg-card rounded-lg border shadow-sm overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-muted/50">
-              <tr>
-                {['Date', 'Test', 'Time Taken', 'Score', 'Total Plays', 'Download'].map(h => (
-                  <th key={h} className="p-4 font-semibold text-muted-foreground">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {patient.testHistory.map(item => (
-                <motion.tr 
-                  key={item.id} 
-                  className="border-b last:border-b-0"
-                  whileHover={{ backgroundColor: 'var(--color-accent)' }}
-                >
-                  <td className="p-4">{item.date}</td>
-                  <td className="p-4 font-medium text-foreground">{item.test}</td>
-                  <td className="p-4">{item.timeTaken}</td>
-                  <td className="p-4">{item.score}</td>
-                  <td className="p-4">{item.totalPlays}</td>
-                  <td className="p-4">
-                    <button className="p-2 hover:bg-accent rounded-md text-muted-foreground">
-                      <Download className="w-5 h-5" />
-                    </button>
-                  </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <TestHistory testHistory={patient.testHistory} />
       </motion.div>
 
       {/* Questionnaire Modal */}

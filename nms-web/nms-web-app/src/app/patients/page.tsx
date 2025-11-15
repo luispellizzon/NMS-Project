@@ -14,9 +14,12 @@ import { motion, Variants } from 'framer-motion';
 import AddPatientModal from '@/components/ui/patients/AddPatientModal';
 import AssignPatientModal from '@/components/ui/patients/AssignPatientModal';
 import { useAuth } from '@/contexts/AuthContext';
-import { getDoctorProfile, getDoctorPatients, removePatientFromDoctor, getPatientRiskAssessment } from '@/lib/firebase/firestore-service';
+import { getDoctorProfile, getDoctorPatients, removePatientFromDoctor, getPatientRiskAssessment, getPatientById, getPatientGameScores, getPatientTestHistory } from '@/lib/firebase/firestore-service';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import { pdf } from '@react-pdf/renderer';
+import { PatientReportPDF } from '@/components/ui/patients/PatientReportPDF';
+import { PatientProfile } from '@/lib/mock_data';
 
 const ITEMS_PER_PAGE = 5;
 
@@ -61,6 +64,7 @@ export default function PatientsPage() {
   const [dataLoading, setDataLoading] = useState(true);
   const [error, setError] = useState('');
   const [doctorId, setDoctorId] = useState<string>('');
+  const [assignedPatientIds, setAssignedPatientIds] = useState<string[]>([]); // State for assigned IDs
 
   // --- STATE FOR ACTIONS ---
   const [patientToView, setPatientToView] = useState<Patient | null>(null);
@@ -99,6 +103,7 @@ export default function PatientsPage() {
 
       // Fetch doctor's patients
       const patientIds = await getDoctorPatients(user.uid);
+      setAssignedPatientIds(patientIds); // Store the assigned patient IDs
 
       // Fetch patient details from users collection and risk assessments
       const patientDetails: Patient[] = [];
@@ -116,11 +121,9 @@ export default function PatientsPage() {
           patientDetails.push({
             id: patientId,
             name: patientData.fullName || 'Unknown',
-            // Get age and gender from risk assessment
             age: riskAssessment?.age || 0,
             gender: riskAssessment?.gender || 'Female',
             avatarUrl: '/images/Avatar.jpg',
-            // Use risk assessment data if available, otherwise use defaults
             riskScore: riskAssessment?.riskScore || 0,
             riskLevel: riskAssessment?.riskLevel || 'Low',
             trend: riskAssessment?.trend || 'Stable',
@@ -168,8 +171,70 @@ export default function PatientsPage() {
   }, [filteredPatients, currentPage]);
 
   // --- ACTION HANDLERS ---
-  const handleGenerateReport = (patient: Patient) => {
-    alert(`Generating report for ${patient.name}...`);
+  const handleGenerateReport = async (patient: Patient) => {
+    try {
+      // Fetch complete patient data
+      const patientData = await getPatientById(patient.id);
+      if (!patientData) {
+        alert('Patient data not found');
+        return;
+      }
+
+      // Fetch risk assessment data
+      const riskAssessment = await getPatientRiskAssessment(patient.id);
+
+      // Fetch game scores
+      const gameScores = await getPatientGameScores(patient.id);
+
+      // Fetch test history
+      const testHistory = await getPatientTestHistory(patient.id);
+
+      // Create complete patient profile
+      const patientProfile: PatientProfile = {
+        id: patient.id,
+        name: patient.name,
+        email: patientData.email,
+        age: patient.age,
+        gender: patient.gender,
+        avatarUrl: patient.avatarUrl,
+        riskScore: patient.riskScore,
+        riskLevel: patient.riskLevel,
+        trend: patient.trend,
+        assessments: patient.assessments,
+        lastCheck: patient.lastCheck,
+        nextAppointment: patient.nextAppointment,
+        smoker: riskAssessment?.smoker || 'No',
+        lastPlayed: riskAssessment?.lastPlayed || 'Never',
+        gameScores: {
+          speech: gameScores?.speech || 0,
+          cognitive: gameScores?.cognitive || 0,
+          memory: gameScores?.memory || 0,
+          avg: gameScores?.avg || 0,
+        },
+        testHistory: testHistory,
+      };
+
+      // Generate PDF
+      const doc = <PatientReportPDF patient={patientProfile} questionnaireData={riskAssessment} />;
+      const blob = await pdf(doc).toBlob();
+
+      // Create download link
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${patient.name.replace(/\s+/g, '_')}_Medical_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+      alert('Failed to generate PDF report. Please try again.');
+    }
   };
 
   const handleContactPatient = (patient: Patient) => {
@@ -200,8 +265,10 @@ export default function PatientsPage() {
   };
 
   // --- Handler for patient assignment ---
-  const handlePatientAssigned = () => {
-    // Reload patient data to refresh the list
+  const handlePatientAssigned = (newlyAssignedPatientId: string) => {
+    // Optimistically update the list of assigned IDs to instantly disable the button in the modal
+    setAssignedPatientIds(prevIds => [...prevIds, newlyAssignedPatientId]);
+    // Reload all patient data to get the full new patient object and refresh the main table
     loadDoctorPatients();
   };
 
@@ -317,18 +384,18 @@ export default function PatientsPage() {
       </motion.div>
 
       {/* --- MODALS --- */}
-      {/* --- Render the AddPatientModal --- */}
       <AddPatientModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onPatientAdded={handlePatientAdded}
       />
 
-      {/* --- Render the AssignPatientModal --- */}
+      {/* Pass the assignedPatientIds to the modal */}
       <AssignPatientModal
         isOpen={isAssignModalOpen}
         onClose={() => setIsAssignModalOpen(false)}
         doctorId={doctorId}
+        assignedPatientIds={assignedPatientIds} 
         onPatientAssigned={handlePatientAssigned}
       />
 

@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@playwright/test": "^1.55.1",
+    "@react-pdf/renderer": "^4.3.1",
     "firebase": "^12.3.0",
     "framer-motion": "^12.23.24",
     "lucide-react": "^0.544.0",
