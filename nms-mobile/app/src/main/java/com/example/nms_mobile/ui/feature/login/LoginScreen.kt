@@ -1,5 +1,8 @@
-package com.example.nms_mobile.ui.login
+package com.example.nms_mobile.ui.feature.login
 
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -17,6 +20,7 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -33,6 +37,9 @@ import com.example.nms_mobile.ui.TealPrimary
 import com.example.nms_mobile.ui.TextHint
 import com.example.nms_mobile.ui.TextSecondary
 import com.example.nms_mobile.ui.White
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 
 
 @Composable
@@ -43,14 +50,77 @@ fun LoginScreen(
     onLoginClick: () -> Unit,
     onSignUpClick: () -> Unit,
     onForgotPasswordClick: () -> Unit = {},
-    onGoogleClick: () -> Unit = {},
-    onFacebookClick: () -> Unit = {},
-    onAppleClick: () -> Unit = {}
+    onGoogleLogin: (String) -> Unit,
+    onFacebookLogin: (String) -> Unit,
+    onConfirmProviderLink: (String?, String?, String?) -> Unit = { _, _, _ -> }
 ) {
+    val context = LocalContext.current
+    val activity = context as? Activity
+
     // Controls whether the password text is visible or hidden.
     var pwVisible by remember { mutableStateOf(false) }
     // Tool to move focus between text fields.
     val focus = LocalFocusManager.current
+
+    // ==================== GOOGLE SIGN-IN ====================
+    val googleSignInClient = remember {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(context.getString(R.string.default_web_client_id)) // From google-services.json
+            .requestEmail()
+            .build()
+        GoogleSignIn.getClient(context, gso)
+    }
+
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            try {
+                val account = task.getResult(ApiException::class.java)
+                val idToken = account?.idToken
+                if (idToken != null) {
+                    onGoogleLogin(idToken)
+                }
+            } catch (e: ApiException) {
+                // Handle error - you might want to show a toast or update UI state
+                android.util.Log.e("GoogleSignIn", "Sign in failed: ${e.message}")
+            }
+        }
+    }
+
+
+
+    // ==================== PROVIDER LINKING DIALOG ====================
+    if (state.requiresLinking) {
+        AlertDialog(
+            onDismissRequest = { /* Don't allow dismissing without choice */ },
+            title = { Text("Link Account") },
+            text = {
+                Text(
+                    "An account already exists with this email using a different sign-in method. " +
+                            "Would you like to link your ${state.pendingCredentialProvider} account?"
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        // Re-trigger the social sign-in to get fresh credentials for linking
+                        when (state.pendingCredentialProvider) {
+                            "google" -> googleSignInLauncher.launch(googleSignInClient.signInIntent)
+                        }
+                    }
+                ) {
+                    Text("Link Account")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { /* Handle cancellation */ }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     // Main layout is scrollable to prevent overlapping on small screens.
     Column(
@@ -116,7 +186,7 @@ fun LoginScreen(
                 focusedTextColor = TealPrimary
             ),
 
-        )
+            )
 
         Spacer(Modifier.height(12.dp))
 
@@ -223,9 +293,11 @@ fun LoginScreen(
 
         // --- Social Buttons ---
         SocialLoginButtons(
-            onGoogleClick = onGoogleClick,
-            onFacebookClick = onFacebookClick,
-            onAppleClick = onAppleClick,
+            onGoogleClick = {
+                googleSignInLauncher.launch(googleSignInClient.signInIntent)
+            },
+            onFacebookClick = {
+            },
         )
 
         // --- Terms and Privacy Notice ---

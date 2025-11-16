@@ -27,6 +27,8 @@ import com.example.nms_mobile.data.AuthRepository
 import com.example.nms_mobile.data.FirestoreRepository
 import com.example.nms_mobile.data.SpeechAssessmentsTasks
 import com.example.nms_mobile.ui.feature.dashboard.DashboardScreen
+import com.example.nms_mobile.ui.feature.login.LoginScreen
+import com.example.nms_mobile.ui.feature.login.LoginViewModel
 import com.example.nms_mobile.ui.feature.memory.MemoryTestScreen
 import com.example.nms_mobile.ui.feature.memory.MemoryTestViewModel
 import com.example.nms_mobile.ui.feature.speech.SpeechAssessmentEvent
@@ -35,16 +37,14 @@ import com.example.nms_mobile.ui.feature.speech.SpeechTaskEvent
 import com.example.nms_mobile.ui.feature.speech.SpeechTaskScreen
 import com.example.nms_mobile.ui.feature.speech.SpeechTaskViewModel
 import com.example.nms_mobile.ui.feature.speech.results.SpeechResultsScreen
-import com.example.nms_mobile.ui.login.LoginScreen
-import com.example.nms_mobile.ui.login.LoginViewModel
 import com.example.nms_mobile.ui.feature.personal_details.PersonalInfoEvent
 import com.example.nms_mobile.ui.feature.personal_details.PersonalInfoScreen
 import com.example.nms_mobile.ui.feature.personal_details.PersonalInfoViewModel
+import com.example.nms_mobile.ui.feature.signup.SignUpViewModel
 import com.example.nms_mobile.ui.questionnaire.SectionedQuestionnaireEvent
 import com.example.nms_mobile.ui.questionnaire.SectionedQuestionnaireScreen
 import com.example.nms_mobile.ui.questionnaire.SectionedQuestionnaireViewModel
 import com.example.nms_mobile.ui.signup.SignUpScreen
-import com.example.nms_mobile.ui.signup.SignUpViewModel
 import com.example.nms_mobile.ui.speech.SpeechAssessmentScreen
 
 // The starting screen: checks if the user is logged in and if they have a profile.
@@ -94,30 +94,29 @@ fun LoginRoute(
     onNavigateAfterLogin: (hasProfile: Boolean) -> Unit,
     onNavigateToSignUp: () -> Unit
 ) {
-    // Create and remember the ViewModel (the logic).
     val viewModel = remember { LoginViewModel() }
-    // Watch the current status of the ViewModel.
     val state by viewModel.uiState.collectAsState()
 
     // When the login attempt succeeds, navigate away.
     LaunchedEffect(state.success) {
         if (state.success) {
-            // We pass 'false' to indicate we still need to check the profile status later.
             onNavigateAfterLogin(false)
         }
     }
 
-    // Connect the UI screen to the ViewModel's data and functions.
     LoginScreen(
         state = state,
         onEmailChange = viewModel::onEmailChange,
         onPasswordChange = viewModel::onPasswordChange,
         onLoginClick = viewModel::login,
-        onSignUpClick = onNavigateToSignUp
+        onSignUpClick = onNavigateToSignUp,
+        onGoogleLogin = viewModel::loginWithGoogle,
+        onFacebookLogin = viewModel::loginWithFacebook,
+        onConfirmProviderLink = viewModel::confirmProviderLink
     )
 }
 
-// Handles the sign-up logic and navigation.
+// Replace the existing SignUpRoute with this:
 @Composable
 fun SignUpRoute(
     onNavigateToPersonalInfo: () -> Unit,
@@ -132,7 +131,6 @@ fun SignUpRoute(
         if (state.success) onNavigateToPersonalInfo()
     }
 
-    // Connect the UI screen to the ViewModel.
     SignUpScreen(
         state = state,
         onEmailChange = vm::onEmailChange,
@@ -140,12 +138,16 @@ fun SignUpRoute(
         onConfirmPasswordChange = vm::onConfirmPasswordChange,
         onSignUpClick = vm::signUp,
         onLoginClick = onLoginInstead,
-        onGoogleClick = { /* TODO: Google sign-in */ },
-        onFacebookClick = { /* TODO: Facebook sign-in */ },
-        onAppleClick = { /* TODO: Apple sign-in */ }
+        onGoogleSignUp = { idToken ->
+            // For sign-up, we use the same login methods since
+            // social providers automatically create accounts if they don't exist
+            vm.signUpWithGoogle(idToken)
+        },
+        onFacebookSignUp = { accessToken ->
+            vm.signUpWithFacebook(accessToken)
+        },
     )
 }
-
 // Handles collecting and saving user's initial personal details.
 @Composable
 fun PersonalInfoRoute(onFinished: () -> Unit) {
