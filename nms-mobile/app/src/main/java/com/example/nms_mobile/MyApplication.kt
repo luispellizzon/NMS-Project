@@ -1,6 +1,7 @@
 package com.example.nms_mobile
 
 import android.app.Application
+import com.example.nms_mobile.services.TTSManager
 import com.google.firebase.FirebaseApp
 import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
@@ -27,5 +28,9 @@ class MyApplication : Application() {
         } catch (e: Exception) {
             android.util.Log.e("MyApplication", "Error initializing Firebase/AppCheck", e)
         }
+    }
+    override fun onTerminate() {
+        TTSManager.getInstance(this).shutdown()
+        super.onTerminate()
     }
 }

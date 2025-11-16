@@ -7,10 +7,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.nms_mobile.navigation.routes.DashboardRoute
 import com.example.nms_mobile.navigation.routes.LoginRoute
+import com.example.nms_mobile.navigation.routes.MemoryTestRoute
 import com.example.nms_mobile.navigation.routes.PersonalInfoRoute
 import com.example.nms_mobile.navigation.routes.QuestionnaireRoute
 import com.example.nms_mobile.navigation.routes.SignUpRoute
 import com.example.nms_mobile.navigation.routes.SpeechAssessmentRoute
+import com.example.nms_mobile.navigation.routes.SpeechResultsRoute
 import com.example.nms_mobile.navigation.routes.SpeechTaskRoute
 import com.example.nms_mobile.navigation.routes.StartRoute
 import com.example.nms_mobile.ui.questionnaire.QuestionnaireIntroScreen
@@ -109,6 +111,15 @@ fun AppNavigation(
                 onOpenSpeech = {
                     navController.navigate(Screen.SpeechTask.route)
                 },
+                // Open the Speech Results screen (when clicked and analysis is complete)
+                onOpenSpeechResults = {
+                    navController.navigate(Screen.SpeechResults.route)
+                },
+
+                // Open the Speech Assessment screen.
+                onOpenMemory = {
+                    navController.navigate(Screen.MemoryTest.route)
+                },
                 // When the user logs out, go back to the Login screen and clear ALL history.
                 onLoggedOut = {
                     navController.navigate(Screen.Login.route) {
@@ -125,7 +136,8 @@ fun AppNavigation(
                 // Start the actual questionnaire screens.
                 onStart = {
                     navController.navigate(Screen.Questionnaire.route)
-                }
+                },
+                onBack = { navController.popBackStack() }
             )
         }
 
@@ -162,7 +174,35 @@ fun AppNavigation(
                 // Go back to Dashboard
                 onBack = { navController.popBackStack() },
                 // When all tasks completed, return to Dashboard
-                onCompleted = {}
+                onCompleted = {
+                    navController.navigate(Screen.Dashboard.route) {
+                        popUpTo(Screen.SpeechTask.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+
+        // SPEECH RESULTS (NEW: Show detailed results after analysis)
+        composable(Screen.SpeechResults.route) {
+            SpeechResultsRoute(
+                // Go back to Dashboard
+                onBack = { navController.popBackStack() },
+                // Redo test - navigate to Speech Task
+                onRedoTest = {
+                    navController.navigate(Screen.SpeechTask.route) {
+                        popUpTo(Screen.Dashboard.route)
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+
+        composable(Screen.MemoryTest.route){
+            MemoryTestRoute(
+                onBack = { navController.popBackStack() },
+                onCompleted = {
+                    navController.popBackStack() }
             )
         }
     }

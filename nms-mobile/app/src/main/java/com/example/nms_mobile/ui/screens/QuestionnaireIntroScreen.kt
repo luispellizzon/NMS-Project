@@ -2,6 +2,7 @@
 package com.example.nms_mobile.ui.questionnaire
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -9,19 +10,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.nms_mobile.ui.BackgroundGray
+import com.example.nms_mobile.ui.TealDark
 import com.example.nms_mobile.ui.TealPrimary
 import com.example.nms_mobile.ui.White
 
 @Composable
 fun QuestionnaireIntroScreen(
     onStart: () -> Unit,
+    onBack: () -> Unit,
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 24.dp, vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceBetween
+        verticalArrangement = Arrangement.SpaceEvenly
     ) {
         Spacer(Modifier.height(24.dp))
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -37,13 +41,25 @@ fun QuestionnaireIntroScreen(
                 textAlign = TextAlign.Center
             )
         }
-        Button(
-            onClick = onStart,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = TealPrimary, contentColor = White),
-            shape = MaterialTheme.shapes.large
-        ) { Text("Start Now!") }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Button(
+                onClick = onStart,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = TealPrimary, contentColor = White),
+                shape = MaterialTheme.shapes.large
+            ) { Text("Start Now!") }
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = onBack,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(contentColor = TealDark , containerColor = BackgroundGray),
+                shape = MaterialTheme.shapes.large
+            ) { Text("Back to Dashboard") }
+        }
+
     }
 }

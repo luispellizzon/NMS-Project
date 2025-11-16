@@ -8,8 +8,11 @@ import android.util.Log
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.delay
 
 class SpeechAssessmentsTasks private constructor(
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
@@ -21,6 +24,7 @@ class SpeechAssessmentsTasks private constructor(
         private const val TAG = "SpeechAssessmentTasks"
         private const val COLLECTION_USERS = "users"
         private const val SUBCOLLECTION_SPEECH = "speech_assessment"
+        private const val POLL_INTERVAL_MS = 30000L // 30 seconds
     }
 
     /**
@@ -62,7 +66,8 @@ class SpeechAssessmentsTasks private constructor(
                 currentTaskId = SpeechTaskType.WORD_RECALL_INITIAL.taskId,
                 isCompleted = false,
                 totalScore = 0,
-                content = contentMap
+                content = contentMap,
+                aiAnalysis = null  // Initially null
             )
 
             saveAssessment(newAssessment)
@@ -110,8 +115,7 @@ class SpeechAssessmentsTasks private constructor(
                 .document(assessmentId)
 
             val updates = mutableMapOf<String, Any>(
-                "content.${taskType.taskId}.result" to taskResult,
-                "totalScore" to FieldValue.increment(taskResult.userScore.toLong())
+                "content.${taskType.taskId}.result" to taskResult
             )
 
             if (nextTaskId != null) {
@@ -128,7 +132,7 @@ class SpeechAssessmentsTasks private constructor(
     }
 
     /**
-     * Marks assessment as completed
+     * Marks assessment as completed and sets aiAnalysis to "processing"
      */
     suspend fun completeAssessment(assessmentId: String) {
         val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
@@ -140,12 +144,13 @@ class SpeechAssessmentsTasks private constructor(
             .update(
                 mapOf(
                     "isCompleted" to true,
-                    "completedAt" to Timestamp.now()
+                    "completedAt" to Timestamp.now(),
+                    "aiAnalysis" to "processing"  // Set to processing when completed
                 )
             )
             .await()
 
-        Log.d(TAG, "Assessment completed: $assessmentId")
+        Log.d(TAG, "Assessment completed: $assessmentId, AI analysis status: processing")
     }
 
     /**
@@ -209,6 +214,113 @@ class SpeechAssessmentsTasks private constructor(
         } catch (e: Exception) {
             Log.e(TAG, "Error fetching completed assessments", e)
             emptyList()
+        }
+    }
+
+    /**
+     * Gets the most recent completed assessment (to check analysis status)
+     */
+    suspend fun getMostRecentCompletedAssessment(): SpeechAssessmentDocument? {
+        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+
+        return try {
+            val snapshot = firestore.collection(COLLECTION_USERS)
+                .document(userId)
+                .collection(SUBCOLLECTION_SPEECH)
+                .whereEqualTo("isCompleted", true)
+                .orderBy("completedAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .limit(1)
+                .get()
+                .await()
+
+            snapshot.documents.firstOrNull()?.toObject(SpeechAssessmentDocument::class.java)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching most recent completed assessment", e)
+            null
+        }
+    }
+
+    /**
+     * Checks if the AI analysis is complete for a given assessment
+     */
+    suspend fun checkAnalysisStatus(assessmentId: String): String? {
+        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+
+        return try {
+            val snapshot = firestore.collection(COLLECTION_USERS)
+                .document(userId)
+                .collection(SUBCOLLECTION_SPEECH)
+                .document(assessmentId)
+                .get()
+                .await()
+
+            val assessment = snapshot.toObject(SpeechAssessmentDocument::class.java)
+            assessment?.aiAnalysis
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking analysis status", e)
+            null
+        }
+    }
+
+    /**
+     * Polls for analysis completion every 30 seconds
+     * Returns a Flow that emits the current aiAnalysis status
+     */
+    fun pollForAnalysisCompletion(assessmentId: String): Flow<String?> = flow {
+        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+
+        while (true) {
+            try {
+                val status = checkAnalysisStatus(assessmentId)
+                emit(status)
+
+                // Stop polling if analysis is completed or if there's an error
+                if (status == "processed" || status == "error") {
+                    Log.d(TAG, "Analysis polling stopped. Status: $status")
+                    break
+                }
+
+                delay(POLL_INTERVAL_MS)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error during polling", e)
+                emit(null)
+                break
+            }
+        }
+    }
+
+    /**
+     * Creates a real-time listener for analysis status changes
+     * More efficient than polling if you want immediate updates
+     */
+    fun observeAnalysisStatus(
+        assessmentId: String,
+        onStatusChange: (String?) -> Unit
+    ): ListenerRegistration? {
+        val userId = auth.currentUser?.uid ?: return null
+
+        return try {
+            firestore.collection(COLLECTION_USERS)
+                .document(userId)
+                .collection(SUBCOLLECTION_SPEECH)
+                .document(assessmentId)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        Log.e(TAG, "Error listening to analysis status", error)
+                        onStatusChange(null)
+                        return@addSnapshotListener
+                    }
+
+                    if (snapshot != null && snapshot.exists()) {
+                        val assessment = snapshot.toObject(SpeechAssessmentDocument::class.java)
+                        val status = assessment?.aiAnalysis
+                        Log.d(TAG, "Analysis status changed: $status")
+                        onStatusChange(status)
+                    }
+                }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error setting up listener", e)
+            null
         }
     }
 }

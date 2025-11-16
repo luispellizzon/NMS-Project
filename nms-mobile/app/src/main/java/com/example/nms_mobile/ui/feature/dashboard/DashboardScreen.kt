@@ -1,10 +1,15 @@
 package com.example.nms_mobile.ui.feature.dashboard
 
 import DashboardUiState
+import SpeechAnalysisStatus
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -13,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.nms_mobile.ui.TealPrimary
 import com.example.nms_mobile.ui.components.NmsTopAppBar
 
@@ -95,13 +101,16 @@ fun DashboardScreen(
                     isCompleted = state.isLifestyleQuestionaryCompleted
                 )
 
-                // Speech Tile (Default color is gray, meaning 'Pending')
-                TestTile(
-                    title = "Speech",
+                // Speech Tile with dynamic status
+                SpeechTestTile(
                     onClick = onOpenSpeech,
                     modifier = Modifier
                         .weight(1f)
-                        .height(180.dp)
+                        .height(180.dp),
+                    analysisStatus = state.speechAnalysisStatus,
+                    isCompleted = state.isSpeechAssessmentCompleted,
+                    userScore = state.speechUserScore,
+                    totalScore = state.speechTotalScore
                 )
             }
 
@@ -178,6 +187,103 @@ private fun TestTile(
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                 color = Color.White
             )
+        }
+    }
+}
+
+// Special Speech Test Tile with status indicator and score display
+@Composable
+private fun SpeechTestTile(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    analysisStatus: SpeechAnalysisStatus,
+    isCompleted: Boolean,
+    userScore: Int?,
+    totalScore: Int?
+) {
+    // Determine card appearance based on status
+    val cardColor = when (analysisStatus) {
+        SpeechAnalysisStatus.NOT_STARTED -> Color(0xFF9E9E9E) // Gray
+        SpeechAnalysisStatus.PROCESSING -> Color(0xFFFF9800) // Orange
+        SpeechAnalysisStatus.COMPLETED -> Color(0xFF4CAF50) // Green
+        SpeechAnalysisStatus.ERROR -> Color(0xFFF44336) // Red
+    }
+
+    val displayText = when (analysisStatus) {
+        SpeechAnalysisStatus.NOT_STARTED -> "Speech"
+        SpeechAnalysisStatus.PROCESSING -> "Analyzing..."
+        SpeechAnalysisStatus.COMPLETED -> "View Results"
+        SpeechAnalysisStatus.ERROR -> "Error"
+    }
+
+    val icon = when (analysisStatus) {
+        SpeechAnalysisStatus.PROCESSING -> Icons.Default.AccessTime
+        SpeechAnalysisStatus.COMPLETED -> Icons.Default.CheckCircle
+        SpeechAnalysisStatus.ERROR -> Icons.Default.Error
+        else -> null
+    }
+
+    // Disable click when processing
+    val clickEnabled = analysisStatus != SpeechAnalysisStatus.PROCESSING
+
+    ElevatedCard(
+        onClick = { if (clickEnabled) onClick() },
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = cardColor),
+        elevation = CardDefaults.elevatedCardElevation(6.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                // Show icon if applicable
+                if (icon != null) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
+
+                Text(
+                    text = displayText,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = Color.White,
+                    textAlign = TextAlign.Center
+                )
+
+                // Show score when analysis is completed
+                if (analysisStatus == SpeechAnalysisStatus.COMPLETED && userScore != null && totalScore != null) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "$userScore / $totalScore",
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 24.sp
+                        ),
+                        color = Color.White
+                    )
+                }
+
+                // Show additional info for processing
+                if (analysisStatus == SpeechAnalysisStatus.PROCESSING) {
+                    Spacer(Modifier.height(8.dp))
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                }
+            }
         }
     }
 }

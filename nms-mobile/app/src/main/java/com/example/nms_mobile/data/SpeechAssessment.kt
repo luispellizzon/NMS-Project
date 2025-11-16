@@ -36,8 +36,9 @@ data class SpeechAssessment(
     val aiAnalysis: String? = null,                // AI analysis (optional - for later)
     val score: Double? = null,                     // Test score (optional - for later)
     val timestamp: Timestamp = Timestamp.now(),
-    val status: String = "pending"                 // pending, transcribed, analyzed
+    val status: String = "pending",                 // pending, transcribed, analyzed
 )
+
 data class SpeechAssessmentDocument(
     val id: String = "",
     val userId: String = "",
@@ -46,8 +47,10 @@ data class SpeechAssessmentDocument(
     val currentTaskId: String = SpeechTaskType.WORD_RECALL_INITIAL.taskId,
     @get:PropertyName("isCompleted") @set:PropertyName("isCompleted")
     var isCompleted: Boolean = false,
-    val totalScore: Int = 0,
-    val content: Map<String, TaskContent> = emptyMap()
+    val totalScore: Int? = null,
+    val content: Map<String, TaskContent> = emptyMap(),
+    // NEW: AI analysis status field
+    val aiAnalysis: String? = null,  // Can be null, "processing", or "processed"
 )
 
 data class TaskContent(
@@ -172,6 +175,16 @@ enum class RecordingState {
     PROCESSING,
     COMPLETED,
     ERROR
+}
+
+/**
+ * Speech Analysis Status for UI display
+ */
+enum class SpeechAnalysisStatus {
+    NOT_STARTED,      // Assessment not completed yet
+    PROCESSING,       // Assessment completed, AI is processing
+    COMPLETED,        // AI processing completed
+    ERROR            // Error during processing
 }
 
 fun getExpectedLocalizationWords(): List<String> {

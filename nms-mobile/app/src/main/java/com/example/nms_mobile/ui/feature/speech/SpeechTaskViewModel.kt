@@ -20,6 +20,11 @@ import java.io.File
 import android.os.Build
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import com.example.nms_mobile.api.ProcessAssessmentRequest
+import com.example.nms_mobile.api.ProcessAssessmentResponse
+import com.example.nms_mobile.api.TranscriptionApiClient
+import com.example.nms_mobile.services.TTSManager
+import kotlinx.coroutines.Dispatchers
 import java.util.Locale
 
 import java.util.UUID
@@ -60,6 +65,7 @@ sealed class SpeechTaskEvent {
 class SpeechTaskViewModel(
     private val repository: SpeechAssessmentsTasks = SpeechAssessmentsTasks.instance,
     private val storage: StorageRepository = StorageRepository.instance,
+    private val auth: AuthRepository = AuthRepository.instance
 ) : ViewModel() {
 
 
@@ -171,113 +177,10 @@ class SpeechTaskViewModel(
             return
         }
 
-        _uiState.update { it.copy(isInstructionPlaying = true, error = null) }
-
-        viewModelScope.launch {
-            try {
-                val appContext = context.applicationContext
-                var tts: TextToSpeech? = null
-
-                tts = TextToSpeech(appContext) { status ->
-                    if (status != TextToSpeech.SUCCESS) {
-                        Log.e(TAG, "TTS initialization failed: $status")
-                        viewModelScope.launch {
-                            _uiState.update {
-                                it.copy(
-                                    isInstructionPlaying = false,
-                                    error = "Unable to initialize TTS engine"
-                                )
-                            }
-                        }
-                        tts?.shutdown()
-                        return@TextToSpeech
-                    }
-
-                    val languageResult = tts?.setLanguage(Locale.getDefault())
-                    if (languageResult == TextToSpeech.LANG_MISSING_DATA ||
-                        languageResult == TextToSpeech.LANG_NOT_SUPPORTED
-                    ) {
-                        Log.e(TAG, "TTS language not supported")
-                        viewModelScope.launch {
-                            _uiState.update {
-                                it.copy(
-                                    isInstructionPlaying = false,
-                                    error = "Language not supported on this device"
-                                )
-                            }
-                        }
-                        tts?.shutdown()
-                        return@TextToSpeech
-                    }
-
-                    val utteranceId = "instruction_${UUID.randomUUID()}"
-
-                    tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                        override fun onStart(utteranceId: String?) {
-                            Log.d(TAG, "TTS started for $utteranceId")
-                        }
-
-                        override fun onDone(utteranceId: String?) {
-                            Log.d(TAG, "TTS completed for $utteranceId")
-                            viewModelScope.launch {
-                                _uiState.update { it.copy(isInstructionPlaying = false) }
-                            }
-                            tts?.shutdown()
-                        }
-
-                        override fun onError(utteranceId: String?) {
-                            Log.e(TAG, "TTS error for $utteranceId")
-                            viewModelScope.launch {
-                                _uiState.update {
-                                    it.copy(
-                                        isInstructionPlaying = false,
-                                        error = "Failed to play instruction"
-                                    )
-                                }
-                            }
-                            tts?.shutdown()
-                        }
-
-                        override fun onError(utteranceId: String?, errorCode: Int) {
-                            onError(utteranceId)
-                        }
-                    })
-
-                    val speakResult = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        tts?.speak(instructionText, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
-                    } else {
-                        @Suppress("DEPRECATION")
-                        tts?.speak(
-                            instructionText,
-                            TextToSpeech.QUEUE_FLUSH,
-                            hashMapOf(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID to utteranceId)
-                        )
-                    }
-
-                    if (speakResult == TextToSpeech.ERROR) {
-                        Log.e(TAG, "TTS speak() failed")
-                        viewModelScope.launch {
-                            _uiState.update {
-                                it.copy(
-                                    isInstructionPlaying = false,
-                                    error = "Unable to speak instruction"
-                                )
-                            }
-                        }
-                        tts?.shutdown()
-                    }
-                }
-
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to play instruction", e)
-                _uiState.update {
-                    it.copy(
-                        isInstructionPlaying = false,
-                        error = "Failed to play instruction: ${e.localizedMessage}"
-                    )
-                }
-            }
-        }
+        _uiState.update { it.copy(isInstructionPlaying = true) }
+        val tts = TTSManager.getInstance(context)
+        tts.speak(instructionText)
+        _uiState.update { it.copy(isInstructionPlaying = false) }
     }
 
 
@@ -567,10 +470,25 @@ class SpeechTaskViewModel(
     /**
      * Complete the entire assessment
      */
+
     private fun completeAssessment() {
         viewModelScope.launch {
             try {
-                repository.completeAssessment(_uiState.value.assessmentId!!)
+                val assessmentId = _uiState.value.assessmentId!!
+                repository.completeAssessment(assessmentId)
+
+                // Fire-and-forget the local API call
+                launch(Dispatchers.IO)  {
+                    try {
+                        val userId = auth.currentUser()?.uid // add a helper or reuse auth.currentUser!!.uid
+                        val resp = callProcessAssessmentRetry(userId!!, assessmentId)
+
+                        Log.d(TAG, "Transcription kickoff: ${resp?.status} ${resp?.message}")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to call process-assessment API", e)
+                    }
+                }
+
                 _uiState.update { it.copy(isCompleted = true, isLoading = false) }
                 _events.send(SpeechTaskEvent.AssessmentCompleted)
             } catch (e: Exception) {
@@ -578,6 +496,23 @@ class SpeechTaskViewModel(
             }
         }
     }
+
+    private suspend fun callProcessAssessmentRetry(userId: String, assessmentId: String): ProcessAssessmentResponse? {
+        repeat(3) { attempt ->
+            try {
+                val resp = TranscriptionApiClient.api.processAssessment(
+                    ProcessAssessmentRequest(userId, assessmentId)
+                )
+                Log.d(TAG, "process-assessment ok: $resp")
+                return resp
+            } catch (e: Exception) {
+                Log.w(TAG, "process-assessment attempt ${attempt+1} failed", e)
+                kotlinx.coroutines.delay(1000L * (attempt + 1))
+            }
+        }
+        return null
+    }
+
 
     /**
      * Duration counter

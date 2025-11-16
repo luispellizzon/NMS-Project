@@ -1,6 +1,8 @@
 package com.example.nms_mobile.navigation.routes
 
 import DashboardViewModel
+import SpeechAnalysisStatus
+import SpeechAssessmentDocument
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -23,12 +25,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.nms_mobile.data.AuthRepository
 import com.example.nms_mobile.data.FirestoreRepository
+import com.example.nms_mobile.data.SpeechAssessmentsTasks
 import com.example.nms_mobile.ui.feature.dashboard.DashboardScreen
+import com.example.nms_mobile.ui.feature.memory.MemoryTestScreen
+import com.example.nms_mobile.ui.feature.memory.MemoryTestViewModel
 import com.example.nms_mobile.ui.feature.speech.SpeechAssessmentEvent
 import com.example.nms_mobile.ui.feature.speech.SpeechAssessmentViewModel
 import com.example.nms_mobile.ui.feature.speech.SpeechTaskEvent
 import com.example.nms_mobile.ui.feature.speech.SpeechTaskScreen
 import com.example.nms_mobile.ui.feature.speech.SpeechTaskViewModel
+import com.example.nms_mobile.ui.feature.speech.results.SpeechResultsScreen
 import com.example.nms_mobile.ui.login.LoginScreen
 import com.example.nms_mobile.ui.login.LoginViewModel
 import com.example.nms_mobile.ui.personaldetails.PersonalInfoEvent
@@ -178,12 +184,14 @@ fun DashboardRoute(
     onOpenQuestionnaire: () -> Unit,
     onOpenNews: () -> Unit = {},
     onOpenSpeech: () -> Unit = {},
+    onOpenSpeechResults: () -> Unit = {},  // NEW
     onOpenMemory: () -> Unit = {},
     onOpenCognitive: () -> Unit = {},
     onLoggedOut: () -> Unit = {}
 ) {
     val vm = remember { DashboardViewModel() }
     val state by vm.ui.collectAsState()
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     // Watch for the 'LoggedOut' event from the ViewModel.
     LaunchedEffect(Unit) {
@@ -195,12 +203,26 @@ fun DashboardRoute(
         }
     }
 
+    // Refresh speech assessment status when dashboard is resumed
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            vm.refreshSpeechAssessmentStatus()
+        }
+    }
+
     // Connect the Dashboard UI screen to the ViewModel.
     DashboardScreen(
         state = state,
         onOpenNews = onOpenNews,
         onOpenRiskAssessment = onOpenQuestionnaire, // Opens the questionnaire
-        onOpenSpeech = onOpenSpeech,
+        onOpenSpeech = {
+            // Navigate to results if completed, otherwise to speech task
+            if (state.speechAnalysisStatus == SpeechAnalysisStatus.COMPLETED) {
+                onOpenSpeechResults()
+            } else {
+                onOpenSpeech()
+            }
+        },
         onOpenMemory = onOpenMemory,
         onOpenCognitive = onOpenCognitive,
         onLogoutClick = vm::logout
@@ -262,67 +284,6 @@ fun QuestionnaireRoute(
         onChronic = vm::onChronic
     )
 }
-//// Handles the Speech Assessment screen
-//@Composable
-//fun SpeechAssessmentRoute(
-//    onBack: () -> Unit,
-//    onCompleted: () -> Unit
-//) {
-//    val context = LocalContext.current
-//    val vm = remember { SpeechAssessmentViewModel() }
-//    val state by vm.uiState.collectAsState()
-//    val lifecycleOwner = LocalLifecycleOwner.current
-//
-//    // Handle events
-//    LaunchedEffect(vm) {
-//        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-//            vm.events.collect { event ->
-//                when (event) {
-//                    is SpeechAssessmentEvent.UploadCompleted -> {
-//                        // Upload completed, navigate back
-//                        onCompleted()
-//                    }
-//                    is SpeechAssessmentEvent.RecordingCompleted -> {
-//                        // Recording stopped, now in review mode (don't navigate yet)
-//                    }
-//                    is SpeechAssessmentEvent.Error -> {
-//                        // Error already shown in UI state
-//                    }
-//                }
-//            }
-//        }
-//    }
-//
-//    // Request audio permissions
-//    val audioPermission = android.Manifest.permission.RECORD_AUDIO
-//    val permissionLauncher = rememberLauncherForActivityResult(
-//        contract = ActivityResultContracts.RequestPermission()
-//    ) { isGranted ->
-//        if (isGranted) {
-//            vm.startRecording(context)
-//        }
-//    }
-//
-//    SpeechAssessmentScreen(
-//        state = state,
-//        onStartRecording = {
-//            // Check permission before recording
-//            if (context.checkSelfPermission(audioPermission) == PackageManager.PERMISSION_GRANTED) {
-//                vm.startRecording(context)
-//            } else {
-//                permissionLauncher.launch(audioPermission)
-//            }
-//        },
-//        onStopRecording = vm::stopRecording,
-//        onPlayRecording = { vm.playRecording(context) },
-//        onPausePlayback = vm::pausePlayback,
-//        onResumePlayback = vm::resumePlayback,
-//        onRestartPlayback = { vm.restartPlayback(context) },
-//        onRepeatRecording = { vm.repeatRecording(context) },
-//        onConfirmRecording = vm::confirmRecording,
-//        onBack = onBack
-//    )
-//}
 
 // Handles the Speech Assessment screen (OLD - Image Description Task)
 @Composable
@@ -385,6 +346,7 @@ fun SpeechAssessmentRoute(
         onBack = onBack
     )
 }
+
 // NEW: Handles the Speech Task flow (Word Recall, Localization, Repeat Action)
 @Composable
 fun SpeechTaskRoute(
@@ -410,7 +372,8 @@ fun SpeechTaskRoute(
                         // Task completed, stay on screen (VM will navigate to next task)
                     }
                     is SpeechTaskEvent.AssessmentCompleted -> {
-                        // All tasks completed, navigate back to dashboard
+                        // All tasks completed - screen will show completion view
+                        // User clicks "Done" to go back to dashboard
                     }
                     is SpeechTaskEvent.Error -> {
                         // Error already shown in UI state
@@ -451,14 +414,44 @@ fun SpeechTaskRoute(
         onRestartPlayback = { vm.restartPlayback(context) },
         onRepeatRecording = { vm.repeatRecording(context) },
         onSubmitTask = { vm.submitTask(context) },
-        onBack = onBack
+        onBack = onBack,
+        onCompletionDone = onCompleted  // Navigate back to dashboard when user clicks "Done"
     )
 }
 
+// NEW: Handles the Speech Results screen (shows detailed results)
+@Composable
+fun SpeechResultsRoute(
+    onBack: () -> Unit,
+    onRedoTest: () -> Unit
+) {
+    val speechRepo = remember { SpeechAssessmentsTasks.instance }
+    var assessment by remember { mutableStateOf<SpeechAssessmentDocument?>(null) }
 
+    // Load the most recent completed assessment
+    LaunchedEffect(Unit) {
+        assessment = speechRepo.getMostRecentCompletedAssessment()
+    }
 
+    SpeechResultsScreen(
+        assessment = assessment,
+        onBack = onBack,
+        onRedoTest = onRedoTest
+    )
+}
 
+@Composable
+fun MemoryTestRoute(
+    onBack: () -> Unit,
+    onCompleted: () -> Unit
+){
+    val vm = remember { MemoryTestViewModel() }
 
+    MemoryTestScreen(
+        viewModel = vm,
+        onBack = onBack,
+        onCompleted = onCompleted
+    )
 
-
+}
 

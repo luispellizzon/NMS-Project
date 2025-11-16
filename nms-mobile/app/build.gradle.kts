@@ -96,4 +96,13 @@ dependencies {
 
     // Lifecycle Compose helper (for collectAsStateWithLifecycle)
     implementation(libs.androidx.lifecycle.runtime.compose)
+
+    // OkHttp for HTTP calls
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+// Retrofit (if you're using a Retrofit-based client)
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    // If you're using Retrofit with Moshi converter:
+    implementation("com.squareup.retrofit2:converter-moshi:2.9.0")
 }

@@ -16,6 +16,8 @@ val BorderNormal   = Color(0xFFA9A3A3)
 val BorderActive   = Color(0xFF006F72)
 val BackgroundColor = Color(0xFFFFFFFF)
 
+val BackgroundGray = Color(0xFFD3D3D3)
+
 // Optional surfaces (used by the theme below)
 val SurfaceLight   = Color(0xFFFFFFFF)
 val SurfaceDark    = Color(0xFF121212)

@@ -38,7 +38,8 @@ fun SpeechTaskScreen(
     onResumePlayback: () -> Unit,
     onRepeatRecording: () -> Unit,
     onSubmitTask: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onCompletionDone:() -> Unit = {}
 ) {
 
     Scaffold(
@@ -69,9 +70,10 @@ fun SpeechTaskScreen(
                 )
             }
             else if (state.isCompleted){
-                Column(){
-                    Text("Assessment Completed")
-                }
+                SpeechCompletionScreen(
+                    onDone = onCompletionDone
+                )
+
             }else {
                 Column(
                     modifier = Modifier
@@ -305,7 +307,7 @@ private fun LocalizationGuidance() {
 
         Spacer(Modifier.height(8.dp))
 
-        val items = listOf("Year", "Season", "Date", "Day of the Week", "Today's Date")
+        val items = listOf("Year", "Season", "Month", "Day of the Week (Monday, Tuesday, etc...)", "Today's Date (Number)")
         items.forEach { item ->
             Row(
                 modifier = Modifier
