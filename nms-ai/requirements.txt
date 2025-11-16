@@ -1,3 +1,0 @@
-crewai
-feedparser
-crewai_tools
