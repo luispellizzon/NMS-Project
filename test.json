@@ -1,0 +1,29 @@
+{
+    "tasks":{
+        "image_description": audio.wav,
+        "speech":{
+            "word_recall": audio.wav,
+            "localisation": audio.wav,
+            "repeat_action": audio.wav,
+            "orientation": audio.wav,
+        },
+        "cognitive":{
+            "connect_path": ["A", 1, "B", 2],
+            "copy_cube": cube.jpg,
+            "set_clock": cube.jpg,
+            "fig_1": "animal",
+            "fig_2": "animal",
+            "fig_3": "animal",
+        },
+        "memory":{
+            "question1": 1,
+            "question2": 1,
+            "question3": 1,
+            "question4": 1,
+            "question5": 1,
+            "question6": 1,
+            "question7": 1
+        }
+    },
+    "progress":[task, item]
+}

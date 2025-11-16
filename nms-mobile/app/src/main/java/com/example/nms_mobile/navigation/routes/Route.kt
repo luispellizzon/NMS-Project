@@ -1,5 +1,12 @@
-package com.example.nms_mobile.navigation
+package com.example.nms_mobile.navigation.routes
 
+import DashboardViewModel
+import SpeechAnalysisStatus
+import SpeechAssessmentDocument
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -8,24 +15,28 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
-import com.example.nms_mobile.ui.dashboard.DashboardEvent
-import com.example.nms_mobile.ui.dashboard.DashboardScreen
-import com.example.nms_mobile.ui.dashboard.DashboardViewModel
-import com.example.nms_mobile.ui.home.HomeEvent
+import com.example.nms_mobile.data.AuthRepository
+import com.example.nms_mobile.data.FirestoreRepository
+import com.example.nms_mobile.data.SpeechAssessmentsTasks
+import com.example.nms_mobile.ui.feature.dashboard.DashboardScreen
+import com.example.nms_mobile.ui.feature.memory.MemoryTestScreen
+import com.example.nms_mobile.ui.feature.memory.MemoryTestViewModel
+import com.example.nms_mobile.ui.feature.speech.SpeechAssessmentEvent
+import com.example.nms_mobile.ui.feature.speech.SpeechAssessmentViewModel
+import com.example.nms_mobile.ui.feature.speech.SpeechTaskEvent
+import com.example.nms_mobile.ui.feature.speech.SpeechTaskScreen
+import com.example.nms_mobile.ui.feature.speech.SpeechTaskViewModel
+import com.example.nms_mobile.ui.feature.speech.results.SpeechResultsScreen
 import com.example.nms_mobile.ui.login.LoginScreen
 import com.example.nms_mobile.ui.login.LoginViewModel
-import com.example.nms_mobile.ui.home.HomeScreen
-import com.example.nms_mobile.ui.home.HomeViewModel
 import com.example.nms_mobile.ui.personaldetails.PersonalInfoEvent
 import com.example.nms_mobile.ui.personaldetails.PersonalInfoScreen
 import com.example.nms_mobile.ui.personaldetails.PersonalInfoViewModel
@@ -34,35 +45,40 @@ import com.example.nms_mobile.ui.questionnaire.SectionedQuestionnaireScreen
 import com.example.nms_mobile.ui.questionnaire.SectionedQuestionnaireViewModel
 import com.example.nms_mobile.ui.signup.SignUpScreen
 import com.example.nms_mobile.ui.signup.SignUpViewModel
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.tasks.await
+import com.example.nms_mobile.ui.speech.SpeechAssessmentScreen
 
+// The starting screen: checks if the user is logged in and if they have a profile.
 @Composable
 fun StartRoute(
     onGoLogin: () -> Unit,
     onGoPersonalInfo: () -> Unit,
     onGoDashboard: () -> Unit
 ) {
-    // do the check once
+    val auth = AuthRepository.instance
+    val db = FirestoreRepository.instance
+
+    // Run this check only once when the screen starts.
     LaunchedEffect(Unit) {
-        val auth = FirebaseAuth.getInstance()
-        val user = auth.currentUser
+        val user = auth.currentUser()
+        // If there's no user, go to Login.
         if (user == null) {
             onGoLogin()
             return@LaunchedEffect
         }
 
-        // Check Firestore: has the user completed profile?
-        val db = FirebaseFirestore.getInstance()
-        val details = db.collection("users").document(user.uid).get().await()
-        val hasProfile = details.exists()
+        // Check the Firestore database to see if the user profile exists.
+        val hasProfile = try {
+            db.hasCompletedProfile()
+        } catch (e: Exception) {
+            false
+        }
 
+        // Navigate based on profile status.
         if (hasProfile) onGoDashboard()
         else onGoPersonalInfo()
     }
 
-    // Simple splash while the check runs
+    // Show a loading circle while the check is happening.
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             CircularProgressIndicator()
@@ -71,20 +87,27 @@ fun StartRoute(
         }
     }
 }
+
+// Handles the login logic and navigation.
 @Composable
 fun LoginRoute(
     onNavigateAfterLogin: (hasProfile: Boolean) -> Unit,
     onNavigateToSignUp: () -> Unit
 ) {
+    // Create and remember the ViewModel (the logic).
     val viewModel = remember { LoginViewModel() }
+    // Watch the current status of the ViewModel.
     val state by viewModel.uiState.collectAsState()
 
+    // When the login attempt succeeds, navigate away.
     LaunchedEffect(state.success) {
         if (state.success) {
-            onNavigateAfterLogin(false) // proceed to home or personal info
+            // We pass 'false' to indicate we still need to check the profile status later.
+            onNavigateAfterLogin(false)
         }
     }
 
+    // Connect the UI screen to the ViewModel's data and functions.
     LoginScreen(
         state = state,
         onEmailChange = viewModel::onEmailChange,
@@ -94,57 +117,49 @@ fun LoginRoute(
     )
 }
 
-
-/**
- * SIGN UP
- * - Calls auth.signUp(email, password)
- * - On success (user != null) moves to PersonalInfo
- */
+// Handles the sign-up logic and navigation.
 @Composable
 fun SignUpRoute(
-    onNavigateToDashboard: () -> Unit,
+    onNavigateToPersonalInfo: () -> Unit,
     onBack: () -> Unit,
     onLoginInstead: () -> Unit
 ) {
     val vm = remember { SignUpViewModel() }
     val state by vm.uiState.collectAsState()
 
+    // When sign-up succeeds, navigate to the Personal Info screen.
     LaunchedEffect(state.success) {
-        if (state.success) onNavigateToDashboard()
+        if (state.success) onNavigateToPersonalInfo()
     }
 
+    // Connect the UI screen to the ViewModel.
     SignUpScreen(
         state = state,
-        onFullNameChange = vm::onFullNameChange,
         onEmailChange = vm::onEmailChange,
         onPasswordChange = vm::onPasswordChange,
         onConfirmPasswordChange = vm::onConfirmPasswordChange,
         onSignUpClick = vm::signUp,
         onLoginClick = onLoginInstead,
         onGoogleClick = { /* TODO: Google sign-in */ },
-        onFacebookClick = { /* TODO: Google sign-in */ },
-        onAppleClick = { /* TODO: Apple sign-in */ },
-        onDobChange = vm::onDobChange,
-        onRoleChange = vm::onRoleChange
+        onFacebookClick = { /* TODO: Facebook sign-in */ },
+        onAppleClick = { /* TODO: Apple sign-in */ }
     )
 }
 
-/**
- * PERSONAL INFO
- * - For now, just emits onFinished when the form is submitted.
- *   Later you can persist to Firestore, then call onFinished().
- */
+// Handles collecting and saving user's initial personal details.
 @Composable
-fun PersonalInfoRoute(
-    onFinished: () -> Unit
-) {
+fun PersonalInfoRoute(onFinished: () -> Unit) {
     val vm = remember { PersonalInfoViewModel() }
+    // Watch the ViewModel's state.
     val state by vm.uiState.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
 
+    // Watch for single-time events from the ViewModel.
     LaunchedEffect(vm) {
+        // Collect events only when the screen is visible.
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             vm.events.collect { e ->
+                // If submission is successful, navigate to the Dashboard.
                 if (e is PersonalInfoEvent.SubmittedSuccessfully) {
                     onFinished()
                 }
@@ -152,81 +167,69 @@ fun PersonalInfoRoute(
         }
     }
 
+    // Connect the UI screen to the ViewModel.
     PersonalInfoScreen(
         state = state,
         onFullNameChange = vm::onFullNameChange,
         onDateOfBirthChange = vm::onDateOfBirthChange,
+        onEmailChange = vm::onEmailChange,
+        onRoleChange = vm::onRoleChange,
         onSubmit = vm::submit
     )
 }
 
-/**
- * HOME
- * - Pure UI container. If user hasn't completed profile, caller can navigate to PersonalInfo.
- */
-@Composable
-fun HomeRoute(
-    hasCompletedProfile: Boolean,
-    onLoggedOut: () -> Unit,
-    onCompleteProfile: () -> Unit
-) {
-    val vm = remember { HomeViewModel() }
-    val ui by vm.ui.collectAsState()
-
-    // Keep VM in sync with the arg coming from navigation
-    LaunchedEffect(hasCompletedProfile) {
-        vm.setHasCompletedProfile(hasCompletedProfile)
-    }
-
-    // One-shot events (logout)
-    LaunchedEffect(Unit) {
-        vm.events.collect { e ->
-            when (e) {
-                HomeEvent.LoggedOut -> onLoggedOut()
-            }
-        }
-    }
-
-    HomeScreen(
-        state = ui,
-        onLogoutClick = vm::logout,
-        onSelectTab = vm::selectTab,
-        onCompleteProfileClick = onCompleteProfile
-    )
-}
+// Handles the main dashboard view.
 @Composable
 fun DashboardRoute(
     onOpenQuestionnaire: () -> Unit,
     onOpenNews: () -> Unit = {},
     onOpenSpeech: () -> Unit = {},
+    onOpenSpeechResults: () -> Unit = {},  // NEW
     onOpenMemory: () -> Unit = {},
     onOpenCognitive: () -> Unit = {},
-    onLoggedOut : () -> Unit = {}
+    onLoggedOut: () -> Unit = {}
 ) {
     val vm = remember { DashboardViewModel() }
     val state by vm.ui.collectAsState()
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Collect events and navigate after logout
+    // Watch for the 'LoggedOut' event from the ViewModel.
     LaunchedEffect(Unit) {
         vm.events.collect { ev ->
             when (ev) {
+                // If the ViewModel sends a logout event, navigate to the Login screen.
                 DashboardEvent.LoggedOut -> onLoggedOut()
             }
         }
     }
 
+    // Refresh speech assessment status when dashboard is resumed
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            vm.refreshSpeechAssessmentStatus()
+        }
+    }
+
+    // Connect the Dashboard UI screen to the ViewModel.
     DashboardScreen(
         state = state,
         onOpenNews = onOpenNews,
-        onOpenRiskAssessment = {
-            onOpenQuestionnaire()
+        onOpenRiskAssessment = onOpenQuestionnaire, // Opens the questionnaire
+        onOpenSpeech = {
+            // Navigate to results if completed, otherwise to speech task
+            if (state.speechAnalysisStatus == SpeechAnalysisStatus.COMPLETED) {
+                onOpenSpeechResults()
+            } else {
+                onOpenSpeech()
+            }
         },
-        onOpenSpeech = onOpenSpeech,
         onOpenMemory = onOpenMemory,
         onOpenCognitive = onOpenCognitive,
         onLogoutClick = vm::logout
     )
 }
+
+// Handles the sequence of questionnaire screens.
 @Composable
 fun QuestionnaireRoute(
     onFinishedAll: () -> Unit,
@@ -234,29 +237,35 @@ fun QuestionnaireRoute(
 ) {
     val vm = remember { SectionedQuestionnaireViewModel() }
     val state by vm.ui.collectAsState()
-
-    // lifecycle-aware one-shot event collection
     val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Watch for the 'Submitted' event from the ViewModel.
     LaunchedEffect(vm) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             vm.events.collect { e ->
+                // If the questionnaire is submitted successfully, navigate away.
                 if (e is SectionedQuestionnaireEvent.Submitted) onFinishedAll()
             }
         }
     }
 
+    // Connect the Questionnaire UI screen to the ViewModel.
     SectionedQuestionnaireScreen(
         state = state,
         onBackClick = onBack,
+        // The 'Prev' button checks if the current section is valid before moving back.
         onPrev = {
             if (vm.validateCurrentSection()) vm.prevSection() else Unit
         },
+        // The 'Next' button checks if the current section is valid before moving forward.
         onNext = {
             if (vm.validateCurrentSection()) vm.nextSection()
         },
+        // The 'Submit' button checks if the current section is valid before submitting all data.
         onSubmit = {
             if (vm.validateCurrentSection()) vm.submit()
         },
+        // All these functions connect the user's input directly to the ViewModel's setters.
         onAge = vm::onAge,
         onWeight = vm::onWeight,
         onDominantHand = vm::onDominantHand,
@@ -276,6 +285,173 @@ fun QuestionnaireRoute(
     )
 }
 
+// Handles the Speech Assessment screen (OLD - Image Description Task)
+@Composable
+fun SpeechAssessmentRoute(
+    onBack: () -> Unit,
+    onCompleted: () -> Unit
+) {
+    val context = LocalContext.current
+    val vm = remember { SpeechAssessmentViewModel() }
+    val state by vm.uiState.collectAsState()
+    val lifecycleOwner = LocalLifecycleOwner.current
 
+    // Handle events
+    LaunchedEffect(vm) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            vm.events.collect { event ->
+                when (event) {
+                    is SpeechAssessmentEvent.UploadCompleted -> {
+                        // Upload completed, navigate back
+                        onCompleted()
+                    }
+                    is SpeechAssessmentEvent.RecordingCompleted -> {
+                        // Recording stopped, now in review mode (don't navigate yet)
+                    }
+                    is SpeechAssessmentEvent.Error -> {
+                        // Error already shown in UI state
+                    }
+                }
+            }
+        }
+    }
 
+    // Request audio permissions
+    val audioPermission = Manifest.permission.RECORD_AUDIO
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            vm.startRecording(context)
+        }
+    }
+
+    SpeechAssessmentScreen(
+        state = state,
+        onStartRecording = {
+            // Check permission before recording
+            if (context.checkSelfPermission(audioPermission) == PackageManager.PERMISSION_GRANTED) {
+                vm.startRecording(context)
+            } else {
+                permissionLauncher.launch(audioPermission)
+            }
+        },
+        onStopRecording = vm::stopRecording,
+        onPlayRecording = { vm.playRecording(context) },
+        onPausePlayback = vm::pausePlayback,
+        onResumePlayback = vm::resumePlayback,
+        onRestartPlayback = { vm.restartPlayback(context) },
+        onRepeatRecording = { vm.repeatRecording(context) },
+        onConfirmRecording = vm::confirmRecording,
+        onBack = onBack
+    )
+}
+
+// NEW: Handles the Speech Task flow (Word Recall, Localization, Repeat Action)
+@Composable
+fun SpeechTaskRoute(
+    onBack: () -> Unit,
+    onCompleted: () -> Unit
+) {
+    val context = LocalContext.current
+    val vm = remember { SpeechTaskViewModel() }
+    val state by vm.uiState.collectAsState()
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Initialize assessment on first launch
+    LaunchedEffect(Unit) {
+        vm.initializeAssessment()
+    }
+
+    // Handle events
+    LaunchedEffect(vm) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            vm.events.collect { event ->
+                when (event) {
+                    is SpeechTaskEvent.TaskCompleted -> {
+                        // Task completed, stay on screen (VM will navigate to next task)
+                    }
+                    is SpeechTaskEvent.AssessmentCompleted -> {
+                        // All tasks completed - screen will show completion view
+                        // User clicks "Done" to go back to dashboard
+                    }
+                    is SpeechTaskEvent.Error -> {
+                        // Error already shown in UI state
+                    }
+                    is SpeechTaskEvent.NavigateToTask -> {
+                        // Task navigation handled by VM, no action needed here
+                    }
+                }
+            }
+        }
+    }
+
+    // Request audio permissions
+    val audioPermission = Manifest.permission.RECORD_AUDIO
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            vm.startRecording(context)
+        }
+    }
+
+    SpeechTaskScreen(
+        state = state,
+        onPlayInstruction = { vm.playInstruction(context) },
+        onStartRecording = {
+            // Check permission before recording
+            if (context.checkSelfPermission(audioPermission) == PackageManager.PERMISSION_GRANTED) {
+                vm.startRecording(context)
+            } else {
+                permissionLauncher.launch(audioPermission)
+            }
+        },
+        onStopRecording = vm::stopRecording,
+        onPlayRecording = { vm.playRecording(context) },
+        onPausePlayback = vm::pausePlayback,
+        onResumePlayback = vm::resumePlayback,
+        onRestartPlayback = { vm.restartPlayback(context) },
+        onRepeatRecording = { vm.repeatRecording(context) },
+        onSubmitTask = { vm.submitTask(context) },
+        onBack = onBack,
+        onCompletionDone = onCompleted  // Navigate back to dashboard when user clicks "Done"
+    )
+}
+
+// NEW: Handles the Speech Results screen (shows detailed results)
+@Composable
+fun SpeechResultsRoute(
+    onBack: () -> Unit,
+    onRedoTest: () -> Unit
+) {
+    val speechRepo = remember { SpeechAssessmentsTasks.instance }
+    var assessment by remember { mutableStateOf<SpeechAssessmentDocument?>(null) }
+
+    // Load the most recent completed assessment
+    LaunchedEffect(Unit) {
+        assessment = speechRepo.getMostRecentCompletedAssessment()
+    }
+
+    SpeechResultsScreen(
+        assessment = assessment,
+        onBack = onBack,
+        onRedoTest = onRedoTest
+    )
+}
+
+@Composable
+fun MemoryTestRoute(
+    onBack: () -> Unit,
+    onCompleted: () -> Unit
+){
+    val vm = remember { MemoryTestViewModel() }
+
+    MemoryTestScreen(
+        viewModel = vm,
+        onBack = onBack,
+        onCompleted = onCompleted
+    )
+
+}
 

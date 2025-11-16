@@ -43,9 +43,18 @@ class FirestoreRepository private constructor(
 ) {
 
     /* ---------- User Details ---------- */
-    suspend fun saveUserDetails(details: UserProfile ) {
+    suspend fun saveUserDetails(profile: UserProfile ) {
         val uid = uidOrThrow()
-        userDoc(uid).set(details).await()
+        userDoc(uid).set(
+            mapOf(
+                "uid" to uid,
+                "fullName" to profile.fullName,
+                "dateOfBirth" to profile.dateOfBirth,
+                "email" to profile.email,
+                "role" to profile.role,
+                "createdAt" to FieldValue.serverTimestamp()
+            )
+        ).await()
     }
 
     // Will be used to check users from google, facebook, apple signup.
@@ -107,5 +116,18 @@ class FirestoreRepository private constructor(
 
     companion object {
         val instance: FirestoreRepository by lazy { FirestoreRepository() }
+    }
+    suspend fun getLifestyleQuestionaryStatus(userId: String): Boolean {
+        return try {
+            // 💡 Cambio CLAVE: Usamos la ruta donde se guarda el cuestionario.
+            val snapshot = questionnaireCombinedDoc(userId).get().await()
+
+            // El cuestionario está "completado" si el documento existe.
+            snapshot.exists()
+
+        } catch (e: Exception) {
+            println("Firestore error fetching lifestyle status: $e")
+            false
+        }
     }
 }
