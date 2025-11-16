@@ -23,6 +23,7 @@ import {
   UserCredential,
 } from 'firebase/auth';
 import { auth } from '../config';
+import { getDoctorProfile, createDoctorProfile } from '../firestore-service';
 
 // Mock the entire firebase/auth module
 vi.mock('firebase/auth', () => ({
@@ -42,11 +43,19 @@ vi.mock('../config', () => ({
   auth: { currentUser: null }, // Start with no user logged in
 }));
 
+// Mock firestore-service to handle doctor profile operations
+vi.mock('../firestore-service', () => ({
+  getDoctorProfile: vi.fn(),
+  createDoctorProfile: vi.fn(),
+}));
+
 // Cast mocks to their correct types for intellisense and control
 const createUserWithEmailAndPasswordMock = createUserWithEmailAndPassword as Mock;
 const signInWithEmailAndPasswordMock = signInWithEmailAndPassword as Mock;
 const updateProfileMock = updateProfile as Mock;
 const signInWithPopupMock = signInWithPopup as Mock;
+const getDoctorProfileMock = getDoctorProfile as Mock;
+const createDoctorProfileMock = createDoctorProfile as Mock;
 
 describe('Auth Service', () => {
 
@@ -98,23 +107,42 @@ describe('Auth Service', () => {
 
   describe('signInWithGoogle', () => {
     it('should call signInWithPopup with a GoogleAuthProvider and return the user', async () => {
-      const mockUser = { uid: 'google-user-123' } as User;
+      const mockUser = { uid: 'google-user-123', displayName: 'Google User', email: 'google@example.com' } as User;
       signInWithPopupMock.mockResolvedValue({ user: mockUser });
+
+      // Mock getDoctorProfile to return null (profile doesn't exist)
+      getDoctorProfileMock.mockResolvedValue(null);
+      // Mock createDoctorProfile to succeed
+      createDoctorProfileMock.mockResolvedValue('google-user-123');
 
       const user = await signInWithGoogle();
 
       expect(GoogleAuthProvider).toHaveBeenCalled();
       expect(signInWithPopup).toHaveBeenCalledWith(auth, expect.any(GoogleAuthProvider));
+
+      // Verify doctor profile creation was attempted
+      expect(getDoctorProfileMock).toHaveBeenCalledWith('google-user-123');
+      expect(createDoctorProfileMock).toHaveBeenCalledWith('google-user-123', {
+        fullName: 'Google User',
+        email: 'google@example.com',
+        role: 'doctor',
+      });
+
       expect(user).toEqual(mockUser);
     });
   });
 
   describe('signInWithApple', () => {
     it('should call signInWithPopup with an OAuthProvider and return the user', async () => {
-      const mockUser = { uid: 'apple-user-456' } as User;
+      const mockUser = { uid: 'apple-user-456', displayName: 'Apple User', email: 'apple@example.com' } as User;
       const mockProvider = { addScope: vi.fn() };
       (OAuthProvider as unknown as Mock).mockReturnValue(mockProvider);
       signInWithPopupMock.mockResolvedValue({ user: mockUser });
+
+      // Mock getDoctorProfile to return null (profile doesn't exist)
+      getDoctorProfileMock.mockResolvedValue(null);
+      // Mock createDoctorProfile to succeed
+      createDoctorProfileMock.mockResolvedValue('apple-user-456');
 
       const user = await signInWithApple();
 
@@ -122,6 +150,15 @@ describe('Auth Service', () => {
       expect(mockProvider.addScope).toHaveBeenCalledWith('email');
       expect(mockProvider.addScope).toHaveBeenCalledWith('name');
       expect(signInWithPopup).toHaveBeenCalledWith(auth, mockProvider);
+
+      // Verify doctor profile creation was attempted
+      expect(getDoctorProfileMock).toHaveBeenCalledWith('apple-user-456');
+      expect(createDoctorProfileMock).toHaveBeenCalledWith('apple-user-456', {
+        fullName: 'Apple User',
+        email: 'apple@example.com',
+        role: 'doctor',
+      });
+
       expect(user).toEqual(mockUser);
     });
   });

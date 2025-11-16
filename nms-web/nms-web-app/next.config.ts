@@ -6,6 +6,25 @@ const nextConfig: NextConfig = {
     '*.local-origin.dev', // Allows requests from any subdomain of local-origin.dev
     // Add other origins as needed
   ],
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'platform-lookaside.fbsbx.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'appleid.cdn-apple.com',
+        pathname: '/**',
+      },
+    ],
+  },
 };
 
 export default nextConfig;
