@@ -184,6 +184,7 @@ async def _bg_process_assessment(job: ProcessAssessmentJob):
         logging.exception(f"[{job.assessmentId}] Failed processing assessment: {e}")
         assessment_ref(job.userId, job.assessmentId).update({
             "processingError": str(e)
+        })
 
 
 # --- Core Transcription Logic (to be run in the background) ---

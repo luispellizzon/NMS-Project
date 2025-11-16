@@ -1,41 +1,51 @@
 package com.example.nms_mobile.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
-import com.example.nms_mobile.auth.LocalAuth
-import androidx.compose.runtime.collectAsState
+import com.example.nms_mobile.navigation.routes.DashboardRoute
+import com.example.nms_mobile.navigation.routes.LoginRoute
+import com.example.nms_mobile.navigation.routes.MemoryTestRoute
+import com.example.nms_mobile.navigation.routes.PersonalInfoRoute
+import com.example.nms_mobile.navigation.routes.QuestionnaireRoute
+import com.example.nms_mobile.navigation.routes.SignUpRoute
+import com.example.nms_mobile.navigation.routes.SpeechAssessmentRoute
+import com.example.nms_mobile.navigation.routes.SpeechResultsRoute
+import com.example.nms_mobile.navigation.routes.SpeechTaskRoute
+import com.example.nms_mobile.navigation.routes.StartRoute
 import com.example.nms_mobile.ui.questionnaire.QuestionnaireIntroScreen
 
-// AppNavigation.kt
+
+// This is the central file that defines all the app screens and how to move between them.
+
 @Composable
 fun AppNavigation(
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController() // Keeps track of the screens history (the back stack).
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Start.route
+        startDestination = Screen.Start.route // The very first screen the user sees.
     ) {
-        // START GATE
+        // START GATE (The first screen that decides where the user should go: Login, Personal Info, or Dashboard)
         composable(Screen.Start.route) {
             StartRoute(
+                // Go to the Login screen. Clear the Start screen from the history.
                 onGoLogin = {
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Start.route) { inclusive = true }
                         launchSingleTop = true
                     }
                 },
+                // Go to the Personal Info screen. Clear the Start screen from the history.
                 onGoPersonalInfo = {
                     navController.navigate(Screen.PersonalInfo.route) {
                         popUpTo(Screen.Start.route) { inclusive = true }
                         launchSingleTop = true
                     }
                 },
+                // Go to the main Dashboard. Clear the Start screen from the history.
                 onGoDashboard = {
                     navController.navigate(Screen.Dashboard.route) {
                         popUpTo(Screen.Start.route) { inclusive = true }
@@ -45,37 +55,42 @@ fun AppNavigation(
             )
         }
 
-        // LOGIN
+        // LOGIN (User signs into their account)
         composable(Screen.Login.route) {
             LoginRoute(
+                // After a successful login, navigate back to the Start screen to re-evaluate the user's destination.
                 onNavigateAfterLogin = { _hasProfileIgnored ->
-                    // after login, re-run the gate so we get the real Firestore result
                     navController.navigate(Screen.Start.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                         launchSingleTop = true
                     }
                 },
+                // Go to the sign-up screen.
                 onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) }
             )
         }
 
-        // SIGN UP
+        // SIGN UP (User creates a new account)
         composable(Screen.SignUp.route) {
             SignUpRoute(
-                onNavigateToDashboard = {
-                    navController.navigate(Screen.Dashboard.route) {
+                // After creating an account, go to the Personal Info screen. Clear SignUp from history.
+                onNavigateToPersonalInfo = {
+                    navController.navigate(Screen.PersonalInfo.route) {
                         popUpTo(Screen.SignUp.route) { inclusive = true }
                         launchSingleTop = true
                     }
                 },
+                // Go back to the previous screen.
                 onBack = { navController.popBackStack() },
+                // Go back to the login screen.
                 onLoginInstead = { navController.popBackStack() }
             )
         }
 
-        // PERSONAL INFO → after submit go Dashboard
+        // PERSONAL INFO (User adds their name, DOB, etc.)
         composable(Screen.PersonalInfo.route) {
             PersonalInfoRoute(
+                // Once finished, go straight to the Dashboard. Clear PersonalInfo from history.
                 onFinished = {
                     navController.navigate(Screen.Dashboard.route) {
                         popUpTo(Screen.PersonalInfo.route) { inclusive = true }
@@ -85,68 +100,110 @@ fun AppNavigation(
             )
         }
 
-        // DASHBOARD
+        // DASHBOARD (The main screen of the app)
         composable(Screen.Dashboard.route) {
             DashboardRoute(
-                onOpenQuestionnaire = { navController.navigate(Screen.QuestionnaireIntro.route) },
+                // Open the intro page for the questionnaire.
+                onOpenQuestionnaire = {
+                    navController.navigate(Screen.QuestionnaireIntro.route)
+                },
+                // Open the Speech Assessment screen.
+                onOpenSpeech = {
+                    navController.navigate(Screen.SpeechTask.route)
+                },
+                // Open the Speech Results screen (when clicked and analysis is complete)
+                onOpenSpeechResults = {
+                    navController.navigate(Screen.SpeechResults.route)
+                },
+
+                // Open the Speech Assessment screen.
+                onOpenMemory = {
+                    navController.navigate(Screen.MemoryTest.route)
+                },
+                // When the user logs out, go back to the Login screen and clear ALL history.
                 onLoggedOut = {
                     navController.navigate(Screen.Login.route) {
-                        popUpTo(Screen.Home.route.substringBefore("/{")) { inclusive = true }
+                        popUpTo(0) { inclusive = true }
                         launchSingleTop = true
                     }
-                },
+                }
             )
         }
 
-        // OPTIONAL intro
+        // QUESTIONNAIRE INTRO (Explains the questionnaire)
         composable(Screen.QuestionnaireIntro.route) {
-            QuestionnaireIntroScreen(onStart = { navController.navigate(Screen.Questionnaire.route) })
+            QuestionnaireIntroScreen(
+                // Start the actual questionnaire screens.
+                onStart = {
+                    navController.navigate(Screen.Questionnaire.route)
+                },
+                onBack = { navController.popBackStack() }
+            )
         }
 
-        // COMBINED QUESTIONNAIRE
+        // QUESTIONNAIRE (The sequence of questions)
         composable(Screen.Questionnaire.route) {
             QuestionnaireRoute(
+                // Once all questions are answered, go back to the Dashboard. Clear the Questionnaire from history.
                 onFinishedAll = {
-                    // After saving questionnaire, you likely want Dashboard
                     navController.navigate(Screen.Dashboard.route) {
                         popUpTo(Screen.Questionnaire.route) { inclusive = true }
                         launchSingleTop = true
                     }
                 },
-                onBack ={
-                    navController.navigate(Screen.Dashboard.route)
+                // Go back to the previous question or the intro screen.
+                onBack = {
+                    navController.popBackStack()
                 }
             )
         }
 
-        // Home (if you’re keeping it)
-        composable(
-            route = Screen.Home.route,
-            arguments = listOf(navArgument("hasCompletedProfile") { type = NavType.BoolType })
-        ) { backStackEntry ->
-            val profileCompleted = backStackEntry.arguments?.getBoolean("hasCompletedProfile") ?: false
-            HomeRoute(
-                hasCompletedProfile = profileCompleted,
-                onLoggedOut = {
-                    navController.navigate(Screen.Login.route) {
-                        popUpTo(Screen.Home.route.substringBefore("/{")) { inclusive = true }
+        // SPEECH ASSESSMENT (Audio recording and transcription)
+        composable(Screen.SpeechAssessment.route) {
+            SpeechAssessmentRoute(
+                // Go back to Dashboard
+                onBack = { navController.popBackStack() },
+                // When completed, return to Dashboard
+                onCompleted = {}
+            )
+        }
+
+        // SPEECH TASK (NEW: Word Recall, Localization, Repeat Action)
+        composable(Screen.SpeechTask.route) {
+            SpeechTaskRoute(
+                // Go back to Dashboard
+                onBack = { navController.popBackStack() },
+                // When all tasks completed, return to Dashboard
+                onCompleted = {
+                    navController.navigate(Screen.Dashboard.route) {
+                        popUpTo(Screen.SpeechTask.route) { inclusive = true }
                         launchSingleTop = true
                     }
-                },
-                onCompleteProfile = { navController.navigate(Screen.PersonalInfo.route) }
+                }
+            )
+        }
+
+        // SPEECH RESULTS (NEW: Show detailed results after analysis)
+        composable(Screen.SpeechResults.route) {
+            SpeechResultsRoute(
+                // Go back to Dashboard
+                onBack = { navController.popBackStack() },
+                // Redo test - navigate to Speech Task
+                onRedoTest = {
+                    navController.navigate(Screen.SpeechTask.route) {
+                        popUpTo(Screen.Dashboard.route)
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+
+        composable(Screen.MemoryTest.route){
+            MemoryTestRoute(
+                onBack = { navController.popBackStack() },
+                onCompleted = {
+                    navController.popBackStack() }
             )
         }
     }
 }
-
-/* ---------- Helpers ---------- */
-
-private fun NavHostController.navigateAndClearToHome(hasProfile: Boolean) {
-    navigate(Screen.Home.createRoute(hasProfile)) {
-        // Clear entire back stack so user can't go "back" to auth flow
-        popUpTo(graph.startDestinationId) { inclusive = true }
-        launchSingleTop = true
-    }
-}
-
-
