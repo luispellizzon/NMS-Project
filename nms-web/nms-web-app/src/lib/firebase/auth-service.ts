@@ -12,6 +12,7 @@ import {
   OAuthProvider,
 } from 'firebase/auth';
 import { auth } from './config';
+import { getDoctorProfile, createDoctorProfile } from './firestore-service';
 
 // Email/Password Sign Up
 export const signUpWithEmail = async (
@@ -38,10 +39,39 @@ export const signInWithEmail = async (
   return userCredential.user;
 };
 
+/**
+ * Ensures a doctor profile exists for the given user.
+ * If no profile exists, creates one with the user's info.
+ * @param user The authenticated Firebase user.
+ */
+const ensureDoctorProfile = async (user: User): Promise<void> => {
+  try {
+    // Check if doctor profile already exists
+    const existingProfile = await getDoctorProfile(user.uid);
+
+    if (!existingProfile) {
+      // Create doctor profile with available user information
+      await createDoctorProfile(user.uid, {
+        fullName: user.displayName || 'Doctor',
+        email: user.email || '',
+        role: 'doctor',
+      });
+      console.log('Doctor profile created for OAuth user:', user.uid);
+    }
+  } catch (error) {
+    console.error('Error ensuring doctor profile:', error);
+    throw new Error('Could not create doctor profile.');
+  }
+};
+
 // Google Sign In
 export const signInWithGoogle = async (): Promise<User> => {
   const provider = new GoogleAuthProvider();
   const userCredential = await signInWithPopup(auth, provider);
+
+  // Ensure doctor profile exists
+  await ensureDoctorProfile(userCredential.user);
+
   return userCredential.user;
 };
 
@@ -51,6 +81,10 @@ export const signInWithApple = async (): Promise<User> => {
   provider.addScope('email');
   provider.addScope('name');
   const userCredential = await signInWithPopup(auth, provider);
+
+  // Ensure doctor profile exists
+  await ensureDoctorProfile(userCredential.user);
+
   return userCredential.user;
 };
 
