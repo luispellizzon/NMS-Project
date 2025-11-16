@@ -105,4 +105,8 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     // If you're using Retrofit with Moshi converter:
     implementation("com.squareup.retrofit2:converter-moshi:2.9.0")
+
+    // providers
+    implementation("com.facebook.android:facebook-login:16.2.0")
+    implementation("com.google.android.gms:play-services-auth:21.3.0")
 }

@@ -1,6 +1,10 @@
 package com.example.nms_mobile.data
 
+import com.google.firebase.auth.AuthCredential
+import com.google.firebase.auth.FacebookAuthProvider
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.OAuthProvider
 import com.google.firebase.auth.userProfileChangeRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -47,41 +51,64 @@ class AuthRepository private constructor(
         _session.value = UserSession(user.uid, user.email, null)
     }
 
-    /**
-     * This is the older method to create an account, which is now less used.
-     * It sets up the user in both Firebase and Firestore.
-     */
-    suspend fun signUp(
-        name: String,
-        email: String,
-        password: String,
-        dob: String,
-        role: String // "patient" | "caregiver"
-    )  {
-        // Create the user account in Firebase.
-        val result = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
-        val user = result.user ?: firebaseAuth.currentUser ?: return
+    private suspend fun signInWithCredential(credential: AuthCredential): UserSession {
+        val result = firebaseAuth.signInWithCredential(credential).await()
+        val user = result.user ?: throw Exception("Auth failed â€” no user returned")
 
-        // Update the session in memory first to make the UI faster.
-        _session.value = UserSession(user.uid, user.email, name.trim())
-
-        // Save the user's name to their Firebase profile.
-        val updates = userProfileChangeRequest { displayName = name.trim() }
-        user.updateProfile(updates).await()
-
-        // Create the user's full profile record in Firestore.
-        db.createUserProfile(
-            UserProfile(
-                uid = user.uid,
-                fullName = name.trim(),
-                dateOfBirth = dob,
-                email = email,
-                role = role
-            )
-        )
-        // Refresh the user data from Firebase just to be sure.
-        runCatching { user.reload().await() }
+        val session = UserSession(user.uid, user.email, user.displayName)
+        _session.value = session
+        return session
     }
+
+    // --------------------------
+    // SHARED link helper
+    // --------------------------
+    private suspend fun linkCredential(credential: AuthCredential): UserSession {
+        val user = firebaseAuth.currentUser ?: throw Exception("Cannot link â€” no authenticated user")
+
+        val result = user.linkWithCredential(credential).await()
+        val linkedUser = result.user ?: throw Exception("Link failed â€” no user returned")
+
+        val session = UserSession(linkedUser.uid, linkedUser.email, linkedUser.displayName)
+        _session.value = session
+        return session
+    }
+
+    // --------------------------
+    // Google
+    // --------------------------
+    suspend fun signInWithGoogle(idToken: String) =
+        signInWithCredential(GoogleAuthProvider.getCredential(idToken, null))
+
+    suspend fun linkGoogleCredential(idToken: String) =
+        linkCredential(GoogleAuthProvider.getCredential(idToken, null))
+
+    // --------------------------
+    // Facebook
+    // --------------------------
+    suspend fun signInWithFacebook(accessToken: String) =
+        signInWithCredential(FacebookAuthProvider.getCredential(accessToken))
+
+    suspend fun linkFacebookCredential(accessToken: String) =
+        linkCredential(FacebookAuthProvider.getCredential(accessToken))
+
+    // --------------------------
+    // Apple
+    // --------------------------
+    suspend fun signInWithApple(idToken: String, nonce: String) =
+        signInWithCredential(
+            OAuthProvider.newCredentialBuilder("apple.com")
+                .setIdToken(idToken)
+                .build()
+        )
+
+    suspend fun linkAppleCredential(idToken: String, nonce: String) =
+        linkCredential(
+            OAuthProvider.newCredentialBuilder("apple.com")
+                .setIdToken(idToken)
+                .build()
+        )
+
 
     suspend fun updateDisplayName(name: String) {
         val user = firebaseAuth.currentUser ?: return

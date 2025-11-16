@@ -1,5 +1,8 @@
 package com.example.nms_mobile.ui.signup
 
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -17,6 +20,7 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -33,6 +37,10 @@ import com.example.nms_mobile.ui.TealPrimary
 import com.example.nms_mobile.ui.TextHint
 import com.example.nms_mobile.ui.TextSecondary
 import com.example.nms_mobile.ui.White
+import com.example.nms_mobile.ui.feature.signup.SignUpUiState
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 
 @Composable
 fun SignUpScreen(
@@ -42,13 +50,42 @@ fun SignUpScreen(
     onConfirmPasswordChange: (String) -> Unit,
     onSignUpClick: () -> Unit,
     onLoginClick: () -> Unit,
-    onGoogleClick: () -> Unit = {},
-    onFacebookClick: () -> Unit = {},
-    onAppleClick: () -> Unit = {}
+    onGoogleSignUp: (String) -> Unit,
+    onFacebookSignUp: (String) -> Unit,
 ) {
+    val context = LocalContext.current
+    val activity = context as? Activity
+
     var pwVisible by remember { mutableStateOf(false) }
     var confirmVisible by remember { mutableStateOf(false) }
     val focus = LocalFocusManager.current
+
+    // ==================== GOOGLE SIGN-IN ====================
+    val googleSignInClient = remember {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(context.getString(R.string.default_web_client_id))
+            .requestEmail()
+            .build()
+        GoogleSignIn.getClient(context, gso)
+    }
+
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            try {
+                val account = task.getResult(ApiException::class.java)
+                val idToken = account?.idToken
+                if (idToken != null) {
+                    onGoogleSignUp(idToken)
+                }
+            } catch (e: ApiException) {
+                android.util.Log.e("GoogleSignIn", "Sign in failed: ${e.message}")
+            }
+        }
+    }
+
 
     Column(
         modifier = Modifier
@@ -236,9 +273,11 @@ fun SignUpScreen(
 
         // Social Buttons (Google / Apple / Facebook)
         SocialLoginButtons(
-            onGoogleClick = onGoogleClick,
-            onFacebookClick = onFacebookClick,
-            onAppleClick = onAppleClick,
+            onGoogleClick = {
+                googleSignInLauncher.launch(googleSignInClient.signInIntent)
+            },
+            onFacebookClick = {
+            },
         )
 
         Text(
