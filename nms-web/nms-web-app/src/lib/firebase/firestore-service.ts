@@ -13,7 +13,7 @@ import {
   orderBy
 } from 'firebase/firestore';
 import { db } from './config';
-import { Patient } from '@/types/patient';
+import { Patient, ClinicalAssessment, ClinicalAssessmentData } from '@/types/patient';
 import { Doctor, NewDoctorData, DoctorPatientRelationship } from '@/types/doctor';
 import { SpeechAssessment, MemoryTest, TestHistoryItem } from '@/types/testHistory';
 
@@ -444,5 +444,78 @@ export const getPatientTestHistory = async (patientId: string): Promise<TestHist
   } catch (error) {
     console.error("Error fetching patient test history:", error);
     return [];
+  }
+};
+
+/**
+ * Saves or updates a clinical assessment for a patient.
+ * @param assessmentData The clinical assessment data.
+ * @returns The ID of the assessment document.
+ */
+export const saveClinicalAssessment = async (
+  assessmentData: ClinicalAssessmentData
+): Promise<string> => {
+  try {
+    const { patientId, doctorId, riskLevel, notes } = assessmentData;
+
+    // Use patientId as the document ID to ensure one assessment per patient
+    const assessmentDocRef = doc(db, 'clinical_assessments', patientId);
+    const assessmentSnapshot = await getDoc(assessmentDocRef);
+
+    const assessmentPayload = {
+      patientId,
+      doctorId,
+      riskLevel,
+      notes: notes || null,
+      lastUpdated: serverTimestamp(),
+    };
+
+    if (assessmentSnapshot.exists()) {
+      // Update existing assessment
+      await setDoc(assessmentDocRef, assessmentPayload, { merge: true });
+    } else {
+      // Create new assessment
+      await setDoc(assessmentDocRef, {
+        ...assessmentPayload,
+        timestamp: serverTimestamp(),
+      });
+    }
+
+    return patientId;
+  } catch (error) {
+    console.error("Error saving clinical assessment:", error);
+    throw new Error("Could not save clinical assessment.");
+  }
+};
+
+/**
+ * Gets a clinical assessment for a specific patient.
+ * @param patientId The patient's UID.
+ * @returns Clinical assessment or null if not found.
+ */
+export const getClinicalAssessment = async (
+  patientId: string
+): Promise<ClinicalAssessment | null> => {
+  try {
+    const assessmentDocRef = doc(db, 'clinical_assessments', patientId);
+    const assessmentSnapshot = await getDoc(assessmentDocRef);
+
+    if (assessmentSnapshot.exists()) {
+      const data = assessmentSnapshot.data();
+      return {
+        id: assessmentSnapshot.id,
+        patientId: data.patientId,
+        doctorId: data.doctorId,
+        riskLevel: data.riskLevel,
+        notes: data.notes,
+        timestamp: data.timestamp?.toDate() || new Date(),
+        lastUpdated: data.lastUpdated?.toDate(),
+      } as ClinicalAssessment;
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error fetching clinical assessment:", error);
+    return null;
   }
 };
