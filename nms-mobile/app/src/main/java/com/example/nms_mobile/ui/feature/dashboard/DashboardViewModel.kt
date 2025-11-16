@@ -14,10 +14,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalTime
 import android.util.Log
+import com.example.nms_mobile.data.Patient
+import com.example.nms_mobile.data.PatientRepository
 
 // Data model for the Dashboard screen's state (what the user sees).
 data class DashboardUiState(
     val displayName: String = "NMS",
+    val role: String? = null,
     val greeting: String = "Good morning",
     val riskScore: Double? = null,
     val isLoadingScore: Boolean = false,
@@ -27,9 +30,14 @@ data class DashboardUiState(
     // Speech assessment status tracking
     val speechAnalysisStatus: SpeechAnalysisStatus = SpeechAnalysisStatus.NOT_STARTED,
     val isSpeechAssessmentCompleted: Boolean = false,
-    // NEW: Score display
     val speechUserScore: Int? = null,
-    val speechTotalScore: Int? = null
+    val speechTotalScore: Int? = null,
+
+    // Caregiver stuff for now
+    val patients: List<Patient> = emptyList(),
+    val isLoadingPatients: Boolean = false,
+    val selectedPatient: Patient? = null,  // Currently selected patient
+    val isManagingPatient: Boolean = false
 )
 
 // Single events for the UI (like navigation commands).
@@ -41,7 +49,8 @@ class DashboardViewModel(
     private val repo: AuthRepository = AuthRepository.instance,
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val db: FirestoreRepository = FirestoreRepository.instance,
-    private val speechRepo: SpeechAssessmentsTasks = SpeechAssessmentsTasks.instance
+    private val speechRepo: SpeechAssessmentsTasks = SpeechAssessmentsTasks.instance,
+    private val patientRepo: PatientRepository = PatientRepository.instance
 ) : ViewModel() {
 
     companion object {
@@ -57,20 +66,66 @@ class DashboardViewModel(
     private val _events = Channel<DashboardEvent>(Channel.BUFFERED)
     val events: Flow<DashboardEvent> = _events.receiveAsFlow()
 
+
     init {
-        // Start a task that runs when the ViewModel is created.
         viewModelScope.launch {
-            // Watch for changes in the user session (like name updates).
             repo.session.collect { s ->
+                val userRole = db.getUserProfile()?.role
                 val name = s.displayName?.takeIf { it.isNotBlank() } ?: "NMS"
-                // Update the user's name and the time-based greeting.
-                _ui.update { it.copy(displayName = name, greeting = computeGreeting()) }
+                _ui.update { it.copy(displayName = name, greeting = computeGreeting(), role = userRole) }
+
+                // Load data based on role
+                if (userRole == "caregiver") {
+                    loadCaregiverPatients()
+                } else if (userRole == "patient") {
+                    checkLifestyleQuestionaryStatus()
+                    checkSpeechAssessmentStatus()
+                }
             }
         }
-        // Load the completion status of the questionnaire right away.
-        checkLifestyleQuestionaryStatus()
-        // Check speech assessment status
-        checkSpeechAssessmentStatus()
+    }
+
+    // NEW: Load patients for caregiver
+    fun loadCaregiverPatients() = viewModelScope.launch {
+        _ui.update { it.copy(isLoadingPatients = true) }
+        try {
+            val patients = patientRepo.getCaregiverPatients()
+            Log.d("CAregiver", patients.toString())
+            _ui.update {
+                it.copy(
+                    patients = patients,
+                    isLoadingPatients = false
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error loading patients", e)
+            _ui.update { it.copy(isLoadingPatients = false) }
+        }
+    }
+
+    // NEW: Select a patient to manage
+    fun selectPatient(patient: Patient) {
+        _ui.update {
+            it.copy(
+                selectedPatient = patient,
+                isManagingPatient = true
+            )
+        }
+    }
+
+    // NEW: Go back to patient list
+    fun deselectPatient() {
+        _ui.update {
+            it.copy(
+                selectedPatient = null,
+                isManagingPatient = false
+            )
+        }
+    }
+
+    // NEW: Refresh patient list
+    fun refreshPatients() {
+        loadCaregiverPatients()
     }
 
     // Calculates "Good morning," "Good afternoon," or "Good evening" based on the time.

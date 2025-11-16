@@ -1,5 +1,6 @@
-package com.example.nms_mobile.ui.personaldetails
+package com.example.nms_mobile.ui.feature.personal_details
 
+import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nms_mobile.data.AuthRepository
@@ -71,7 +72,7 @@ class PersonalInfoViewModel(
             !s.dateOfBirth.matches(Regex("""\d{2}/\d{2}/\d{4}""")) -> "Date must be in DD/MM/YYYY format"
             s.email.isBlank() -> "Email is required"
             // Use Android's utility to validate email format.
-            !android.util.Patterns.EMAIL_ADDRESS.matcher(s.email).matches() -> "Invalid email format"
+            !Patterns.EMAIL_ADDRESS.matcher(s.email).matches() -> "Invalid email format"
             s.role.isBlank() -> "Please select a role (Patient or Caregiver)"
             s.role !in listOf("patient", "caregiver") -> "Invalid role selected"
             else -> null
