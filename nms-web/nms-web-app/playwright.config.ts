@@ -5,8 +5,8 @@ const PORT = process.env.PORT || 3001;
 const baseURL = `http://localhost:${PORT}`; 
 
 export default defineConfig({
-  // Timeout for each test in milliseconds
-  timeout: 60 * 1000,
+  // Timeout for each test in milliseconds (increased for Firebase operations)
+  timeout: 120 * 1000,
   
   // The directory where tests are located
   testDir: './e2e',
@@ -18,7 +18,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   
   // Retry on CI only
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? 2 : 1,
   
   // Opt out of parallel tests on CI.
   workers: process.env.CI ? 1 : 3,

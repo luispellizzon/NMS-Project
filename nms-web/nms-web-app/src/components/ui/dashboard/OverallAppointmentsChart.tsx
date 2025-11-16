@@ -46,12 +46,16 @@ export default function OverallAppointmentsChart() {
           <XAxis dataKey="month" tick={{ fontSize: 12, fill: colors.tick }} />
           <YAxis tick={{ fontSize: 12, fill: colors.tick }} />
           <Tooltip
-            cursor={{ fill: 'var(--accent)' }}
+            cursor={{
+              fill: resolvedTheme === 'dark' ? 'rgba(30, 41, 59, 0.3)' : 'rgba(226, 232, 240, 0.5)',
+              opacity: 0.5
+            }}
             contentStyle={{
-              backgroundColor: 'var(--card)',
-              borderColor: 'var(--border)',
-              color: 'var(--card-foreground)',
-              borderRadius: 'var(--radius)',
+              backgroundColor: 'var(--color-popover)',
+              borderColor: 'var(--color-border)',
+              color: 'var(--color-popover-foreground)',
+              borderRadius: '0.5rem',
+              border: '1px solid',
             }}
           />
           <Legend

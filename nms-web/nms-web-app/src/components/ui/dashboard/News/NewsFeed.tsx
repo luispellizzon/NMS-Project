@@ -3,8 +3,8 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { motion, Variants } from 'framer-motion';
 import { NewsArticle } from '@/types/news';
-import { fetchArticles, generateArticleWithStream } from '@/lib/services/newsService';
-import { AlertTriangle, LoaderCircle } from 'lucide-react';
+import { fetchArticles, generateArticleWithStream, NewsGenerationError } from '@/lib/services/newsService';
+import { AlertTriangle, LoaderCircle, RefreshCw } from 'lucide-react';
 import GenericSearchBar from '../../common/SearchBar';
 import ArticleDetailView from './ArticleDetailView';
 import ArticleListView from './ArticleListView';
@@ -22,11 +22,13 @@ export default function NewsFeed({ variants }: NewsFeedProps) {
   const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isRetryable, setIsRetryable] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationComplete, setGenerationComplete] = useState(false);
   const [newsMode, setNewsMode] = useState<NewsMode>(NewsMode.FilterExisting);
   const [artifacts, setArtifacts] = useState<AgentArtifact[]>([]);
   const [generatedArticle, setGeneratedArticle] = useState<NewsArticle | null>(null);
+  const [lastSearchTerm, setLastSearchTerm] = useState('');
 
   const loadArticles = async () => {
     setLoading(true);
@@ -54,8 +56,10 @@ export default function NewsFeed({ variants }: NewsFeedProps) {
       setGenerationComplete(false);
       setArtifacts([]);
       setError(null);
+      setIsRetryable(false);
       setGeneratedArticle(null);
       const currentSearchTerm = searchTerm;
+      setLastSearchTerm(currentSearchTerm);
 
       try {
         // Use the streaming function with WebSocket
@@ -98,10 +102,24 @@ export default function NewsFeed({ variants }: NewsFeedProps) {
         // Show completion screen
         setGenerationComplete(true);
       } catch (err) {
-        setError("Failed to generate the new report. Please try again.");
+        // Handle NewsGenerationError with specific error messages
+        if (err instanceof NewsGenerationError) {
+          setError(err.message);
+          setIsRetryable(err.isRetryable);
+        } else {
+          setError("An unexpected error occurred. Please try again.");
+          setIsRetryable(false);
+        }
         setIsGenerating(false);
         setGenerationComplete(false);
       }
+    }
+  };
+
+  const handleRetry = () => {
+    if (lastSearchTerm) {
+      setSearchTerm(lastSearchTerm);
+      handleSearchSubmit(new Event('submit') as any);
     }
   };
 
@@ -140,9 +158,33 @@ export default function NewsFeed({ variants }: NewsFeedProps) {
         variants={variants}
         className="bg-card text-card-foreground rounded-lg border shadow-sm p-6"
       >
-        <div className="flex flex-col items-center justify-center h-[400px] text-destructive">
-          <AlertTriangle className="w-8 h-8" />
-          <p className="mt-2">{error}</p>
+        <div className="flex flex-col items-center justify-center h-[400px] space-y-4">
+          <AlertTriangle className="w-12 h-12 text-destructive" />
+          <div className="text-center space-y-2">
+            <h3 className="text-lg font-semibold text-foreground">Generation Failed</h3>
+            <p className="text-sm text-muted-foreground max-w-md">{error}</p>
+          </div>
+          <div className="flex gap-3 mt-4">
+            {isRetryable && lastSearchTerm && (
+              <button
+                onClick={handleRetry}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Try Again
+              </button>
+            )}
+            <button
+              onClick={() => {
+                setError(null);
+                setIsRetryable(false);
+                setNewsMode(NewsMode.FilterExisting);
+              }}
+              className="px-4 py-2 border rounded-lg font-medium hover:bg-accent transition-colors"
+            >
+              Back to News Feed
+            </button>
+          </div>
         </div>
       </motion.div>
     );

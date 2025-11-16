@@ -16,6 +16,7 @@ interface AssignPatientModalProps {
   isOpen: boolean;
   onClose: () => void;
   doctorId: string;
+  assignedPatientIds: string[]; // New prop for existing patient IDs
   onPatientAssigned: (patientId: string) => void;
 }
 
@@ -23,6 +24,7 @@ export default function AssignPatientModal({
   isOpen,
   onClose,
   doctorId,
+  assignedPatientIds, // Destructure the new prop
   onPatientAssigned,
 }: AssignPatientModalProps) {
   const [patients, setPatients] = useState<PatientListItem[]>([]);
@@ -75,10 +77,7 @@ export default function AssignPatientModal({
     try {
       await assignPatientToDoctor(doctorId, patientId);
       setSuccess(`${patientName} has been assigned successfully!`);
-      onPatientAssigned(patientId);
-
-      // Remove assigned patient from the list
-      setPatients((prev) => prev.filter((p) => p.id !== patientId));
+      onPatientAssigned(patientId); // This callback updates the parent component
 
       // Clear success message after 2 seconds
       setTimeout(() => {
@@ -141,25 +140,44 @@ export default function AssignPatientModal({
                   {searchTerm ? 'No patients found matching your search.' : 'No patients available to assign.'}
                 </p>
               ) : (
-                filteredPatients.map((patient) => (
-                  <div
-                    key={patient.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent transition-colors"
-                  >
-                    <div>
-                      <h3 className="font-semibold text-foreground">{patient.fullName}</h3>
-                      <p className="text-sm text-muted-foreground">{patient.email}</p>
-                      <p className="text-xs text-muted-foreground mt-1">ID: {patient.id}</p>
-                    </div>
-                    <button
-                      onClick={() => handleAssignPatient(patient.id, patient.fullName)}
-                      className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                filteredPatients.map((patient) => {
+                  // Check if the current patient is already assigned
+                  const isAssigned = assignedPatientIds.includes(patient.id);
+
+                  return (
+                    <div
+                      key={patient.id}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent transition-colors"
                     >
-                      <UserPlus className="w-4 h-4" />
-                      Assign
-                    </button>
-                  </div>
-                ))
+                      <div>
+                        <h3 className="font-semibold text-foreground">{patient.fullName}</h3>
+                        <p className="text-sm text-muted-foreground">{patient.email}</p>
+                        <p className="text-xs text-muted-foreground mt-1">ID: {patient.id}</p>
+                      </div>
+                      <button
+                        onClick={() => handleAssignPatient(patient.id, patient.fullName)}
+                        disabled={isAssigned} // Disable button if assigned
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                          isAssigned
+                            ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                            : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                        }`}
+                      >
+                        {isAssigned ? (
+                          <>
+                            <CheckCircle2 className="w-4 h-4" />
+                            Assigned
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="w-4 h-4" />
+                            Assign
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  );
+                })
               )}
             </div>
           </>

@@ -19,3 +19,20 @@ export interface Patient {
   lastCheck: string; // Using string for simplicity, can be Date object
   nextAppointment: string;
 }
+
+export interface ClinicalAssessment {
+  id?: string; // Document ID
+  patientId: string;
+  doctorId: string;
+  riskLevel: RiskLevel;
+  notes?: string;
+  timestamp: Date;
+  lastUpdated?: Date;
+}
+
+export interface ClinicalAssessmentData {
+  patientId: string;
+  doctorId: string;
+  riskLevel: RiskLevel;
+  notes?: string;
+}

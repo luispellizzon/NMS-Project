@@ -42,11 +42,12 @@ describe('Modal', () => {
   it('calls onClose when backdrop is clicked', () => {
     const { container } = render(<Modal {...defaultProps} />);
 
-    const backdrop = container.querySelector('.bg-black\\/60');
-    expect(backdrop).toBeInTheDocument();
+    // The onClick handler is on the container div (z-50), not the backdrop (z-40)
+    const modalContainer = container.querySelector('.z-50');
+    expect(modalContainer).toBeInTheDocument();
 
-    if (backdrop) {
-      fireEvent.click(backdrop);
+    if (modalContainer) {
+      fireEvent.click(modalContainer);
       expect(mockOnClose).toHaveBeenCalledTimes(1);
     }
   });

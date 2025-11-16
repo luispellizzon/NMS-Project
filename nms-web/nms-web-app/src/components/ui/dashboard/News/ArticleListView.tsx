@@ -60,16 +60,18 @@ export default function ArticleListView({ articles, onArticleSelect, onRefresh }
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{article.title}</p>
-                  <p className="text-xs text-muted-foreground capitalize line-clamp-1">{article.summary}</p>
+
+                  <p className="text-sm text-primary md:hidden">{article.category}</p>
+                  <p className="hidden md:block text-sm text-muted-foreground md:col-span-2">{article.category}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-4 flex-shrink-0">
-                <button
-                  onClick={() => onArticleSelect(article)}
-                  className="text-sm font-semibold text-primary hover:underline flex-shrink-0"
-                >
-                  Read
-                </button>
+              <div className="flex items-center gap-4 flex-shrink-0 md:col-span-4 md:justify-end">
+                <p className="hidden sm:block text-sm text-center text-muted-foreground md:col-span-2">{article.readTime} min</p>
+                <div className="md:col-span-2 text-center">
+                  <button onClick={() => onArticleSelect(article)} className="text-sm font-semibold text-primary hover:underline flex-shrink-0">
+                    Read
+                  </button>
+                </div>
               </div>
             </div>
           ))
@@ -102,11 +104,10 @@ export default function ArticleListView({ articles, onArticleSelect, onRefresh }
                 <button
                   key={page}
                   onClick={() => goToPage(page)}
-                  className={`min-w-[32px] h-8 px-2 text-sm rounded transition-colors ${
-                    currentPage === page
+                  className={`min-w-[32px] h-8 px-2 text-sm rounded transition-colors ${currentPage === page
                       ? 'bg-primary text-primary-foreground font-medium'
                       : 'hover:bg-accent text-muted-foreground'
-                  }`}
+                    }`}
                 >
                   {page}
                 </button>
