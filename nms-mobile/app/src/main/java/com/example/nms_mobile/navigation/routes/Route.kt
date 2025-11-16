@@ -37,9 +37,9 @@ import com.example.nms_mobile.ui.feature.speech.SpeechTaskViewModel
 import com.example.nms_mobile.ui.feature.speech.results.SpeechResultsScreen
 import com.example.nms_mobile.ui.login.LoginScreen
 import com.example.nms_mobile.ui.login.LoginViewModel
-import com.example.nms_mobile.ui.personaldetails.PersonalInfoEvent
-import com.example.nms_mobile.ui.personaldetails.PersonalInfoScreen
-import com.example.nms_mobile.ui.personaldetails.PersonalInfoViewModel
+import com.example.nms_mobile.ui.feature.personal_details.PersonalInfoEvent
+import com.example.nms_mobile.ui.feature.personal_details.PersonalInfoScreen
+import com.example.nms_mobile.ui.feature.personal_details.PersonalInfoViewModel
 import com.example.nms_mobile.ui.questionnaire.SectionedQuestionnaireEvent
 import com.example.nms_mobile.ui.questionnaire.SectionedQuestionnaireScreen
 import com.example.nms_mobile.ui.questionnaire.SectionedQuestionnaireViewModel
@@ -225,7 +225,10 @@ fun DashboardRoute(
         },
         onOpenMemory = onOpenMemory,
         onOpenCognitive = onOpenCognitive,
-        onLogoutClick = vm::logout
+        onLogoutClick = vm::logout,
+        onAddPatient = {},
+        onSelectPatient = vm::selectPatient,
+        onDeselectPatient = vm::deselectPatient
     )
 }
 

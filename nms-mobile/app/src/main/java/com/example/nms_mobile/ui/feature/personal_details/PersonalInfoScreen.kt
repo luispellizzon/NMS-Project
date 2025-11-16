@@ -1,4 +1,4 @@
-package com.example.nms_mobile.ui.personaldetails
+package com.example.nms_mobile.ui.feature.personal_details
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState

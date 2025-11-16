@@ -17,6 +17,7 @@ data class AuthUser(
     val displayName: String?
 )
 
+
 // The current state of the authentication process.
 data class AuthState(
     val isLoading: Boolean = true, // Is the app currently checking auth status?
@@ -52,41 +53,5 @@ class Auth(
         auth.addAuthStateListener(listener)
         // Check the current status when the app starts.
         listener.onAuthStateChanged(auth)
-    }
-
-    suspend fun signIn(email: String, password: String) {
-        // Start loading and clear any old errors.
-        _state.update { it.copy(isLoading = true, error = null) }
-        // Try to sign in with email/password.
-        runCatching { auth.signInWithEmailAndPassword(email, password).await() }
-            // If it fails, stop loading and save the error message.
-            .onFailure { e -> _state.update { it.copy(isLoading = false, error = e.localizedMessage) } }
-    }
-
-    suspend fun signUp(displayName: String,email: String, password: String) {
-        // Start loading and clear any old errors.
-        _state.update { it.copy(isLoading = true, error = null) }
-        // Try to create a new user account.
-        runCatching { auth.createUserWithEmailAndPassword(email, password).await() }
-            // If it fails, stop loading and save the error message.
-            .onFailure { e -> _state.update { it.copy(isLoading = false, error = e.localizedMessage) } }
-    }
-
-    suspend fun signInWithGoogleIdToken(idToken: String) {
-        // Start loading and clear any old errors.
-        _state.update { it.copy(isLoading = true, error = null) }
-        // Create the necessary credentials from the Google token.
-        val cred = GoogleAuthProvider.getCredential(idToken, null)
-        // Try to sign in using the Google credentials.
-        runCatching { auth.signInWithCredential(cred).await() }
-            // If it fails, stop loading and save the error message.
-            .onFailure { e -> _state.update { it.copy(isLoading = false, error = e.localizedMessage) } }
-    }
-
-    fun signOut() {
-        // Tell Firebase to sign the user out.
-        auth.signOut()
-        // Immediately update the app's state to signed out.
-        _state.value = AuthState(isLoading = false, user = null)
     }
 }

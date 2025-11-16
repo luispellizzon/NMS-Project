@@ -31,7 +31,6 @@ class SignUpViewModel(
     fun signUp() {
         val s = _uiState.value
 
-        // Validación completa
         val err = when {
             s.email.isBlank() -> "Email is required"
             !android.util.Patterns.EMAIL_ADDRESS.matcher(s.email).matches() -> "Invalid email format"
@@ -50,8 +49,6 @@ class SignUpViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                // Solo crear cuenta en Firebase Auth
-                // PersonalInfo capturará el resto de la información
                 repository.signUpAuth(s.email, s.password)
                 _uiState.update { it.copy(isLoading = false, success = true) }
             } catch (e: Exception) {
