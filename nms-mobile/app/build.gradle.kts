@@ -109,4 +109,7 @@ dependencies {
     // providers
     implementation("com.facebook.android:facebook-login:16.2.0")
     implementation("com.google.android.gms:play-services-auth:21.3.0")
+
+    //OpenCV
+    implementation("org.opencv:opencv:4.12.0")
 }

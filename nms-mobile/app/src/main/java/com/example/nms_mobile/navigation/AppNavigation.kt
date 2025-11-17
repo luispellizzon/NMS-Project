@@ -5,6 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.nms_mobile.navigation.routes.CognitiveTestRoute
 import com.example.nms_mobile.navigation.routes.DashboardRoute
 import com.example.nms_mobile.navigation.routes.LoginRoute
 import com.example.nms_mobile.navigation.routes.MemoryTestRoute
@@ -15,6 +16,7 @@ import com.example.nms_mobile.navigation.routes.SpeechAssessmentRoute
 import com.example.nms_mobile.navigation.routes.SpeechResultsRoute
 import com.example.nms_mobile.navigation.routes.SpeechTaskRoute
 import com.example.nms_mobile.navigation.routes.StartRoute
+import com.example.nms_mobile.ui.feature.cognitive.CognitiveIntroScreen
 import com.example.nms_mobile.ui.questionnaire.QuestionnaireIntroScreen
 
 
@@ -109,16 +111,21 @@ fun AppNavigation(
                 },
                 // Open the Speech Assessment screen.
                 onOpenSpeech = {
-                    navController.navigate(Screen.SpeechTask.route)
+                    navController.navigate(Screen.SpeechAssessment.route)
                 },
                 // Open the Speech Results screen (when clicked and analysis is complete)
                 onOpenSpeechResults = {
-                    navController.navigate(Screen.SpeechResults.route)
+                    navController.navigate(Screen.SpeechAssessment.route)
                 },
 
                 // Open the Speech Assessment screen.
                 onOpenMemory = {
                     navController.navigate(Screen.MemoryTest.route)
+                },
+
+                // Open the Speech Assessment screen.
+                onOpenCognitive = {
+                    navController.navigate(Screen.CognitiveIntro.route)
                 },
                 // When the user logs out, go back to the Login screen and clear ALL history.
                 onLoggedOut = {
@@ -205,5 +212,29 @@ fun AppNavigation(
                     navController.popBackStack() }
             )
         }
+
+        // COGNITIVE TEST INTRO (Instructions for cognitive assessment)
+        composable(Screen.CognitiveIntro.route) {
+            CognitiveIntroScreen(
+                onStart = {
+                    navController.navigate(Screen.CognitiveTest.route)
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // COGNITIVE TEST (The actual cognitive tasks)
+        composable(Screen.CognitiveTest.route) {
+            CognitiveTestRoute(
+                onCompleted = {
+                    navController.navigate(Screen.Dashboard.route) {
+                        popUpTo(Screen.CognitiveTest.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
     }
 }

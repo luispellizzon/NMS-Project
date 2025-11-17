@@ -125,7 +125,7 @@ class SpeechAssessmentRepository private constructor(
         transcription: String,
         aiAnalysis: String? = null,
         score: Double? = null,
-        status: String = "transcribed"  // ←
+        status: String = "transcribed"
     ) {
         val updates = hashMapOf<String, Any>(
             "transcription" to transcription,

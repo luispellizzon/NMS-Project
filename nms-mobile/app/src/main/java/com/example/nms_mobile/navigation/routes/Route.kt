@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -26,6 +28,11 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.nms_mobile.data.AuthRepository
 import com.example.nms_mobile.data.FirestoreRepository
 import com.example.nms_mobile.data.SpeechAssessmentsTasks
+import com.example.nms_mobile.ui.cognitive.CubeDrawingScreen
+import com.example.nms_mobile.ui.feature.cognitive.ClockDrawingScreen
+import com.example.nms_mobile.ui.feature.cognitive.CognitiveEvent
+import com.example.nms_mobile.ui.feature.cognitive.CognitiveViewModel
+import com.example.nms_mobile.ui.feature.cognitive.TrailMakingScreen
 import com.example.nms_mobile.ui.feature.dashboard.DashboardScreen
 import com.example.nms_mobile.ui.feature.login.LoginScreen
 import com.example.nms_mobile.ui.feature.login.LoginViewModel
@@ -458,5 +465,101 @@ fun MemoryTestRoute(
         onCompleted = onCompleted
     )
 
+}
+
+@Composable
+fun CognitiveTestRoute(
+    onCompleted: () -> Unit,
+    onBack: () -> Unit
+) {
+    val vm = remember { CognitiveViewModel() }
+    val state by vm.uiState.collectAsState()
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Listen for events
+    LaunchedEffect(vm) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            vm.events.collect { event ->
+                when (event) {
+                    is CognitiveEvent.AllTasksCompleted -> {
+                        onCompleted()
+                    }
+                    else -> {}
+                }
+            }
+        }
+    }
+
+    // Main screen switcher
+    when (state.currentTask) {
+        0 -> {
+            // Start with intro (should navigate via CognitiveIntro route)
+            // This shouldn't happen if navigation is correct
+            LaunchedEffect(Unit) {
+                vm.startTask(1)
+            }
+        }
+        1 -> {
+            // Cube Drawing Task
+            CubeDrawingScreen(
+                elapsedTime = state.elapsedTime,
+                onPathsChanged = vm::updatePaths,
+                onClear = vm::clearCanvas,
+                onNext = { bitmap ->
+                    vm.submitCubeDrawing(bitmap)
+                    // Go directly to next task (no dialog)
+                    vm.startTask(2)
+                },
+                onBack = onBack
+            )
+        }
+        2 -> {
+            // Trail Making Task
+            TrailMakingScreen(
+                elapsedTime = state.elapsedTime,
+                touchSequence = state.touchSequence,
+                expectedSequence = state.expectedSequence,
+                onNodeTouched = vm::registerNodeTouch,
+                onNext = { bitmap ->
+                    vm.submitTrailMaking(bitmap)
+                    // Go directly to next task (no dialog)
+                    vm.startTask(3)
+                },
+                onBack = {
+                    vm.startTask(1)  // Back to Cube
+                }
+            )
+        }
+        3 -> {
+            // Clock Drawing Task
+            ClockDrawingScreen(
+                elapsedTime = state.elapsedTime,
+                onPathsChanged = vm::updatePaths,
+                onClear = vm::clearCanvas,
+                onNext = { bitmap ->
+                    vm.submitClockDrawing(bitmap)
+                    // Complete test (no dialog)
+                    onCompleted()
+                },
+                onBack = {
+                    vm.startTask(2)  // Back to previous task
+                }
+            )
+        }
+    }
+
+    // Error dialog (if any)
+    if (state.error != null) {
+        AlertDialog(
+            onDismissRequest = { /* Do nothing */ },
+            title = { Text("Error") },
+            text = { Text(state.error!!) },
+            confirmButton = {
+                Button(onClick = { vm.reset() }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
 }
 

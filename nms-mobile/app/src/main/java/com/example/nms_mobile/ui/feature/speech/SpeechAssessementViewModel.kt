@@ -6,6 +6,10 @@ import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.nms_mobile.api.ProcessAssessmentRequest
+import com.example.nms_mobile.api.ProcessAssessmentResponse
+import com.example.nms_mobile.api.ProcessImageDescriptionRequest
+import com.example.nms_mobile.api.TranscriptionApiClient
 import com.example.nms_mobile.data.*
 import com.example.nms_mobile.services.AudioRecorderService
 import com.example.nms_mobile.services.AudioPlayerService
@@ -275,9 +279,10 @@ class SpeechAssessmentViewModel(
 
                 val userId = AuthRepository.instance.currentUser()?.uid
                     ?: throw Exception("User not logged in")
+                val id = UUID.randomUUID().toString()
 
                 val assessment = SpeechAssessment(
-                    id = UUID.randomUUID().toString(),
+                    id = id,
                     userId = userId,
                     testType = "audio_recording",
                     audioUrl = downloadUrl,
@@ -299,6 +304,9 @@ class SpeechAssessmentViewModel(
                 }
 
                 _events.send(SpeechAssessmentEvent.UploadCompleted)
+                val resp = callProcessAssessmentRetry(downloadUrl, id)
+
+                Log.d(TAG, "Transcription kickoff: ${resp?.status} ${resp?.message}")
 
             } catch (e: Exception) {
                 Log.e(TAG, "Upload failed", e)
@@ -312,6 +320,24 @@ class SpeechAssessmentViewModel(
                 _events.send(SpeechAssessmentEvent.Error(e.localizedMessage ?: "Upload failed"))
             }
         }
+    }
+
+    private suspend fun callProcessAssessmentRetry(audioUrl: String, assessmentId: String): ProcessAssessmentResponse? {
+        Log.d(TAG, "Body: Audio:$audioUrl \n DocumentID:$assessmentId")
+
+        repeat(3) { attempt ->
+            try {
+                val resp = TranscriptionApiClient.api.processImageDescription(
+                    ProcessImageDescriptionRequest(audioUrl, assessmentId)
+                )
+                Log.d(TAG, "description-assessment ok: $resp")
+                return resp
+            } catch (e: Exception) {
+                Log.w(TAG, "description-assessment attempt ${attempt+1} failed", e)
+                kotlinx.coroutines.delay(1000L * (attempt + 1))
+            }
+        }
+        return null
     }
 
 
