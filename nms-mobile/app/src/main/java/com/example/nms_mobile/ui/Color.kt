@@ -9,6 +9,8 @@ val TealDark    = Color(0xFF005557)
 
 // Neutrals / text / borders
 val White          = Color(0xFFFFFFFF)
+
+val Red = Color(0xFFD32F2F)
 val TextPrimary    = Color(0xFF000000)
 val TextSecondary  = Color(0xFF414040)
 val TextHint       = Color(0xFFD1C2C2)

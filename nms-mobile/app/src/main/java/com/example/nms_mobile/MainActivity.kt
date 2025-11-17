@@ -55,9 +55,6 @@ class MainActivity : ComponentActivity() {
 /**
  * Compose component that checks and requests exact alarm permission
  * Only needed on Android 12 (API 31) and above
- *
- * 🔧 FIXED: Added lifecycle checks and delays to prevent crashes
- * ✅ NO EXTERNAL DEPENDENCIES REQUIRED
  */
 @Composable
 fun AlarmPermissionCheck() {

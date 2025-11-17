@@ -1,23 +1,4 @@
-//package com.example.nms_mobile.data
-//
-//import com.google.firebase.Timestamp
-//
-///**
-// * Data model for Speech Assessment
-// */
 
-
-///**
-// * Recording state
-// */
-//enum class RecordingState {
-//    IDLE,
-//    RECORDING,
-//    STOPPED,
-//    PROCESSING,
-//    COMPLETED,
-//    ERROR
-//}
 
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.PropertyName
@@ -69,22 +50,6 @@ data class TaskResult(
     val completedAt: Timestamp = Timestamp.now(),
     val duration: Long = 0
 )
-
-/**
- * Individual Task Result
- */
-//data class TaskResult(
-//    val taskId: String = "",
-//    val taskName: String = "",
-//    val taskQuestion: String = "",
-//    val taskKeywordsAnswer: String = "",
-//    val audioUrl: String = "",
-//    val transcription: String = "",
-//    val maxScore: Int = 0,
-//    val userScore: Int = 0,
-//    val completedAt: Timestamp = Timestamp.now(),
-//    val duration: Long = 0 // in milliseconds
-//)
 
 /**
  * Speech Task Types

@@ -14,6 +14,9 @@ sealed class Screen(val route: String) {
     data object SpeechAssessment : Screen("speech_assessment")
     data object SpeechTask : Screen("speech_task")
     data object SpeechResults : Screen("speech_results")
+    object MemoryIntro : Screen("memory_intro")
     data object MemoryTest : Screen("memory_test")
+    object CognitiveIntro : Screen("cognitive_intro")
+    object CognitiveTest : Screen("cognitive_test")
 
 }
