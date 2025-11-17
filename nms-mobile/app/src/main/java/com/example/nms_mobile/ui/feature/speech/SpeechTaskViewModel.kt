@@ -17,17 +17,11 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.io.File
-import android.os.Build
-import android.speech.tts.TextToSpeech
-import android.speech.tts.UtteranceProgressListener
 import com.example.nms_mobile.api.ProcessAssessmentRequest
 import com.example.nms_mobile.api.ProcessAssessmentResponse
 import com.example.nms_mobile.api.TranscriptionApiClient
 import com.example.nms_mobile.services.TTSManager
 import kotlinx.coroutines.Dispatchers
-import java.util.Locale
-
-import java.util.UUID
 
 data class SpeechTaskUiState(
     val assessmentId: String? = null,
