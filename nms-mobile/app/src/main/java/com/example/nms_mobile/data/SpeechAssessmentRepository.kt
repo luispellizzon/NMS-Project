@@ -13,12 +13,14 @@ import kotlin.getValue
 class SpeechAssessmentRepository private constructor(
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
     private val storage: FirebaseStorage = FirebaseStorage.getInstance(),
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
+    private val userdb: FirestoreRepository = FirestoreRepository.instance
 ) {
 
     companion object {
         val instance: SpeechAssessmentRepository by lazy { SpeechAssessmentRepository() }
-        private const val COLLECTION_SPEECH = "speech_assessments"
+        private const val COLLECTION_SPEECH = "image_description_assessment"
+        private const val USERS = "users"
         private const val STORAGE_AUDIO_PATH = "speech_audio"
     }
 
@@ -55,13 +57,18 @@ class SpeechAssessmentRepository private constructor(
             "aiAnalysis" to assessment.aiAnalysis,
             "score" to assessment.score,
             "timestamp" to assessment.timestamp,
-            "status" to assessment.status  // ← AÑADIDO
+            "status" to assessment.status  //
         )
 
-        firestore.collection(COLLECTION_SPEECH)
+
+        firestore.collection(USERS)
+            .document(userId)
+            .collection(COLLECTION_SPEECH)
             .document(assessment.id)
             .set(data)
             .await()
+
+        userdb.updateTask("hasCompletedImageDescription", UserTasks.SPEECH_ASSESSMENT.taskName )
     }
 
     /**

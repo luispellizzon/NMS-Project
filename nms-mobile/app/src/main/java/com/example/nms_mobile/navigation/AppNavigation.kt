@@ -111,11 +111,15 @@ fun AppNavigation(
                 },
                 // Open the Speech Assessment screen.
                 onOpenSpeech = {
+                    navController.navigate(Screen.SpeechTask.route)
+                },
+
+                onOpenImageDescription = {
                     navController.navigate(Screen.SpeechAssessment.route)
                 },
                 // Open the Speech Results screen (when clicked and analysis is complete)
                 onOpenSpeechResults = {
-                    navController.navigate(Screen.SpeechAssessment.route)
+                    navController.navigate(Screen.SpeechResults.route)
                 },
 
                 // Open the Speech Assessment screen.

@@ -7,7 +7,8 @@ import java.util.UUID
 
 class MemoryTestRepository private constructor(
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
+    private val userdb: FirestoreRepository = FirestoreRepository.instance
 ) {
 
     companion object {
@@ -40,6 +41,8 @@ class MemoryTestRepository private constructor(
             .document(test.id)
             .set(data)
             .await()
+
+        userdb.updateTask("hasCompletedMemoryAssessment", UserTasks.COGNITIVE_ASSESSMENT.taskName)
     }
 
     /**

@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.nms_mobile.api.ProcessAssessmentRequest
 import com.example.nms_mobile.api.ProcessAssessmentResponse
 import com.example.nms_mobile.api.ProcessImageDescriptionRequest
+import com.example.nms_mobile.api.ProcessImageDescriptionResponse
 import com.example.nms_mobile.api.TranscriptionApiClient
 import com.example.nms_mobile.data.*
 import com.example.nms_mobile.services.AudioRecorderService
@@ -322,13 +323,14 @@ class SpeechAssessmentViewModel(
         }
     }
 
-    private suspend fun callProcessAssessmentRetry(audioUrl: String, assessmentId: String): ProcessAssessmentResponse? {
+    private suspend fun callProcessAssessmentRetry(audioUrl: String, assessmentId: String): ProcessImageDescriptionResponse? {
         Log.d(TAG, "Body: Audio:$audioUrl \n DocumentID:$assessmentId")
+        val userId = AuthRepository.instance.currentUser()?.uid
 
         repeat(3) { attempt ->
             try {
                 val resp = TranscriptionApiClient.api.processImageDescription(
-                    ProcessImageDescriptionRequest(audioUrl, assessmentId)
+                    ProcessImageDescriptionRequest(userId!!, assessmentId, audioUrl)
                 )
                 Log.d(TAG, "description-assessment ok: $resp")
                 return resp
