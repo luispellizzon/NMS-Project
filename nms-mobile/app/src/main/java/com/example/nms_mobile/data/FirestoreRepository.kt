@@ -1,5 +1,6 @@
 package com.example.nms_mobile.data
 
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
@@ -13,9 +14,25 @@ data class UserProfile(
     val fullName: String = "",
     val dateOfBirth: String = "",
     val email: String = "",
-    val role: String = "patient", // "patient" | "caregiver"
-    val createdAt: Any? = null     // server timestamp (FieldValue) when writing
+    val role: String = "patient",
+    val createdAt: Timestamp = Timestamp.now(),
+    val currentTask: String = UserTasks.RISK_ASSESSMENT.taskName,
+    val hasCompletedRiskAssessment: Boolean = false,
+    val hasCompletedImageDescription: Boolean = false,
+    val hasCompletedSpeechAssessment: Boolean = false,
+    val hasCompletedMemoryAssessment: Boolean = false,
+    val hasCompletedCognitiveAssessment: Boolean = false
 )
+
+enum class UserTasks(
+    val taskName: String
+){
+    RISK_ASSESSMENT(taskName="risk_assessment"),
+    IMAGE_DESCRIPTION(taskName="image_description_assessment"),
+    SPEECH_ASSESSMENT(taskName= "speech_assessment"),
+    MEMORY_ASSESSMENT(taskName="memory_assessment"),
+    COGNITIVE_ASSESSMENT(taskName = "cognitive_assessment")
+}
 
 data class CombinedQuestionnaire(
     // names intentionally match your HF model schema
@@ -43,18 +60,9 @@ class FirestoreRepository private constructor(
 ) {
 
     /* ---------- User Details ---------- */
-    suspend fun saveUserDetails(profile: UserProfile ) {
+    suspend fun createUserProfile(profile: UserProfile ) {
         val uid = uidOrThrow()
-        userDoc(uid).set(
-            mapOf(
-                "uid" to uid,
-                "fullName" to profile.fullName,
-                "dateOfBirth" to profile.dateOfBirth,
-                "email" to profile.email,
-                "role" to profile.role,
-                "createdAt" to FieldValue.serverTimestamp()
-            )
-        ).await()
+        userDoc(uid).set(profile).await()
     }
 
     // Will be used to check users from google, facebook, apple signup.
@@ -64,20 +72,6 @@ class FirestoreRepository private constructor(
     }
     private fun uidOrThrow(): String = auth.currentUser?.uid ?: error("No authenticated user")
     private fun userDoc(uid: String) = db.collection("users").document(uid)
-
-    suspend fun createUserProfile(profile: UserProfile) {
-        val uid = profile.uid.ifBlank { uidOrThrow() }
-        userDoc(uid).set(
-            mapOf(
-                "uid" to uid,
-                "fullName" to profile.fullName,
-                "dateOfBirth" to profile.dateOfBirth,
-                "email" to profile.email,
-                "role" to profile.role,
-                "createdAt" to FieldValue.serverTimestamp()
-            )
-        ).await()
-    }
 
     // can be used to display profile info in the UI
     suspend fun getUserProfile(): UserProfile? {
@@ -91,10 +85,12 @@ class FirestoreRepository private constructor(
     suspend fun saveCombinedQuestionnaire(q: CombinedQuestionnaire) {
         val uid = uidOrThrow()
         questionnaireCombinedDoc(uid).set(q).await()
+        userDoc(uid).update("currentTask", UserTasks.IMAGE_DESCRIPTION.taskName,
+            "hasCompletedRiskAssessment", true).await()
     }
 
     private fun questionnaireCombinedDoc(uid: String) =
-        db.collection("risk_assessments").document(uid)
+        db.collection("users").document(uid).collection("risk_assessment").document(uid)
 
     suspend fun getCombinedQuestionnaire(): CombinedQuestionnaire? {
         val uid = uidOrThrow()
@@ -117,17 +113,25 @@ class FirestoreRepository private constructor(
     companion object {
         val instance: FirestoreRepository by lazy { FirestoreRepository() }
     }
-    suspend fun getLifestyleQuestionaryStatus(userId: String): Boolean {
-        return try {
-            // 💡 Cambio CLAVE: Usamos la ruta donde se guarda el cuestionario.
-            val snapshot = questionnaireCombinedDoc(userId).get().await()
 
-            // El cuestionario está "completado" si el documento existe.
-            snapshot.exists()
-
+    suspend fun getCurrentTask(userId: String): String? {
+        try {
+            val snapshot = db.collection("users").document(userId).get().await()
+            if(snapshot.exists())
+            {
+                val docProfile = snapshot.toObject(UserProfile::class.java)
+                return docProfile?.currentTask
+            }
+            return null
         } catch (e: Exception) {
             println("Firestore error fetching lifestyle status: $e")
-            false
         }
+        return null
     }
+
+    suspend fun updateTask(taskFlag: String, newTask: String) {
+        val uid = uidOrThrow()
+        userDoc(uid).update(taskFlag, true, "currentTask", newTask).await()
+    }
+
 }

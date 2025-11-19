@@ -27,7 +27,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.nms_mobile.data.AuthRepository
 import com.example.nms_mobile.data.FirestoreRepository
-import com.example.nms_mobile.data.SpeechAssessmentsTasks
+import com.example.nms_mobile.data.SpeechAssessmentsTasksRepository
 import com.example.nms_mobile.ui.cognitive.CubeDrawingScreen
 import com.example.nms_mobile.ui.feature.cognitive.ClockDrawingScreen
 import com.example.nms_mobile.ui.feature.cognitive.CognitiveEvent
@@ -191,6 +191,7 @@ fun PersonalInfoRoute(onFinished: () -> Unit) {
 @Composable
 fun DashboardRoute(
     onOpenQuestionnaire: () -> Unit,
+    onOpenImageDescription:  () -> Unit,
     onOpenNews: () -> Unit = {},
     onOpenSpeech: () -> Unit = {},
     onOpenSpeechResults: () -> Unit = {},  // NEW
@@ -224,6 +225,7 @@ fun DashboardRoute(
         state = state,
         onOpenNews = onOpenNews,
         onOpenRiskAssessment = onOpenQuestionnaire, // Opens the questionnaire
+        onOpenImageDescription = onOpenImageDescription,
         onOpenSpeech = {
             // Navigate to results if completed, otherwise to speech task
             if (state.speechAnalysisStatus == SpeechAnalysisStatus.COMPLETED) {
@@ -437,7 +439,7 @@ fun SpeechResultsRoute(
     onBack: () -> Unit,
     onRedoTest: () -> Unit
 ) {
-    val speechRepo = remember { SpeechAssessmentsTasks.instance }
+    val speechRepo = remember { SpeechAssessmentsTasksRepository.instance }
     var assessment by remember { mutableStateOf<SpeechAssessmentDocument?>(null) }
 
     // Load the most recent completed assessment

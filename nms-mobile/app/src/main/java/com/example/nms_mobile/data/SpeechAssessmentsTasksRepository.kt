@@ -14,13 +14,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.delay
 
-class SpeechAssessmentsTasks private constructor(
+class SpeechAssessmentsTasksRepository private constructor(
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
+    private val userdb: FirestoreRepository = FirestoreRepository.instance
 ) {
 
     companion object {
-        val instance: SpeechAssessmentsTasks by lazy { SpeechAssessmentsTasks() }
+        val instance: SpeechAssessmentsTasksRepository by lazy { SpeechAssessmentsTasksRepository() }
         private const val TAG = "SpeechAssessmentTasks"
         private const val COLLECTION_USERS = "users"
         private const val SUBCOLLECTION_SPEECH = "speech_assessment"
@@ -149,6 +150,10 @@ class SpeechAssessmentsTasks private constructor(
                 )
             )
             .await()
+
+        userdb.updateTask("hasCompletedSpeechAssessment", UserTasks.MEMORY_ASSESSMENT.taskName)
+
+        Log.d(TAG, "Assessment marked as completed: $assessmentId")
 
         Log.d(TAG, "Assessment completed: $assessmentId, AI analysis status: processing")
     }

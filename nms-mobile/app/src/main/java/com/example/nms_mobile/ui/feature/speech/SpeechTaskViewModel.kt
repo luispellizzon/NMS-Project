@@ -57,7 +57,7 @@ sealed class SpeechTaskEvent {
 }
 
 class SpeechTaskViewModel(
-    private val repository: SpeechAssessmentsTasks = SpeechAssessmentsTasks.instance,
+    private val repository: SpeechAssessmentsTasksRepository = SpeechAssessmentsTasksRepository.instance,
     private val storage: StorageRepository = StorageRepository.instance,
     private val auth: AuthRepository = AuthRepository.instance
 ) : ViewModel() {

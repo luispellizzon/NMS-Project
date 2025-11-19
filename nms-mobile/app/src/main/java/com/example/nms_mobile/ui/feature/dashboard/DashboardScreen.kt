@@ -4,6 +4,7 @@ import DashboardUiState
 import SpeechAnalysisStatus
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -23,7 +24,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.nms_mobile.data.Patient
+import com.example.nms_mobile.data.UserTasks
 import com.example.nms_mobile.ui.BackgroundGray
+import com.example.nms_mobile.ui.Green
+import com.example.nms_mobile.ui.Orange
+import com.example.nms_mobile.ui.Red
 import com.example.nms_mobile.ui.TealPrimary
 import com.example.nms_mobile.ui.White
 import com.example.nms_mobile.ui.components.NmsTopAppBar
@@ -35,6 +40,7 @@ fun DashboardScreen(
     state: DashboardUiState,
     onOpenNews: () -> Unit,
     onOpenRiskAssessment: () -> Unit,
+    onOpenImageDescription: () -> Unit,
     onOpenSpeech: () -> Unit,
     onOpenMemory: () -> Unit,
     onOpenCognitive: () -> Unit,
@@ -116,7 +122,8 @@ fun DashboardScreen(
                         onOpenRiskAssessment = onOpenRiskAssessment,
                         onOpenSpeech = onOpenSpeech,
                         onOpenMemory = onOpenMemory,
-                        onOpenCognitive = onOpenCognitive
+                        onOpenCognitive = onOpenCognitive,
+                        onOpenImageDescription = onOpenImageDescription
                     )
                 }
             }
@@ -188,7 +195,7 @@ fun DashboardScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             TestTile(
-                title = "Lifestyle Questionary",
+                title = "Lifestyle",
                 onClick = onOpenRiskAssessment,
                 modifier = Modifier
                     .weight(1f)
@@ -262,7 +269,9 @@ fun DashboardScreen(
 
         if (isLoading) {
             Box(
-                modifier = Modifier.fillMaxWidth().padding(32.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(32.dp),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator()
@@ -430,7 +439,8 @@ private fun PatientAssessmentsView(
         onOpenRiskAssessment: () -> Unit,
         onOpenSpeech: () -> Unit,
         onOpenMemory: () -> Unit,
-        onOpenCognitive: () -> Unit
+        onOpenCognitive: () -> Unit,
+        onOpenImageDescription: () -> Unit
     ) {
         Text(
             text = "Assessments and Scores",
@@ -441,26 +451,42 @@ private fun PatientAssessmentsView(
 
         Spacer(Modifier.height(12.dp))
 
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             TestTile(
-                title = "Lifestyle Questionary",
+                title = "Lifestyle",
                 onClick = onOpenRiskAssessment,
-                modifier = Modifier.weight(1f).height(180.dp),
-                pendingColor = TealPrimary,
-                isCompleted = state.isLifestyleQuestionaryCompleted
+                modifier = Modifier
+                    .weight(1f)
+                    .height(180.dp),
+                pendingColor = if (state.currentTask != "risk_assessment") Color.LightGray else TealPrimary,
+                isCompleted = state.hasCompletedRiskAssessment
             )
 
-            SpeechTestTile(
-                onClick = onOpenSpeech,
-                modifier = Modifier.weight(1f).height(180.dp),
-                analysisStatus = state.speechAnalysisStatus,
-                isCompleted = state.isSpeechAssessmentCompleted,
-                userScore = state.speechUserScore,
-                totalScore = state.speechTotalScore
-            )
+            if(state.currentTask == UserTasks.IMAGE_DESCRIPTION.taskName || state.currentTask ==  UserTasks.RISK_ASSESSMENT.taskName){
+                TestTile(
+                    title = "Image Description",
+                    onClick = if (state.currentTask == UserTasks.IMAGE_DESCRIPTION.taskName || state.hasCompletedImageDescription == true) onOpenImageDescription else funTest(),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(180.dp),
+                    pendingColor = if (state.currentTask != UserTasks.IMAGE_DESCRIPTION.taskName ) Color.LightGray else TealPrimary,
+                    isCompleted = state.hasCompletedImageDescription
+                )
+            } else {
+                SpeechTestTile(
+                    onClick = onOpenSpeech,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(180.dp),
+                    analysisStatus = state.speechAnalysisStatus,
+                    userScore = state.speechUserScore,
+                    totalScore = state.speechTotalScore
+                )
+            }
         }
 
         Spacer(Modifier.height(12.dp))
@@ -471,13 +497,22 @@ private fun PatientAssessmentsView(
         ) {
             TestTile(
                 title = "Memory",
-                onClick = onOpenMemory,
-                modifier = Modifier.weight(1f).height(140.dp)
+                onClick = if (state.currentTask == UserTasks.MEMORY_ASSESSMENT.taskName || state.hasCompletedMemoryAssessment == true) onOpenMemory else funTest() ,
+                pendingColor = if (state.currentTask != UserTasks.MEMORY_ASSESSMENT.taskName ) Color.LightGray else TealPrimary,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(140.dp),
+                isCompleted = state.hasCompletedMemoryAssessment
             )
             TestTile(
                 title = "Cognitive",
-                onClick = onOpenCognitive,
-                modifier = Modifier.weight(1f).height(140.dp)
+                onClick = if (state.currentTask == UserTasks.COGNITIVE_ASSESSMENT.taskName  || state.hasCompletedMemoryAssessment == true) onOpenCognitive else funTest(),
+                pendingColor = if (state.currentTask != UserTasks.COGNITIVE_ASSESSMENT.taskName) Color.LightGray else TealPrimary,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(140.dp),
+                isCompleted = state.hasCompletedCognitiveAssessment
+
             )
         }
     }
@@ -487,29 +522,29 @@ private fun TestTile(
     title: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    // Color used when the assessment is NOT completed. Default is gray.
-    pendingColor: Color = Color(0xFF9E9E9E),
-    isCompleted: Boolean = false,
+    pendingColor: Color = Color.LightGray,
+    isCompleted: Boolean? = false,
 ) {
     // The color used when the assessment IS completed (fixed gray).
-    val completedColor = Color(0xFF9E9E9E)
+    val completedColor = Green
 
     // Decide the card's final color.
-    val cardColor = if (isCompleted) {
-        completedColor // Gray if complete
+    val cardColor = if (isCompleted!!) {
+        completedColor
     } else {
-        pendingColor // Teal or default gray if not complete
+        pendingColor
     }
 
     // Change the text if the assessment is completed.
-    val displayText = if (isCompleted) "COMPLETE" else title
+
 
     // Stop click action if the assessment is completed.
-    val clickAction: (() -> Unit)? = if (isCompleted) null else onClick
+//    val clickAction: (() -> Unit)? = if (isCompleted) null else onClick
+//    val clickAction: (() -> Unit)? = if (null) null else onClick
 
     ElevatedCard(
         // Clicks run only if clickAction is not null (i.e., not completed).
-        onClick = { clickAction?.invoke() },
+        onClick = onClick,
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
         // Apply the chosen color.
@@ -522,11 +557,33 @@ private fun TestTile(
                 .padding(16.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = displayText,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = Color.White
-            )
+            Column(modifier = Modifier
+                .fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center){
+                if(isCompleted){
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(32.dp)
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = Color.White
+                )
+                Spacer(Modifier.height(8.dp))
+                if(!isCompleted){
+                    Text(
+                        text = "Status: Pending...",
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = Color.White
+                    )
+                }
+            }
         }
     }
 }
@@ -537,20 +594,19 @@ private fun SpeechTestTile(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     analysisStatus: SpeechAnalysisStatus,
-    isCompleted: Boolean,
     userScore: Int?,
     totalScore: Int?
 ) {
     // Determine card appearance based on status
     val cardColor = when (analysisStatus) {
-        SpeechAnalysisStatus.NOT_STARTED -> Color(0xFF9E9E9E) // Gray
-        SpeechAnalysisStatus.PROCESSING -> Color(0xFFFF9800) // Orange
-        SpeechAnalysisStatus.COMPLETED -> Color(0xFF4CAF50) // Green
-        SpeechAnalysisStatus.ERROR -> Color(0xFFF44336) // Red
+        SpeechAnalysisStatus.NOT_STARTED -> TealPrimary // Gray
+        SpeechAnalysisStatus.PROCESSING -> Orange // Orange
+        SpeechAnalysisStatus.COMPLETED -> Green // Green
+        SpeechAnalysisStatus.ERROR -> Red // Red
     }
 
     val displayText = when (analysisStatus) {
-        SpeechAnalysisStatus.NOT_STARTED -> "Speech"
+        SpeechAnalysisStatus.NOT_STARTED -> "Pending"
         SpeechAnalysisStatus.PROCESSING -> "Analyzing..."
         SpeechAnalysisStatus.COMPLETED -> "View Results"
         SpeechAnalysisStatus.ERROR -> "Error"
@@ -595,10 +651,16 @@ private fun SpeechTestTile(
                 }
 
                 Text(
-                    text = displayText,
+                    text = "Speech",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = Color.White,
                     textAlign = TextAlign.Center
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "Status: $displayText",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = Color.White
                 )
 
                 // Show score when analysis is completed
@@ -626,4 +688,30 @@ private fun SpeechTestTile(
             }
         }
     }
+}
+
+private fun funTest():() ->Unit = {
+//    MessageDialog()
+}
+
+@Composable
+private fun MessageDialog() {
+    AlertDialog(
+        onDismissRequest = { /* Don't allow dismissing without choice */ },
+        title = { Text("Link Account") },
+        text = {
+            Text(
+                "Complete previous assessment before start this one!"
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    // Re-trigger the social sign-in to get fresh credentials for linking
+                }
+            ) {
+                Text("Confirm")
+            }
+        },
+    )
 }

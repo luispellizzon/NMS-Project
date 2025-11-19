@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.nms_mobile.data.AuthRepository
 import com.example.nms_mobile.data.FirestoreRepository
 import com.example.nms_mobile.data.UserProfile
+import com.example.nms_mobile.data.UserTasks
+import com.google.firebase.Timestamp
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -89,22 +91,45 @@ class PersonalInfoViewModel(
             _uiState.update { it.copy(error = "User not authenticated. Please login again.") }
             return
         }
-
+        var userDetails: UserProfile? = null
         // Create the data object to be saved.
-        val details = UserProfile(
-            uid = uid,
-            fullName = s.fullName.trim(),
-            dateOfBirth = s.dateOfBirth,
-            email = s.email.trim(),
-            role = s.role
-        )
+        if(s.role == "patient"){
+            userDetails = UserProfile(
+                uid = uid,
+                fullName = s.fullName.trim(),
+                dateOfBirth = s.dateOfBirth,
+                email = s.email.trim(),
+                role = s.role,
+                createdAt = Timestamp.now(),
+                currentTask = UserTasks.RISK_ASSESSMENT.taskName,
+                hasCompletedRiskAssessment = false,
+                hasCompletedImageDescription = false,
+                hasCompletedSpeechAssessment = false,
+                hasCompletedMemoryAssessment = false
+            )
+        } else {
+            userDetails = UserProfile(
+                uid = uid,
+                fullName = s.fullName.trim(),
+                dateOfBirth = s.dateOfBirth,
+                email = s.email.trim(),
+                role = s.role,
+                createdAt = Timestamp.now(),
+                currentTask = UserTasks.RISK_ASSESSMENT.taskName,
+                hasCompletedRiskAssessment = false,
+                hasCompletedImageDescription = false,
+                hasCompletedSpeechAssessment = false,
+                hasCompletedMemoryAssessment = false
+            )
+        }
+
 
         // --- SUBMISSION LOGIC ---
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmitting = true, error = null) }
             try {
                 // 1. Save the profile data to Firestore.
-                firestore.saveUserDetails(details)
+                firestore.createUserProfile(userDetails)
 
                 // 2. Update the user's display name in Firebase Auth (for quick access).
                 auth.updateDisplayName(s.fullName.trim())
@@ -113,7 +138,7 @@ class PersonalInfoViewModel(
                 // 3. Send event to trigger successful navigation.
                 _events.send(PersonalInfoEvent.SubmittedSuccessfully)
             } catch (e: Exception) {
-                // Handle any submission errors.
+                // Handle any submission errors.s
                 _uiState.update {
                     it.copy(
                         isSubmitting = false,

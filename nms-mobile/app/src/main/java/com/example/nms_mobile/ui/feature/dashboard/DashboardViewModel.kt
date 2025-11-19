@@ -2,7 +2,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nms_mobile.data.AuthRepository
 import com.example.nms_mobile.data.FirestoreRepository
-import com.example.nms_mobile.data.SpeechAssessmentsTasks
+import com.example.nms_mobile.data.SpeechAssessmentsTasksRepository
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -25,11 +25,17 @@ data class DashboardUiState(
     val riskScore: Double? = null,
     val isLoadingScore: Boolean = false,
     val error: String? = null,
-    // Key status: Is the questionnaire finished?
-    val isLifestyleQuestionaryCompleted: Boolean = false,
+    // Status tracking for assessments
+    val currentTask: String? = "risk_assessment",
+    val hasCompletedRiskAssessment: Boolean? = false,
+    val hasCompletedImageDescription: Boolean? = false,
+    val hasCompletedSpeechAssessment: Boolean? = false,
+    val hasCompletedMemoryAssessment: Boolean? = false,
+    val hasCompletedCognitiveAssessment: Boolean? = false,
+
     // Speech assessment status tracking
     val speechAnalysisStatus: SpeechAnalysisStatus = SpeechAnalysisStatus.NOT_STARTED,
-    val isSpeechAssessmentCompleted: Boolean = false,
+//    val isSpeechAssessmentCompleted: Boolean = false,
     val speechUserScore: Int? = null,
     val speechTotalScore: Int? = null,
 
@@ -49,7 +55,7 @@ class DashboardViewModel(
     private val repo: AuthRepository = AuthRepository.instance,
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val db: FirestoreRepository = FirestoreRepository.instance,
-    private val speechRepo: SpeechAssessmentsTasks = SpeechAssessmentsTasks.instance,
+    private val speechRepo: SpeechAssessmentsTasksRepository = SpeechAssessmentsTasksRepository.instance,
     private val patientRepo: PatientRepository = PatientRepository.instance
 ) : ViewModel() {
 
@@ -78,8 +84,9 @@ class DashboardViewModel(
                 if (userRole == "caregiver") {
                     loadCaregiverPatients()
                 } else if (userRole == "patient") {
-                    checkLifestyleQuestionaryStatus()
-                    checkSpeechAssessmentStatus()
+                    loadPatientDetails()
+//                    checkLifestyleQuestionaryStatus()
+//                    checkSpeechAssessmentStatus()
                 }
             }
         }
@@ -90,7 +97,7 @@ class DashboardViewModel(
         _ui.update { it.copy(isLoadingPatients = true) }
         try {
             val patients = patientRepo.getCaregiverPatients()
-            Log.d("CAregiver", patients.toString())
+            Log.d("Caregiver", patients.toString())
             _ui.update {
                 it.copy(
                     patients = patients,
@@ -149,24 +156,48 @@ class DashboardViewModel(
     }
 
     // Fetches the completion status of the questionnaire from the database.
-    private fun checkLifestyleQuestionaryStatus() = viewModelScope.launch {
+    private fun loadPatientDetails() = viewModelScope.launch {
         val userId = auth.currentUser?.uid
 
-        // Only proceed if the user is logged in.
         if (userId != null) {
             try {
                 // Call the repository to check if the status is true/false.
-                val isCompleted = db.getLifestyleQuestionaryStatus(userId)
+                val profile = db.getUserProfile()
 
                 // Update the UI state with the result.
-                _ui.update { it.copy(isLifestyleQuestionaryCompleted = isCompleted) }
+                _ui.update { it.copy(
+                    currentTask = profile?.currentTask,
+                    hasCompletedRiskAssessment = profile?.hasCompletedRiskAssessment,
+                    hasCompletedImageDescription = profile?.hasCompletedImageDescription,
+                    hasCompletedSpeechAssessment = profile?.hasCompletedSpeechAssessment,
+                    hasCompletedMemoryAssessment = profile?.hasCompletedMemoryAssessment,
+                    hasCompletedCognitiveAssessment = profile?.hasCompletedCognitiveAssessment
+                ) }
 
             } catch (e: Exception) {
                 // Log the error if fetching the status fails (e.g., no internet).
-                Log.e(TAG, "Error checking lifestyle questionary status: $e")
+                Log.e(TAG, "Error checking current user task: $e")
             }
         }
     }
+//    private fun checkLifestyleQuestionaryStatus() = viewModelScope.launch {
+//        val userId = auth.currentUser?.uid
+//
+//        // Only proceed if the user is logged in.
+//        if (userId != null) {
+//            try {
+//                // Call the repository to check if the status is true/false.
+//                val isCompleted = db.getLifestyleQuestionaryStatus(userId)
+//
+//                // Update the UI state with the result.
+//                _ui.update { it.copy(isLifestyleQuestionaryCompleted = isCompleted) }
+//
+//            } catch (e: Exception) {
+//                // Log the error if fetching the status fails (e.g., no internet).
+//                Log.e(TAG, "Error checking lifestyle questionary status: $e")
+//            }
+//        }
+//    }
 
     /**
      * Checks the speech assessment status and starts polling if processing
@@ -180,7 +211,7 @@ class DashboardViewModel(
                 val recentAssessment = speechRepo.getMostRecentCompletedAssessment()
 
                 if (recentAssessment != null) {
-                    _ui.update { it.copy(isSpeechAssessmentCompleted = true) }
+                    _ui.update { it.copy(hasCompletedSpeechAssessment = true) }
 
                     // Calculate max score from all tasks
                     val maxScore = recentAssessment.content.values.sumOf { it.maxScore }
@@ -231,7 +262,7 @@ class DashboardViewModel(
                 } else {
                     _ui.update {
                         it.copy(
-                            isSpeechAssessmentCompleted = false,
+                            hasCompletedSpeechAssessment = false,
                             speechAnalysisStatus = SpeechAnalysisStatus.NOT_STARTED,
                             speechUserScore = null,
                             speechTotalScore = null
