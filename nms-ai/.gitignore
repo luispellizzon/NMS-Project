@@ -7,6 +7,7 @@
 # === Credentials & Secrets ===
 # IMPORTANT: Never commit secrets, API keys, or credential files.
 **/serviceAccountKey.json
+serviceAccountKey.json
 *.env
 .env.*
 *.pem
