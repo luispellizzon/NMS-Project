@@ -21,6 +21,28 @@ services:
               count: 1
               capabilities: [gpu]
 
+  # Ollama Service - Local LLM hosting
+  ollama:
+    container_name: nms_ollama_service
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"  # Ollama API port
+    volumes:
+      # Persist Ollama models
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    # Optional: Automatically pull a model on startup
+    # Uncomment the lines below to auto-pull llama3.2
+    # command: >
+    #   sh -c "ollama serve & sleep 5 && ollama pull llama3.2 && wait"
+
   # Agents Service - Handles news aggregation and risk assessment
   agents:
     container_name: nms_agents_service
@@ -34,9 +56,14 @@ services:
     environment:
       - FIREBASE_SERVICE_ACCOUNT_KEY_PATH=/app/secrets/serviceAccountKey.json
       - GEMINI_API_KEY=${GEMINI_API_KEY}  # From .env file
+      # Ollama configuration - connect to ollama service
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2}
+      - DEFAULT_LLM_PROVIDER=${DEFAULT_LLM_PROVIDER:-gemini}
     restart: unless-stopped
     depends_on:
       - transcription
+      - ollama  # Wait for Ollama to be ready
 
   # Backend Service (placeholder for future development)
   # backend:
@@ -53,3 +80,8 @@ services:
   #   depends_on:
   #     - transcription
   #     - agents
+
+# Named volumes for persistent data
+volumes:
+  ollama_data:
+    driver: local
