@@ -9,9 +9,9 @@ warnings.filterwarnings("ignore", category=DeprecationWarning, module="pydantic.
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
-from pydantic import BaseModeyl
+from pydantic import BaseModel
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Optional
 import json
 import asyncio
 
