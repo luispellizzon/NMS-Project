@@ -2,42 +2,46 @@ package com.example.nms_mobile.data
 
 import android.graphics.Bitmap
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.tasks.await
 import java.io.ByteArrayOutputStream
-import java.util.UUID
 
 class CognitiveRepository private constructor(
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
-    private val storage: FirebaseStorage = FirebaseStorage.getInstance(),
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val storage: FirebaseStorage = FirebaseStorage.getInstance()
 ) {
 
     companion object {
-        val instance: CognitiveRepository by lazy { CognitiveRepository() }
-        private const val STORAGE_COGNITIVE_PATH = "cognitive_assessments"
+        @Volatile
+        private var INSTANCE: CognitiveRepository? = null
+
+        val instance: CognitiveRepository
+            get() = INSTANCE ?: synchronized(this) {
+                INSTANCE ?: CognitiveRepository().also { INSTANCE = it }
+            }
     }
 
     /**
-     * Uploads a drawing image (Bitmap) to Firebase Storage
-     * @return Download URL of the uploaded image
+     * Uploads a drawing image to Firebase Storage
      */
     suspend fun uploadDrawingImage(bitmap: Bitmap, taskType: String): String {
         val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
-        val fileName = "${taskType}_${UUID.randomUUID()}.png"
-        val storageRef = storage.reference
-            .child(STORAGE_COGNITIVE_PATH)
-            .child(userId)
-            .child(fileName)
+        val timestamp = System.currentTimeMillis()
+        val filename = "${taskType}_${timestamp}.jpg"
 
-        // Convert Bitmap to ByteArray
+        val storageRef = storage.reference
+            .child("cognitive_drawings")
+            .child(userId)
+            .child(filename)
+
+        // Compress bitmap
         val baos = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos)
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos)
         val data = baos.toByteArray()
 
-        // Upload image
+        // Upload
         storageRef.putBytes(data).await()
 
         // Get download URL
@@ -45,36 +49,102 @@ class CognitiveRepository private constructor(
     }
 
     /**
-     * Saves cognitive task result to user's subcollection
-     * Path: users/{userId}/cognitive_assessments/{taskId}
+     * Creates a new Cognitive Assessment (parent document)
      */
-    suspend fun saveCognitiveTaskResult(result: CognitiveTaskResult) {
+    suspend fun createCognitiveAssessment(assessmentId: String) {
         val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
 
-        val data = hashMapOf(
-            "id" to result.id,
-            "userId" to userId,
-            "taskType" to result.taskType,
-            "imageUrl" to result.imageUrl,
-            "strokeCount" to result.strokeCount,
-            "totalLength" to result.totalLength,
-            "boundingBoxArea" to result.boundingBoxArea,
-            "duration" to result.duration,
-            "passed" to result.passed,
-            "touchSequence" to result.touchSequence,
-            "timestamp" to FieldValue.serverTimestamp()
+        val assessment = CognitiveAssessment(
+            id = assessmentId,
+            userId = userId,
+            totalScore = 0,
+            state = "in_progress",
+            date = com.google.firebase.Timestamp.now(),
+            startedAt = com.google.firebase.Timestamp.now(),
+            completedAt = null
         )
 
         firestore.collection("users")
             .document(userId)
             .collection("cognitive_assessments")
-            .document(result.id)
-            .set(data)
+            .document(assessmentId)
+            .set(assessment)
             .await()
     }
 
     /**
-     * Obtiene todos los resultados del Cognitive Test del usuario
+     * Saves a task result as subcollection under the assessment
+     */
+    suspend fun saveCognitiveTaskResultToAssessment(
+        assessmentId: String,
+        taskResult: CognitiveTaskResult
+    ) {
+        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+
+        // Save task to subcollection
+        firestore.collection("users")
+            .document(userId)
+            .collection("cognitive_assessments")
+            .document(assessmentId)
+            .collection("tasks")
+            .document(taskResult.id)
+            .set(taskResult.copy(userId = userId))
+            .await()
+    }
+
+    /**
+     * Updates the assessment with total score and completion status
+     */
+    suspend fun updateAssessmentScore(assessmentId: String) {
+        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+
+        // Get all tasks for this assessment
+        val tasksSnapshot = firestore.collection("users")
+            .document(userId)
+            .collection("cognitive_assessments")
+            .document(assessmentId)
+            .collection("tasks")
+            .get()
+            .await()
+
+        val totalScore = tasksSnapshot.documents.sumOf {
+            it.getLong("score")?.toInt() ?: 0
+        }
+        val allTasksCount = tasksSnapshot.size()
+
+        // Update parent document
+        firestore.collection("users")
+            .document(userId)
+            .collection("cognitive_assessments")
+            .document(assessmentId)
+            .update(
+                mapOf(
+                    "totalScore" to totalScore,
+                    "state" to if (allTasksCount >= 6) "completed" else "in_progress",
+                    "completedAt" to if (allTasksCount >= 6) com.google.firebase.Timestamp.now() else null
+                )
+            )
+            .await()
+    }
+
+    /**
+     * Saves a cognitive task result (LEGACY - for backward compatibility)
+     * Use saveCognitiveTaskResultToAssessment instead
+     */
+    @Deprecated("Use saveCognitiveTaskResultToAssessment instead")
+    suspend fun saveCognitiveTaskResult(result: CognitiveTaskResult) {
+        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+
+        firestore.collection("users")
+            .document(userId)
+            .collection("cognitive_assessments")
+            .document(result.id)
+            .set(result.copy(userId = userId))
+            .await()
+    }
+
+    /**
+     * Gets all cognitive task results for the user
      */
     suspend fun getCognitiveTaskResults(): List<CognitiveTaskResult> {
         val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
@@ -97,6 +167,65 @@ class CognitiveRepository private constructor(
                 boundingBoxArea = doc.getDouble("boundingBoxArea")?.toFloat() ?: 0f,
                 duration = doc.getLong("duration") ?: 0L,
                 passed = doc.getBoolean("passed") ?: false,
+                score = doc.getLong("score")?.toInt() ?: 0,
+                touchSequence = doc.get("touchSequence") as? List<String>,
+                timestamp = doc.getTimestamp("timestamp") ?: com.google.firebase.Timestamp.now()
+            )
+        }
+    }
+
+    /**
+     * Gets all cognitive assessments for the user
+     */
+    suspend fun getCognitiveAssessments(): List<CognitiveAssessment> {
+        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+
+        val snapshot = firestore.collection("users")
+            .document(userId)
+            .collection("cognitive_assessments")
+            .orderBy("date", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            .get()
+            .await()
+
+        return snapshot.documents.mapNotNull { doc ->
+            CognitiveAssessment(
+                id = doc.getString("id") ?: "",
+                userId = doc.getString("userId") ?: "",
+                totalScore = doc.getLong("totalScore")?.toInt() ?: 0,
+                state = doc.getString("state") ?: "in_progress",
+                date = doc.getTimestamp("date") ?: com.google.firebase.Timestamp.now(),
+                startedAt = doc.getTimestamp("startedAt") ?: com.google.firebase.Timestamp.now(),
+                completedAt = doc.getTimestamp("completedAt")
+            )
+        }
+    }
+
+    /**
+     * Gets tasks for a specific assessment
+     */
+    suspend fun getAssessmentTasks(assessmentId: String): List<CognitiveTaskResult> {
+        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+
+        val snapshot = firestore.collection("users")
+            .document(userId)
+            .collection("cognitive_assessments")
+            .document(assessmentId)
+            .collection("tasks")
+            .get()
+            .await()
+
+        return snapshot.documents.mapNotNull { doc ->
+            CognitiveTaskResult(
+                id = doc.getString("id") ?: "",
+                userId = doc.getString("userId") ?: "",
+                taskType = doc.getString("taskType") ?: "",
+                imageUrl = doc.getString("imageUrl") ?: "",
+                strokeCount = doc.getLong("strokeCount")?.toInt() ?: 0,
+                totalLength = doc.getDouble("totalLength")?.toFloat() ?: 0f,
+                boundingBoxArea = doc.getDouble("boundingBoxArea")?.toFloat() ?: 0f,
+                duration = doc.getLong("duration") ?: 0L,
+                passed = doc.getBoolean("passed") ?: false,
+                score = doc.getLong("score")?.toInt() ?: 0,
                 touchSequence = doc.get("touchSequence") as? List<String>,
                 timestamp = doc.getTimestamp("timestamp") ?: com.google.firebase.Timestamp.now()
             )
@@ -133,7 +262,7 @@ class CognitiveRepository private constructor(
 
         return CognitiveAssessmentSummary(
             userId = userId,
-            totalTasks = 3,  // Cube, Trail, Clock
+            totalTasks = 6,  // Cube, Trail, Clock, 3 Animal Questions
             tasksCompleted = tasks.size,
             tasksPassed = tasks.count { it.passed },
             tasks = tasks
@@ -171,5 +300,22 @@ class CognitiveRepository private constructor(
             .document(taskId)
             .delete()
             .await()
+    }
+
+    /**
+     * Gets the total cognitive score (0-6 points)
+     * Each task passed = 1 point
+     */
+    suspend fun getTotalCognitiveScore(): Int {
+        val summary = getCognitiveAssessmentSummary()
+        return summary.tasksPassed  // Returns 0-6
+    }
+
+    /**
+     * Gets the most recent completed assessment
+     */
+    suspend fun getMostRecentAssessment(): CognitiveAssessment? {
+        val assessments = getCognitiveAssessments()
+        return assessments.firstOrNull { it.state == "completed" }
     }
 }

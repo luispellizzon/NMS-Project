@@ -1,18 +1,20 @@
 package com.example.nms_mobile.ui.cognitive
 
+import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -20,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import com.example.nms_mobile.R
 import com.example.nms_mobile.ui.TealPrimary
 import com.example.nms_mobile.ui.components.CustomTopAppBar
+import com.example.nms_mobile.ui.feature.cognitive.CognitiveUiState
 import com.example.nms_mobile.ui.feature.cognitive.DrawingCanvas
 import com.example.nms_mobile.ui.feature.cognitive.pathsToBitmap
 
@@ -28,13 +31,15 @@ import com.example.nms_mobile.ui.feature.cognitive.pathsToBitmap
  */
 @Composable
 fun CubeDrawingScreen(
+    state: CognitiveUiState,
+    onPlayInstruction: () -> Unit,
     elapsedTime: Long,
-    onPathsChanged: (List<List<androidx.compose.ui.geometry.Offset>>) -> Unit,
+    onPathsChanged: (List<List<Offset>>) -> Unit,
     onClear: () -> Unit,
-    onNext: (android.graphics.Bitmap) -> Unit,
+    onNext: (Bitmap) -> Unit,
     onBack: () -> Unit
 ) {
-    var paths by remember { mutableStateOf(listOf<List<androidx.compose.ui.geometry.Offset>>()) }
+    var paths by remember { mutableStateOf(listOf<List<Offset>>()) }
 
     Scaffold(
         topBar = {
@@ -79,12 +84,20 @@ fun CubeDrawingScreen(
                         shape = RoundedCornerShape(8.dp),
                         color = Color(0xFF00796B)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.VolumeUp,
-                            contentDescription = "Instructions",
-                            tint = Color.White,
-                            modifier = Modifier.padding(12.dp)
-                        )
+                        IconButton(
+                            onClick = onPlayInstruction,
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(TealPrimary, CircleShape),
+                            enabled = !state.isInstructionPlaying
+                        ){
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                                contentDescription = "Play instructions",
+                                tint = Color.White,
+                                modifier = Modifier.padding(8.dp)
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.width(12.dp))
@@ -245,6 +258,7 @@ fun CubeDrawingScreen(
     }
 }
 
+@SuppressLint("DefaultLocale")
 private fun formatTime(seconds: Long): String {
     val mins = seconds / 60
     val secs = seconds % 60

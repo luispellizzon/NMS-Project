@@ -5,6 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.nms_mobile.navigation.routes.CognitiveResultsRoute
 import com.example.nms_mobile.navigation.routes.CognitiveTestRoute
 import com.example.nms_mobile.navigation.routes.DashboardRoute
 import com.example.nms_mobile.navigation.routes.LoginRoute
@@ -109,7 +110,7 @@ fun AppNavigation(
                 onOpenQuestionnaire = {
                     navController.navigate(Screen.QuestionnaireIntro.route)
                 },
-                // Open the Speech Assessment screen.
+                // Open the Speech Task screen.
                 onOpenSpeech = {
                     navController.navigate(Screen.SpeechTask.route)
                 },
@@ -121,13 +122,15 @@ fun AppNavigation(
                 onOpenSpeechResults = {
                     navController.navigate(Screen.SpeechResults.route)
                 },
-
-                // Open the Speech Assessment screen.
+                // Open the Cognitive Results screen
+                onOpenCognitiveResults = {
+                    navController.navigate(Screen.CognitiveResults.route)
+                },
+                // Open the Memory Test screen.
                 onOpenMemory = {
                     navController.navigate(Screen.MemoryTest.route)
                 },
-
-                // Open the Speech Assessment screen.
+                // Open the Cognitive Test Intro screen.
                 onOpenCognitive = {
                     navController.navigate(Screen.CognitiveIntro.route)
                 },
@@ -169,13 +172,18 @@ fun AppNavigation(
             )
         }
 
-        // SPEECH ASSESSMENT (Audio recording and transcription)
+        // SPEECH ASSESSMENT (Audio recording and transcription - OLD)
         composable(Screen.SpeechAssessment.route) {
             SpeechAssessmentRoute(
                 // Go back to Dashboard
                 onBack = { navController.popBackStack() },
                 // When completed, return to Dashboard
-                onCompleted = {}
+                onCompleted = {
+                    navController.navigate(Screen.Dashboard.route) {
+                        popUpTo(Screen.SpeechAssessment.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
 
@@ -209,11 +217,16 @@ fun AppNavigation(
             )
         }
 
-        composable(Screen.MemoryTest.route){
+        // MEMORY TEST
+        composable(Screen.MemoryTest.route) {
             MemoryTestRoute(
                 onBack = { navController.popBackStack() },
                 onCompleted = {
-                    navController.popBackStack() }
+                    navController.navigate(Screen.Dashboard.route) {
+                        popUpTo(Screen.MemoryTest.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
 
@@ -231,7 +244,8 @@ fun AppNavigation(
         composable(Screen.CognitiveTest.route) {
             CognitiveTestRoute(
                 onCompleted = {
-                    navController.navigate(Screen.Dashboard.route) {
+                    // Navigate to results screen after completion
+                    navController.navigate(Screen.CognitiveResults.route) {
                         popUpTo(Screen.CognitiveTest.route) { inclusive = true }
                         launchSingleTop = true
                     }
@@ -240,5 +254,24 @@ fun AppNavigation(
             )
         }
 
+        // COGNITIVE RESULTS (Show detailed results after test completion)
+        composable(Screen.CognitiveResults.route) {
+            CognitiveResultsRoute(
+                // Go back to Dashboard
+                onBack = {
+                    navController.navigate(Screen.Dashboard.route) {
+                        popUpTo(Screen.CognitiveResults.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                // Redo test - navigate back to Cognitive Intro
+                onRedoTest = {
+                    navController.navigate(Screen.CognitiveIntro.route) {
+                        popUpTo(Screen.CognitiveResults.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
     }
 }
