@@ -1,24 +1,34 @@
 package com.example.nms_mobile.ui.feature.personal_details
 
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
 import com.example.nms_mobile.ui.TealPrimary
 import com.example.nms_mobile.ui.White
+import java.time.Instant.ofEpochMilli
+import java.time.ZoneId
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,6 +36,9 @@ fun PersonalInfoScreen(
     state: PersonalInfoUiState,
     onFullNameChange: (String) -> Unit,
     onDateOfBirthChange: (String) -> Unit,
+    onCountryChange: (String) -> Unit,
+    onCountrySelected: (String) -> Unit,
+    onCountryFocused: () -> Unit,
     onEmailChange: (String) -> Unit,        // Function to update email (though field is read-only).
     onRoleChange: (String) -> Unit,         // Function to update the selected role.
     onSubmit: () -> Unit                    // Function to submit the data.
@@ -55,54 +68,32 @@ fun PersonalInfoScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // --- Full Name Input ---
-            OutlinedTextField(
+            FullNameField(
                 value = state.fullName,
-                onValueChange = onFullNameChange,
-                label = { Text("Full Name") },
-                placeholder = { Text("Enter your full name") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
-                    imeAction = ImeAction.Next
-                ),
-                keyboardActions = KeyboardActions(
-                    onNext = { focus.moveFocus(FocusDirection.Down) }
-                ),
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = TealPrimary,
-                    focusedLabelColor = TealPrimary,
-                    unfocusedTextColor = TealPrimary,
-                    focusedTextColor = TealPrimary
-                )
+                onValueChange = onFullNameChange
             )
 
             Spacer(Modifier.height(16.dp))
 
             // --- Date of Birth Input ---
-            OutlinedTextField(
+            DateOfBirthField(
                 value = state.dateOfBirth,
                 onValueChange = onDateOfBirthChange,
-                label = { Text("Date of Birth") },
-                placeholder = { Text("DD/MM/YYYY") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
-                    imeAction = ImeAction.Next
-                ),
-                keyboardActions = KeyboardActions(
-                    onNext = { focus.moveFocus(FocusDirection.Down) }
-                ),
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = TealPrimary,
-                    focusedLabelColor = TealPrimary,
-                    unfocusedTextColor = TealPrimary,
-                    focusedTextColor = TealPrimary
-                )
+            )
+
+
+            Spacer(Modifier.height(16.dp))
+
+            // --- Country Autocomplete ---
+            CountryAutocompleteField(
+                state = state,
+                onCountryChange = onCountryChange,
+                onCountryFocused = onCountryFocused,
+                onCountrySelected = onCountrySelected
             )
 
             Spacer(Modifier.height(16.dp))
+
 
             // --- Email Input (Read-only) ---
             OutlinedTextField(
@@ -228,3 +219,250 @@ private fun RoleOption(
         )
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CountryAutocompleteField(
+    state: PersonalInfoUiState,
+    onCountryChange: (String) -> Unit,
+    onCountryFocused: () -> Unit,
+    onCountrySelected: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    // Expand whenever list is not empty
+    LaunchedEffect(state.filteredCountries) {
+        expanded = state.filteredCountries.isNotEmpty()
+    }
+
+    Column {
+        OutlinedTextField(
+            value = state.location,
+            onValueChange = onCountryChange,
+            label = { Text("Country") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged { focus ->
+                    if (focus.isFocused) {
+                        onCountryFocused()
+                    }
+                },
+            singleLine = true
+        )
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier
+                .fillMaxWidth()
+        ) {
+            Box(
+                modifier = Modifier
+                    .heightIn(max = 250.dp)
+                    .fillMaxWidth()
+            ) {
+                val scrollState = rememberScrollState()
+
+                Column(
+                    modifier = Modifier
+                        .verticalScroll(scrollState)
+                ) {
+                    state.filteredCountries.forEach { country ->
+                        DropdownMenuItem(
+                            text = { Text(country) },
+                            onClick = {
+                                expanded = false
+                                onCountrySelected(country)
+                            }
+                        )
+                    }
+                }
+
+                // 👉 This is the scroll bar!
+                VerticalScrollbar(
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(end = 2.dp),
+                    scrollState = scrollState
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun VerticalScrollbar(
+    modifier: Modifier = Modifier,
+    scrollState: ScrollState
+) {
+    val showBar = scrollState.maxValue > 0
+
+    if (showBar) {
+        Box(
+            modifier
+                .width(4.dp)
+                .fillMaxHeight()
+                .background(Color.LightGray.copy(alpha = 0.4f), RoundedCornerShape(2.dp))
+        ) {
+            val proportion = scrollState.value.toFloat() / scrollState.maxValue
+            val barHeight = max(20.dp, 250.dp * (1f - proportion)).coerceAtMost(250.dp)
+
+            Box(
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(y = (proportion * 250.dp.value).dp)
+                    .width(4.dp)
+                    .height(barHeight)
+                    .background(Color.DarkGray, RoundedCornerShape(2.dp))
+            )
+        }
+    }
+}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DateOfBirthField(
+    value: String,
+    onValueChange: (String) -> Unit
+) {
+    var textFieldValue by remember { mutableStateOf(TextFieldValue(value)) }
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    OutlinedTextField(
+        value = textFieldValue,
+        onValueChange = { newValue ->
+            val formatted = formatDobInput(
+                input = newValue.text,
+                previous = textFieldValue.text
+            )
+
+            textFieldValue = newValue.copy(
+                text = formatted.text,
+                selection = TextRange(formatted.cursor)
+            )
+
+            onValueChange(formatted.text)
+        },
+        label = { Text("Date of Birth") },
+        placeholder = { Text("DD/MM/YYYY") },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Number,
+            imeAction = ImeAction.Next
+        ),
+        trailingIcon = {
+            IconButton(onClick = { showDatePicker = true }) {
+                Icon(Icons.Default.CalendarToday, contentDescription = "Pick date")
+            }
+        },
+        modifier = Modifier.fillMaxWidth()
+    )
+
+    if (showDatePicker) {
+        val dateState = rememberDatePickerState()
+
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        dateState.selectedDateMillis?.let { millis ->
+                            val localDate = ofEpochMilli(millis)
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate()
+
+                            val dob = "%02d/%02d/%04d".format(
+                                localDate.dayOfMonth,
+                                localDate.monthValue,
+                                localDate.year
+                            )
+
+                            textFieldValue = TextFieldValue(
+                                dob,
+                                selection = TextRange(dob.length)
+                            )
+
+                            onValueChange(dob)
+                        }
+
+                        showDatePicker = false
+                    }
+                ) { Text("OK") }
+            }
+        ) {
+            DatePicker(state = dateState)
+        }
+    }
+}
+
+
+
+data class DobFormatted(
+    val text: String,
+    val cursor: Int
+)
+
+fun formatDobInput(input: String, previous: String): DobFormatted {
+    val digits = input.filter(Char::isDigit).take(8)
+
+    val day = digits.take(2)
+    val month = digits.drop(2).take(2)
+    val year = digits.drop(4)
+
+    val formatted = buildString {
+        if (day.isNotEmpty()) append(day)
+        if (month.isNotEmpty()) append("/$month")
+        if (year.isNotEmpty()) append("/$year")
+    }
+
+    val added = formatted.length > previous.length
+
+    val cursorPos = when {
+        added -> formatted.length
+        else -> input.length
+    }
+
+    return DobFormatted(formatted, cursorPos)
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FullNameField(
+    value: String,
+    onValueChange: (String) -> Unit
+) {
+    var tf by remember { mutableStateOf(TextFieldValue(value)) }
+
+    OutlinedTextField(
+        value = tf,
+        onValueChange = { newValue ->
+            val original = newValue.text
+            val formatted = capitalizeWords(original)
+
+            val newCursor = minOf(
+                formatted.length,
+                newValue.selection.start
+            )
+
+            tf = newValue.copy(
+                text = formatted,
+                selection = TextRange(newCursor)
+            )
+
+            onValueChange(formatted)
+        },
+        label = { Text("Full Name") },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+
+fun capitalizeWords(input: String): String {
+    return input.split(" ")
+        .joinToString(" ") { part ->
+            if (part.isBlank()) ""
+            else part.lowercase().replaceFirstChar { it.uppercase() }
+        }
+}
+

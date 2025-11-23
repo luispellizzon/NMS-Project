@@ -59,7 +59,8 @@ sealed class CognitiveEvent {
 }
 
 class CognitiveViewModel(
-    private val repository: CognitiveRepository = CognitiveRepository.instance
+    private val repository: CognitiveRepository = CognitiveRepository.instance,
+    private val userdb: FirestoreRepository = FirestoreRepository.instance
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CognitiveUiState())
@@ -419,6 +420,7 @@ class CognitiveViewModel(
                     )
 
                     repository.saveCognitiveTaskResultToAssessment(state.assessmentId, result)
+                    userdb.updateTask("hasCompletedCognitiveAssessment", UserTasks.AI_ASSESSMENT.taskName)
                 }
 
                 // Update assessment score after all tasks

@@ -184,6 +184,9 @@ fun PersonalInfoRoute(onFinished: () -> Unit) {
         state = state,
         onFullNameChange = vm::onFullNameChange,
         onDateOfBirthChange = vm::onDateOfBirthChange,
+        onCountryChange = vm::onCountryChange,
+        onCountrySelected = vm::onCountrySelected,
+        onCountryFocused = vm::onFieldFocused,
         onEmailChange = vm::onEmailChange,
         onRoleChange = vm::onRoleChange,
         onSubmit = vm::submit

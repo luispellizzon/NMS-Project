@@ -14,11 +14,16 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalTime
 import android.util.Log
+import com.example.nms_mobile.data.AIRepository
 import com.example.nms_mobile.data.Patient
 import com.example.nms_mobile.data.PatientRepository
+import com.example.nms_mobile.data.UserProfile
+import com.example.nms_mobile.data.UserTasks
+import kotlinx.coroutines.Dispatchers
 
 // Data model for the Dashboard screen's state (what the user sees).
 data class DashboardUiState(
+    val profile: UserProfile? = null,
     val displayName: String = "NMS",
     val role: String? = null,
     val greeting: String = "Good morning",
@@ -32,6 +37,8 @@ data class DashboardUiState(
     val hasCompletedSpeechAssessment: Boolean? = false,
     val hasCompletedMemoryAssessment: Boolean? = false,
     val hasCompletedCognitiveAssessment: Boolean? = false,
+    val hasCompletedAiAnalysis: Boolean? = false,
+    val dementiaRisk: String? = null,
 
     // Speech assessment status tracking
     val speechAnalysisStatus: SpeechAnalysisStatus = SpeechAnalysisStatus.NOT_STARTED,
@@ -56,7 +63,8 @@ class DashboardViewModel(
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val db: FirestoreRepository = FirestoreRepository.instance,
     private val speechRepo: SpeechAssessmentsTasksRepository = SpeechAssessmentsTasksRepository.instance,
-    private val patientRepo: PatientRepository = PatientRepository.instance
+    private val patientRepo: PatientRepository = PatientRepository.instance,
+    private val aiRepo: AIRepository = AIRepository.instance
 ) : ViewModel() {
 
     companion object {
@@ -171,8 +179,36 @@ class DashboardViewModel(
                     hasCompletedImageDescription = profile?.hasCompletedImageDescription,
                     hasCompletedSpeechAssessment = profile?.hasCompletedSpeechAssessment,
                     hasCompletedMemoryAssessment = profile?.hasCompletedMemoryAssessment,
-                    hasCompletedCognitiveAssessment = profile?.hasCompletedCognitiveAssessment
+                    hasCompletedCognitiveAssessment = profile?.hasCompletedCognitiveAssessment,
+                    hasCompletedAiAnalysis = profile?.hasCompletedAiAnalysis,
+                    dementiaRisk = profile?.dementiaRisk
                 ) }
+
+                if (profile?.currentTask == UserTasks.AI_ASSESSMENT.taskName) {
+                    viewModelScope.launch {
+                        try {
+                            val mmse = aiRepo.calculateAndStoreMmseScore()
+                            val risk = aiRepo.getLatestRiskAssessment() ?: return@launch
+
+                            val riskPrediction = aiRepo.calcRiskPrediction(mmse, risk)
+
+                            db.updateUserDoc("dementiaRisk", riskPrediction)
+
+                            _ui.update { it.copy(
+                                currentTask = UserTasks.COMPLETED.taskName,
+                                hasCompletedAiAnalysis = true,
+                                dementiaRisk = riskPrediction
+                            ) }
+
+                            Log.d("HF", "Final Model Output: $riskPrediction")
+
+                        } catch (e: Exception) {
+                            Log.e("HF", "Error calling Hugging Face: ${e.message}", e)
+                        }
+                    }
+
+                }
+
 
             } catch (e: Exception) {
                 // Log the error if fetching the status fails (e.g., no internet).
@@ -180,24 +216,6 @@ class DashboardViewModel(
             }
         }
     }
-//    private fun checkLifestyleQuestionaryStatus() = viewModelScope.launch {
-//        val userId = auth.currentUser?.uid
-//
-//        // Only proceed if the user is logged in.
-//        if (userId != null) {
-//            try {
-//                // Call the repository to check if the status is true/false.
-//                val isCompleted = db.getLifestyleQuestionaryStatus(userId)
-//
-//                // Update the UI state with the result.
-//                _ui.update { it.copy(isLifestyleQuestionaryCompleted = isCompleted) }
-//
-//            } catch (e: Exception) {
-//                // Log the error if fetching the status fails (e.g., no internet).
-//                Log.e(TAG, "Error checking lifestyle questionary status: $e")
-//            }
-//        }
-//    }
 
     /**
      * Checks the speech assessment status and starts polling if processing

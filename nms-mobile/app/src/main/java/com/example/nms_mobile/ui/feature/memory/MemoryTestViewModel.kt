@@ -300,7 +300,7 @@ class MemoryTestViewModel(
                 val memoryTest = MemoryTest(
                     id = testId,
                     userId = "", // Will be set by repository
-                    score = state.correctAnswers,  // 0-7 points
+                    totalScore = state.correctAnswers,  // 0-7 points
                     totalQuestions = state.totalQuestions,
                     completionTime = completionTime,
                     status = "completed"

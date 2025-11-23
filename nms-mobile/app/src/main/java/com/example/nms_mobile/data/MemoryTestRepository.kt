@@ -14,7 +14,7 @@ class MemoryTestRepository private constructor(
     companion object {
         val instance: MemoryTestRepository by lazy { MemoryTestRepository() }
         private const val COLLECTION_USERS = "users"
-        private const val SUBCOLLECTION_MEMORY_TESTS = "memory_tests"
+        private const val SUBCOLLECTION_MEMORY_TESTS = "memory_assessment"
     }
 
     /**
@@ -28,10 +28,10 @@ class MemoryTestRepository private constructor(
             "id" to test.id,
             "userId" to userId,
             "testType" to test.testType,
-            "score" to test.score,
+            "totalScore" to test.totalScore,
             "totalQuestions" to test.totalQuestions,
             "completionTime" to test.completionTime,
-            "timestamp" to test.timestamp,
+            "startedAi" to test.startedAt,
             "status" to test.status
         )
 
@@ -63,10 +63,10 @@ class MemoryTestRepository private constructor(
                 id = doc.getString("id") ?: "",
                 userId = doc.getString("userId") ?: "",
                 testType = doc.getString("testType") ?: "",
-                score = doc.getLong("score")?.toInt() ?: 0,
+                totalScore = doc.getLong("totalScore")?.toInt() ?: 0,
                 totalQuestions = doc.getLong("totalQuestions")?.toInt() ?: 7,
                 completionTime = doc.getLong("completionTime") ?: 0L,
-                timestamp = doc.getTimestamp("timestamp") ?: com.google.firebase.Timestamp.now(),
+                startedAt = doc.getTimestamp("startedAt") ?: com.google.firebase.Timestamp.now(),
                 status = doc.getString("status") ?: "completed"
             )
         }
@@ -91,10 +91,10 @@ class MemoryTestRepository private constructor(
             id = doc.getString("id") ?: "",
             userId = doc.getString("userId") ?: "",
             testType = doc.getString("testType") ?: "",
-            score = doc.getLong("score")?.toInt() ?: 0,
+            totalScore = doc.getLong("totalScore")?.toInt() ?: 0,
             totalQuestions = doc.getLong("totalQuestions")?.toInt() ?: 7,
             completionTime = doc.getLong("completionTime") ?: 0L,
-            timestamp = doc.getTimestamp("timestamp") ?: com.google.firebase.Timestamp.now(),
+            startedAt = doc.getTimestamp("startedAt") ?: com.google.firebase.Timestamp.now(),
             status = doc.getString("status") ?: "completed"
         )
     }

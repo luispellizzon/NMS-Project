@@ -4,6 +4,7 @@ import DashboardUiState
 import SpeechAnalysisStatus
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,6 +17,10 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -63,7 +68,6 @@ fun DashboardScreen(
         Column(
             modifier = Modifier
                 .padding(padding)
-                .verticalScroll(rememberScrollState())
                 .fillMaxSize()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
@@ -442,6 +446,16 @@ private fun PatientAssessmentsView(
         onOpenCognitive: () -> Unit,
         onOpenImageDescription: () -> Unit
     ) {
+        var showWarning by remember { mutableStateOf(false) }
+        var prevTask by remember { mutableStateOf("") }
+        var currTask by remember { mutableStateOf("") }
+        if (showWarning) {
+            MessageDialog(
+                prevTask,
+                currTask,
+                onDismiss = { showWarning = false }
+            )
+        }
         Text(
             text = "Assessments and Scores",
             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
@@ -450,73 +464,194 @@ private fun PatientAssessmentsView(
         )
 
         Spacer(Modifier.height(12.dp))
+        Column( modifier = Modifier.fillMaxWidth()){
+            Column(modifier = Modifier.fillMaxWidth()){
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    TestTile(
+                        title = "Lifestyle",
+                        onClick = onOpenRiskAssessment,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(180.dp),
+                        pendingColor = if (state.currentTask != "risk_assessment") Color.LightGray else TealPrimary,
+                        isCompleted = state.hasCompletedRiskAssessment
+                    )
 
+                    if(state.currentTask == UserTasks.IMAGE_DESCRIPTION.taskName || state.currentTask ==  UserTasks.RISK_ASSESSMENT.taskName){
+                        TestTile(
+                            title = "Image Description",
+                            onClick = {
+                                if (state.currentTask == UserTasks.MEMORY_ASSESSMENT.taskName ||
+                                    state.hasCompletedMemoryAssessment == true
+                                ) {
+                                    onOpenImageDescription()
+                                } else {
+                                    currTask = "Image Description"
+                                    prevTask = "Lifestyle Questionnaire"
+                                    showWarning = true
+                                }
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(180.dp),
+                            pendingColor = if (state.currentTask != UserTasks.IMAGE_DESCRIPTION.taskName ) Color.LightGray else TealPrimary,
+                            isCompleted = state.hasCompletedImageDescription
+                        )
+                    } else {
+                        SpeechTestTile(
+                            onClick = onOpenSpeech,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(180.dp),
+                            analysisStatus = state.speechAnalysisStatus,
+                            userScore = state.speechUserScore,
+                            totalScore = state.speechTotalScore
+                        )
+                    }
+                }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            TestTile(
-                title = "Lifestyle",
-                onClick = onOpenRiskAssessment,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(180.dp),
-                pendingColor = if (state.currentTask != "risk_assessment") Color.LightGray else TealPrimary,
-                isCompleted = state.hasCompletedRiskAssessment
-            )
+                Spacer(Modifier.height(12.dp))
 
-            if(state.currentTask == UserTasks.IMAGE_DESCRIPTION.taskName || state.currentTask ==  UserTasks.RISK_ASSESSMENT.taskName){
-                TestTile(
-                    title = "Image Description",
-                    onClick = if (state.currentTask == UserTasks.IMAGE_DESCRIPTION.taskName || state.hasCompletedImageDescription == true) onOpenImageDescription else funTest(),
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(180.dp),
-                    pendingColor = if (state.currentTask != UserTasks.IMAGE_DESCRIPTION.taskName ) Color.LightGray else TealPrimary,
-                    isCompleted = state.hasCompletedImageDescription
-                )
-            } else {
-                SpeechTestTile(
-                    onClick = onOpenSpeech,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(180.dp),
-                    analysisStatus = state.speechAnalysisStatus,
-                    userScore = state.speechUserScore,
-                    totalScore = state.speechTotalScore
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    TestTile(
+                        title = "Memory",
+                        onClick = {
+                                if (state.currentTask == UserTasks.MEMORY_ASSESSMENT.taskName || state.hasCompletedMemoryAssessment == true) {
+                                    onOpenMemory()
+                                } else {
+                                    currTask = "Memory Assessment"
+                                    prevTask = if (state.currentTask == UserTasks.IMAGE_DESCRIPTION.taskName) "Image Description Assessment" else "Speech Assessment"
+                                    showWarning = true
+                                }
+                            },
+                        pendingColor = if (state.currentTask != UserTasks.MEMORY_ASSESSMENT.taskName ) Color.LightGray else TealPrimary,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(140.dp),
+                        isCompleted = state.hasCompletedMemoryAssessment
+                    )
+                    TestTile(
+                        title = "Cognitive",
+                        onClick = {
+                            if (state.currentTask == UserTasks.COGNITIVE_ASSESSMENT.taskName || state.hasCompletedMemoryAssessment == true) {
+                                onOpenCognitive()
+                            } else {
+                                currTask = "Cognitive Assessment"
+                                prevTask = "Memory Assessment"
+                                showWarning = true
+                            }
+                        },
+                        pendingColor = if (state.currentTask != UserTasks.COGNITIVE_ASSESSMENT.taskName) Color.LightGray else TealPrimary,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(140.dp),
+                        isCompleted = state.hasCompletedCognitiveAssessment
+
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+
+                if(state.currentTask == UserTasks.COMPLETED.taskName ){
+                    ResultTile(
+                        title = "Dementia Level",
+                        content = state.dementiaRisk ?: "Pending...",
+                        onClick ={},
+                        pendingColor = Color.Magenta,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            ,
+                        isCompleted = state.hasCompletedAiAnalysis
+                    )
+                }
             }
         }
 
-        Spacer(Modifier.height(12.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+
+
+    }
+@Composable
+private fun ResultTile(
+    title: String,
+    content: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    pendingColor: Color = Color.LightGray,
+    isCompleted: Boolean? = false,
+) {
+    // The color used when the assessment IS completed (fixed gray).
+    val completedColor = Green
+
+    // Decide the card's final color.
+    val cardColor = if (isCompleted!!) {
+        completedColor
+    } else {
+        pendingColor
+    }
+
+    // Change the text if the assessment is completed.
+
+
+    // Stop click action if the assessment is completed.
+//    val clickAction: (() -> Unit)? = if (isCompleted) null else onClick
+//    val clickAction: (() -> Unit)? = if (null) null else onClick
+
+    ElevatedCard(
+        // Clicks run only if clickAction is not null (i.e., not completed).
+        onClick = onClick,
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        // Apply the chosen color.
+        colors = CardDefaults.elevatedCardColors(containerColor = cardColor),
+        elevation = CardDefaults.elevatedCardElevation(6.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
         ) {
-            TestTile(
-                title = "Memory",
-                onClick = if (state.currentTask == UserTasks.MEMORY_ASSESSMENT.taskName || state.hasCompletedMemoryAssessment == true) onOpenMemory else funTest() ,
-                pendingColor = if (state.currentTask != UserTasks.MEMORY_ASSESSMENT.taskName ) Color.LightGray else TealPrimary,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(140.dp),
-                isCompleted = state.hasCompletedMemoryAssessment
-            )
-            TestTile(
-                title = "Cognitive",
-                onClick = if (state.currentTask == UserTasks.COGNITIVE_ASSESSMENT.taskName  || state.hasCompletedMemoryAssessment == true) onOpenCognitive else funTest(),
-                pendingColor = if (state.currentTask != UserTasks.COGNITIVE_ASSESSMENT.taskName) Color.LightGray else TealPrimary,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(140.dp),
-                isCompleted = state.hasCompletedCognitiveAssessment
-
-            )
+            Column(modifier = Modifier
+                .fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center){
+                if(isCompleted){
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = Color.White
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = content,
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = Color.White
+                )
+            }
         }
     }
-// Assessment Tile Component
+}
 @Composable
 private fun TestTile(
     title: String,
@@ -690,28 +825,20 @@ private fun SpeechTestTile(
     }
 }
 
-private fun funTest():() ->Unit = {
-//    MessageDialog()
-}
-
 @Composable
-private fun MessageDialog() {
+fun MessageDialog(
+    prevTask: String,
+    currTask: String,
+    onDismiss: () -> Unit
+) {
     AlertDialog(
-        onDismissRequest = { /* Don't allow dismissing without choice */ },
-        title = { Text("Link Account") },
-        text = {
-            Text(
-                "Complete previous assessment before start this one!"
-            )
-        },
+        onDismissRequest = onDismiss,
+        title = { Text("Warning") },
+        text = { Text("Complete $prevTask before starting $currTask!") },
         confirmButton = {
-            TextButton(
-                onClick = {
-                    // Re-trigger the social sign-in to get fresh credentials for linking
-                }
-            ) {
-                Text("Confirm")
+            TextButton(onClick = onDismiss) {
+                Text("OK")
             }
-        },
+        }
     )
 }
