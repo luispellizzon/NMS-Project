@@ -289,14 +289,21 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
       {/* Patient Profile Header */}
       <motion.div variants={itemVariants} className="bg-card border rounded-lg p-6">
         <div className="flex flex-col md:flex-row gap-6">
-          <div className="flex flex-col items-center md:items-start text-center md:text-left">
-            <div className="hidden md:flex pt-2">
-              <Image src={patient.avatarUrl} alt={patient.name} width={100} height={100} className="rounded-full mb-4" />
+          {/* Left Section: Avatar, Name, Actions */}
+          <div className="flex flex-col items-center md:items-start text-center md:text-left max-w-[240px]">
+            <div className="flex items-start gap-26 mb-4">
+              <Image
+                src={patient.avatarUrl}
+                alt={patient.name}
+                width={100}
+                height={100}
+                className="rounded-full"
+              />
               <Tooltip content="Download Patient Report">
                 <button
                   onClick={handleDownloadReport}
                   disabled={isDownloading}
-                  className="p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 ml-12 mt-3 disabled:cursor-not-allowed"
+                  className="p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                 >
                   {isDownloading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -306,8 +313,8 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                 </button>
               </Tooltip>
             </div>
-            <h2 className="text-2xl font-bold">{patient.name}</h2>
-            <p className="text-muted-foreground">{patient.email}</p>
+            <h2 className="text-2xl font-bold line-clamp-2 w-full truncate">{patient.name}</h2>
+            <p className="text-muted-foreground text-sm truncate w-full">{patient.email}</p>
             <button
               onClick={() => setIsQuestionnaireModalOpen(true)}
               className="mt-4 w-full px-4 py-2 border rounded-lg font-semibold hover:bg-accent transition-colors"
@@ -315,19 +322,22 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
               View Questionnaire
             </button>
           </div>
-          <div className="border-l border-border mx-6 hidden md:block"></div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-8 gap-y-6 flex-1">
+
+          {/* Divider */}
+          <div className="border-l border-border mx-2 hidden md:block"></div>
+
+          {/* Right Section: Patient Details Grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4 flex-1">
             <DetailItem label="Sex" value={patient.gender} />
             <DetailItem label="Age" value={patient.age} />
-            <DetailItem label="Speech" value={patient.assessments.speech} />
+            <DetailItem label="Speech Score" value={patient.assessments.speech} />
+            <DetailItem label="Cognitive Score" value={patient.assessments.cognitive} />
+            <DetailItem label="Risk Score" value={patient.riskScore} />
+            <DetailItem label="Risk Level" value={patient.riskLevel} />
             <DetailItem label="Smoker" value={patient.smoker} />
-            <DetailItem label="Score" value={patient.riskScore} />
             <DetailItem label="Last Played" value={patient.lastPlayed} />
-            <DetailItem label="Cognition" value={patient.assessments.cognitive} />
-            <DetailItem label="Avg Time" value="60 sec" />
-            <DetailItem label="Appointment" value={patient.nextAppointment} />
-            <DetailItem label="Patient ID" value={patient.id} />
-            <DetailItem label="Memory" value="5" />
+            <DetailItem label="Next Appointment" value={patient.nextAppointment} />
+            <DetailItem label="Total Tests" value={patient.testHistory.length} />
           </div>
         </div>
       </motion.div>

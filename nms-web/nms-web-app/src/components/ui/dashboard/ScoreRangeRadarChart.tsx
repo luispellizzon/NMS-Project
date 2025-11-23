@@ -1,20 +1,38 @@
 'use client';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { scoreRangeData } from '@/lib/mock_data';
+import { DashboardStats } from '@/lib/services/dashboardAggregationService';
 
-export default function ScoreRangeRadarChart() {
+interface ScoreRangeRadarChartProps {
+  stats: DashboardStats | null;
+}
+
+export default function ScoreRangeRadarChart({ stats }: ScoreRangeRadarChartProps) {
+  // Use aggregated data or default values
+  const cognitiveScore = stats?.averageScores.cognitive || 0;
+  const speechScore = stats?.averageScores.speech || 0;
+  const memoryScore = stats?.averageScores.memory || 0;
+  const overallScore = stats?.averageScores.overall || 0;
+
+  const scoreRangeData = [
+    { subject: 'Cognitive', score: cognitiveScore },
+    { subject: 'Speech', score: speechScore },
+    { subject: 'Memory', score: memoryScore },
+    { subject: 'Overall', score: overallScore },
+  ];
+
   return (
     <div className="h-64">
       <ResponsiveContainer width="100%" height="100%">
         <RadarChart cx="50%" cy="50%" outerRadius="80%" data={scoreRangeData}>
           <PolarGrid />
-          <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12 }} />
-          <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10 }}/>
+          <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12, fill: 'var(--foreground)' }} />
+          <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}/>
           <Radar name="Score" dataKey="score" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
           <Tooltip contentStyle={{
-              backgroundColor: 'rgba(255, 255, 255, 0.9)',
-              border: '1px solid #ccc',
-              borderRadius: '0.5rem',
+              backgroundColor: 'var(--card)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)',
+              color: 'var(--foreground)',
             }}/>
         </RadarChart>
       </ResponsiveContainer>

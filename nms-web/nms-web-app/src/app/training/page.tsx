@@ -8,53 +8,59 @@ import {
   Settings,
   Activity,
   History,
-  FileUp,
-  Eye,
-  CheckCircle,
-  Trash2,
-  AlertCircle,
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import TrainingConfig from '@/components/ui/training/TrainingConfig';
 import TrainingMonitor from '@/components/ui/training/TrainingMonitor';
 import TrainingHistory from '@/components/ui/training/TrainingHistory';
+import DatasetOverviewCard from '@/components/ui/training/DatasetOverviewCard';
+import PatientSelectionTable from '@/components/ui/training/PatientSelectionTable';
+import ModelRetrainingPanel from '@/components/ui/training/ModelRetrainingPanel';
+import RetrainingHistoryTable from '@/components/ui/training/RetrainingHistoryTable';
 
 type TabType = 'data' | 'config' | 'monitor' | 'history';
 
-interface PendingReview {
-  id: string;
-  type: string;
-  recordCount: number;
-  date: string;
-  status: 'pending' | 'approved' | 'rejected';
-}
-
 export default function TrainingPage() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('data');
-  const [pendingReviews, setPendingReviews] = useState<PendingReview[]>([
-    { id: '1', type: 'Questionnaire', recordCount: 45, date: '2025-10-01', status: 'pending' },
-    { id: '2', type: 'Speech Sample', recordCount: 38, date: '2025-09-28', status: 'pending' },
-    { id: '3', type: 'Cognitive Test', recordCount: 52, date: '2025-09-25', status: 'pending' },
-  ]);
+  const [selectedPatientIds, setSelectedPatientIds] = useState<string[]>([]);
+  const [retrainingRefreshTrigger, setRetrainingRefreshTrigger] = useState(0);
 
-  const stats = {
-    totalRecords: 15847,
-    anonymized: 15847,
-    speechSamples: 12305,
-    questionnaires: 15847,
-  };
+  const handleAnonymize = async (patientIds: string[]) => {
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
 
-  const handleReview = (id: string, action: 'approve' | 'reject') => {
-    setPendingReviews((prev) =>
-      prev.map((review) =>
-        review.id === id
-          ? { ...review, status: action === 'approve' ? 'approved' : 'rejected' }
-          : review
-      )
+    const response = await fetch('/api/anonymization/anonymize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        patientIds,
+        doctorId: user.uid,
+      }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.error || 'Anonymization failed');
+    }
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.message || 'Anonymization failed');
+    }
+
+    alert(
+      `Successfully anonymized ${result.successCount} patient(s)!\n` +
+        (result.failureCount > 0 ? `${result.failureCount} failed.` : '')
     );
+
+    return result;
   };
 
-  const handleDelete = (id: string) => {
-    setPendingReviews((prev) => prev.filter((review) => review.id !== id));
+  const handleRetrainingStarted = () => {
+    setRetrainingRefreshTrigger((prev) => prev + 1);
   };
 
   const tabs = [
@@ -108,124 +114,30 @@ export default function TrainingPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.2 }}
+              className="space-y-6"
             >
-              {/* Stats Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                <div className="bg-card border border-border rounded-lg p-6">
-                  <p className="text-sm text-muted-foreground mb-1">Total Records</p>
-                  <p className="text-3xl font-bold text-foreground">
-                    {stats.totalRecords.toLocaleString()}
-                  </p>
-                  <p className="text-xs text-green-600 mt-1">+234</p>
-                </div>
+              {/* Dataset Overview */}
+              <DatasetOverviewCard />
 
-                <div className="bg-card border border-border rounded-lg p-6">
-                  <p className="text-sm text-muted-foreground mb-1">Anonymized</p>
-                  <p className="text-3xl font-bold text-foreground">
-                    {stats.anonymized.toLocaleString()}
-                  </p>
-                  <p className="text-xs text-green-600 mt-1">100%</p>
-                </div>
+              {/* Patient Selection for Anonymization */}
+              {user && (
+                <PatientSelectionTable
+                  doctorId={user.uid}
+                  onSelectionChange={setSelectedPatientIds}
+                  onAnonymize={handleAnonymize}
+                />
+              )}
 
-                <div className="bg-card border border-border rounded-lg p-6">
-                  <p className="text-sm text-muted-foreground mb-1">Speech Samples</p>
-                  <p className="text-3xl font-bold text-foreground">
-                    {stats.speechSamples.toLocaleString()}
-                  </p>
-                  <p className="text-xs text-green-600 mt-1">+189</p>
-                </div>
+              {/* Model Retraining Panel */}
+              {user && (
+                <ModelRetrainingPanel
+                  doctorId={user.uid}
+                  onRetrainingStarted={handleRetrainingStarted}
+                />
+              )}
 
-                <div className="bg-card border border-border rounded-lg p-6">
-                  <p className="text-sm text-muted-foreground mb-1">Questionnaires</p>
-                  <p className="text-3xl font-bold text-foreground">
-                    {stats.questionnaires.toLocaleString()}
-                  </p>
-                  <p className="text-xs text-green-600 mt-1">+234</p>
-                </div>
-              </div>
-
-              {/* Pending Data Review */}
-              <div className="bg-card border border-border rounded-lg p-6 mb-8">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-foreground">
-                    Pending Data Review
-                  </h2>
-                  <button className="px-4 py-2 bg-[#0d7377] text-white rounded-lg hover:bg-[#0a5c5f] transition-colors">
-                    Review All
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  {pendingReviews.map((review) => (
-                    <div
-                      key={review.id}
-                      className="flex items-center justify-between p-4 bg-background rounded-lg border border-border"
-                    >
-                      <div className="flex items-center gap-4">
-                        <Database className="w-5 h-5 text-muted-foreground" />
-                        <div>
-                          <h3 className="font-medium text-foreground">{review.type}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {review.recordCount} records • {review.date}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm rounded-full">
-                          Pending Review
-                        </span>
-                        <button
-                          onClick={() => handleReview(review.id, 'approve')}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Preview"
-                        >
-                          <Eye className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleReview(review.id, 'approve')}
-                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                          title="Approve"
-                        >
-                          <CheckCircle className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(review.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Upload Anonymized Data */}
-              <div className="bg-card border border-border rounded-lg p-6">
-                <h2 className="text-xl font-semibold text-foreground mb-6">
-                  Upload Anonymized Data
-                </h2>
-
-                <div className="border-2 border-dashed border-border rounded-lg p-12 text-center hover:border-[#0d7377] transition-colors cursor-pointer">
-                  <FileUp className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-foreground font-medium mb-2">
-                    Drop files here or click to browse
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Supports CSV, JSON (max 100MB per file)
-                  </p>
-                </div>
-
-                <div className="mt-4 flex items-start gap-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-blue-800">
-                    All uploaded data must be pre-anonymized. Personal identifiers will be
-                    automatically stripped.
-                  </p>
-                </div>
-              </div>
+              {/* Retraining History */}
+              <RetrainingHistoryTable refreshTrigger={retrainingRefreshTrigger} />
             </motion.div>
           )}
 

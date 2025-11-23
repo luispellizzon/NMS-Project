@@ -2,15 +2,27 @@
 'use client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
 import { useTheme } from 'next-themes';
+import { DashboardStats } from '@/lib/services/dashboardAggregationService';
 
-const data = [
-  { name: 'Men', value: 400, color: { light: '#3b82f6', dark: '#2563eb' } },
-  { name: 'Women', value: 300, color: { light: '#8b5cf6', dark: '#7c3aed' } },
-];
+interface PatientsDistributionChartProps {
+  stats: DashboardStats | null;
+}
 
-export default function PatientsDistributionChart() {
+export default function PatientsDistributionChart({ stats }: PatientsDistributionChartProps) {
   const { resolvedTheme } = useTheme();
   const themeMode = resolvedTheme === 'dark' ? 'dark' : 'light';
+
+  // Use aggregated data or default values
+  const maleCount = stats?.demographicDistribution.gender.male || 0;
+  const femaleCount = stats?.demographicDistribution.gender.female || 0;
+  const otherCount = stats?.demographicDistribution.gender.other || 0;
+
+  const data = [
+    { name: 'Men', value: maleCount, color: { light: '#3b82f6', dark: '#2563eb' } },
+    { name: 'Women', value: femaleCount, color: { light: '#8b5cf6', dark: '#7c3aed' } },
+    ...(otherCount > 0 ? [{ name: 'Other', value: otherCount, color: { light: '#10b981', dark: '#059669' } }] : []),
+  ];
+
   const totalPatients = data.reduce((acc, curr) => acc + curr.value, 0);
 
   return (

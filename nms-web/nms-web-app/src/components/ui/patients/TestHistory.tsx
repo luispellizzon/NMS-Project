@@ -2,7 +2,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Download, FileText, Brain } from 'lucide-react';
+import { Download, Brain, Speech } from 'lucide-react';
 import { TestHistoryItem } from '@/types/testHistory';
 
 interface TestHistoryProps {
@@ -10,11 +10,21 @@ interface TestHistoryProps {
 }
 
 const TestHistory = ({ testHistory }: TestHistoryProps) => {
-  const getTestIcon = (testType: 'speech' | 'memory') => {
-    if (testType === 'speech') {
-      return <FileText className="w-4 h-4 text-purple-500" />;
+  // Update the type definition here to match TestHistoryItem['testType']
+  const getTestIcon = (testType: 'speech' | 'memory' | 'cognitive' | 'image_description') => {
+    switch (testType) {
+      case 'speech':
+      case 'image_description':
+        return <Speech className="w-4 h-4 text-purple-500" />;
+      
+      case 'memory':
+      case 'cognitive':
+        // Grouping memory and cognitive tasks together
+        return <Brain className="w-4 h-4 text-blue-500" />;
+        
+      default:
+        return <Brain className="w-4 h-4 text-gray-500" />;
     }
-    return <Brain className="w-4 h-4 text-blue-500" />;
   };
 
   const handleDownload = (item: TestHistoryItem) => {
