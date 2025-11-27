@@ -160,4 +160,15 @@ class FirestoreRepository private constructor(
 
 
 
+    suspend fun submitFeedback(rating: Int, review: String) {
+        val uid = uidOrThrow()
+        val feedback = hashMapOf(
+            "userId" to uid,
+            "rating" to rating,
+            "review" to review,
+            "version" to "1.0",
+            "timestamp" to FieldValue.serverTimestamp()
+        )
+        db.collection("feedback").add(feedback).await()
+    }
 }

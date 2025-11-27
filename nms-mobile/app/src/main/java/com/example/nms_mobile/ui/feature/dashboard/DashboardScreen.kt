@@ -52,7 +52,9 @@ fun DashboardScreen(
     onLogoutClick: () -> Unit,
     onAddPatient: () -> Unit,  // NEW
     onSelectPatient: (Patient) -> Unit,  // NEW
-    onDeselectPatient: () -> Unit  // NEW
+
+    onDeselectPatient: () -> Unit,  // NEW
+    onFeedbackClick: () -> Unit // NEW
 ) {
     Scaffold(
         topBar = {
@@ -60,7 +62,9 @@ fun DashboardScreen(
             NmsTopAppBar(
                 greeting = state.greeting,
                 displayName = state.displayName,
-                onLogoutClick = onLogoutClick
+
+                onLogoutClick = onLogoutClick,
+                onFeedbackClick = onFeedbackClick
             )
         }
     ) { padding ->

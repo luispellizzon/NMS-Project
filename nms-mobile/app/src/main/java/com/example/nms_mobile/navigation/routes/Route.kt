@@ -204,7 +204,8 @@ fun DashboardRoute(
     onOpenCognitiveResults: () -> Unit = {},
     onOpenMemory: () -> Unit = {},
     onOpenCognitive: () -> Unit = {},
-    onLoggedOut: () -> Unit = {}
+    onLoggedOut: () -> Unit = {},
+    onOpenFeedback: () -> Unit = {}
 ) {
     val vm = remember { DashboardViewModel() }
     val state by vm.ui.collectAsState()
@@ -246,7 +247,8 @@ fun DashboardRoute(
         onLogoutClick = vm::logout,
         onAddPatient = {},
         onSelectPatient = vm::selectPatient,
-        onDeselectPatient = vm::deselectPatient
+        onDeselectPatient = vm::deselectPatient,
+        onFeedbackClick = onOpenFeedback
     )
 }
 

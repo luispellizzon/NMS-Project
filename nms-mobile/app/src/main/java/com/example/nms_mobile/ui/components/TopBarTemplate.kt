@@ -5,27 +5,29 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.nms_mobile.ui.TealPrimary // Make sure this import is correct
+import com.example.nms_mobile.ui.TealPrimary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NmsTopAppBar(
-    // The greeting message (e.g., "Good morning").
     greeting: String,
-    // The user's name to display.
     displayName: String,
-    // The function to run when the user taps the logout button.
     onLogoutClick: () -> Unit,
+    onFeedbackClick: () -> Unit
 ) {
+    var showMenu by remember { mutableStateOf(false) }
+
     TopAppBar(
         title = {
             Row(
@@ -36,11 +38,10 @@ fun NmsTopAppBar(
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .clip(CircleShape) // Makes it round
+                        .clip(CircleShape)
                         .background(Color.Gray),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Person icon inside the gray circle.
                     Icon(
                         imageVector = Icons.Default.Person,
                         contentDescription = "Profile",
@@ -51,32 +52,64 @@ fun NmsTopAppBar(
                 Spacer(modifier = Modifier.width(12.dp))
 
                 Column(Modifier.weight(1f)) {
-                    // Displays the dynamic greeting (e.g., "Good morning, John").
                     Text(
                         text = "$greeting, $displayName",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray // Subdued color for the greeting.
+                        color = Color.Gray
                     )
-                    // Displays a fixed welcome message with the main app color.
                     Text(
                         text = "Welcome NMS",
                         style = MaterialTheme.typography.titleMedium,
-                        color = TealPrimary, // Primary app color.
+                        color = TealPrimary,
                         fontWeight = FontWeight.Bold
                     )
                 }
 
-                // Logout button (icon on the far right)
-                IconButton(onClick = onLogoutClick) {
-                    Icon(
-                        imageVector = Icons.Default.Logout,
-                        contentDescription = "Logout",
-                        tint = TealPrimary // Uses the app's primary color.
-                    )
+                // Menu button
+                Box {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Menu",
+                            tint = TealPrimary
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Rate Our App") },
+                            onClick = {
+                                showMenu = false
+                                onFeedbackClick()
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Star,
+                                    contentDescription = null,
+                                    tint = TealPrimary
+                                )
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Logout") },
+                            onClick = {
+                                showMenu = false
+                                onLogoutClick()
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Logout,
+                                    contentDescription = null,
+                                    tint = TealPrimary
+                                )
+                            }
+                        )
+                    }
                 }
             }
         },
-        // Sets the app bar background to match the screen background.
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.background
         )

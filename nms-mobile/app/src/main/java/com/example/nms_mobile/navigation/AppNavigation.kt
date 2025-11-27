@@ -19,6 +19,7 @@ import com.example.nms_mobile.navigation.routes.SpeechTaskRoute
 import com.example.nms_mobile.navigation.routes.StartRoute
 import com.example.nms_mobile.ui.feature.cognitive.CognitiveIntroScreen
 import com.example.nms_mobile.ui.questionnaire.QuestionnaireIntroScreen
+import com.example.nms_mobile.ui.feature.feedback.FeedbackScreen
 
 
 // This is the central file that defines all the app screens and how to move between them.
@@ -140,7 +141,17 @@ fun AppNavigation(
                         popUpTo(0) { inclusive = true }
                         launchSingleTop = true
                     }
+                },
+                onOpenFeedback = {
+                    navController.navigate(Screen.Feedback.route)
                 }
+            )
+        }
+
+        // FEEDBACK
+        composable(Screen.Feedback.route) {
+            FeedbackScreen(
+                onBackClick = { navController.popBackStack() }
             )
         }
 
