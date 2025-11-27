@@ -14,7 +14,9 @@ data class FeedbackUiState(
     val review: String = "",
     val isSubmitting: Boolean = false,
     val isSuccess: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val displayName: String = "NMS",
+    val greeting: String = "Good morning"
 )
 
 class FeedbackViewModel(
@@ -23,6 +25,23 @@ class FeedbackViewModel(
 
     private val _uiState = MutableStateFlow(FeedbackUiState())
     val uiState: StateFlow<FeedbackUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            val profile = repository.getUserProfile()
+            val name = profile?.fullName?.takeIf { it.isNotBlank() } ?: "NMS"
+            _uiState.update { it.copy(displayName = name, greeting = computeGreeting()) }
+        }
+    }
+
+    private fun computeGreeting(): String {
+        val hour = java.time.LocalTime.now().hour
+        return when (hour) {
+            in 5..11 -> "Good morning"
+            in 12..17 -> "Good afternoon"
+            else -> "Good evening"
+        }
+    }
 
     fun onRatingChanged(rating: Int) {
         _uiState.update { it.copy(rating = rating) }

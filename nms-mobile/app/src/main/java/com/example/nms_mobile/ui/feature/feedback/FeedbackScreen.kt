@@ -6,7 +6,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.*
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -29,9 +33,9 @@ fun FeedbackScreen(
 
     if (uiState.isSuccess) {
         AlertDialog(
-            onDismissRequest = { 
+            onDismissRequest = {
                 viewModel.resetSuccess()
-                onBackClick() 
+                onBackClick()
             },
             title = { Text("Thank You!") },
             text = { Text("Thank you for your feedback!") },
@@ -47,90 +51,188 @@ fun FeedbackScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Rate Our App") },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
-            )
-        }
+        containerColor = Color.White
     ) { padding ->
         Column(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Custom Header
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // Profile Image Placeholder
+                Box(
+                    modifier = Modifier
+                        .size(50.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(Color.Gray), // Placeholder for image
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = androidx.compose.material.icons.Icons.Default.Person,
+                        contentDescription = "Profile",
+                        tint = Color.White
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column {
+                    Text(
+                        text = uiState.greeting,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                    Text(
+                        text = "Welcome ${uiState.displayName}",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = TealPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
             Text(
-                text = "How was your experience?",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
+                text = "RATING AND REVIEW\nOUR APP",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = TealPrimary
+                ),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
-            
+
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Star Rating
+            // Rating Card
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF0FDF9)), // Light mint/teal
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "From ${uiState.rating} out of 5",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = TealPrimary
+                        )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Stars
             Row(
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 for (i in 1..5) {
                     Icon(
-                        imageVector = if (i <= uiState.rating) Icons.Default.Star else Icons.Default.StarBorder,
+                        imageVector = Icons.Default.Star, // Always filled star shape
                         contentDescription = "Star $i",
-                        tint = if (i <= uiState.rating) Color(0xFFFFC107) else Color.Gray, // Amber for filled, Gray for empty
+                        tint = if (i <= uiState.rating) TealPrimary else Color.LightGray, // Teal for filled, Gray for empty
                         modifier = Modifier
-                            .size(48.dp)
+                            .size(56.dp)
                             .clickable { viewModel.onRatingChanged(i) }
                             .padding(4.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
+            // Comments
+            Text(
+                text = "Comments",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.align(Alignment.Start)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = uiState.review,
                 onValueChange = { if (it.length <= 500) viewModel.onReviewChanged(it) },
-                label = { Text("Write a review (optional)") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(150.dp),
-                supportingText = { Text("${uiState.review.length}/500") },
-                maxLines = 5
+                    .height(120.dp),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = Color.LightGray,
+                    focusedBorderColor = TealPrimary
+                )
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
+            // Audio Message Button (Placeholder UI)
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF0FDF9)),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                            .background(TealPrimary),
+                        contentAlignment = Alignment.Center
+                    ) {
+                         // Need a speaker icon, using a placeholder or standard icon
+                         Icon(
+                             imageVector = androidx.compose.material.icons.Icons.Default.VolumeUp,
+                             contentDescription = "Record",
+                             tint = Color.White
+                         )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = "Tap the speaker button to record audio message",
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.weight(1f)) // Push button to bottom
+
+            // Send Button
             Button(
                 onClick = { viewModel.submitFeedback() },
                 enabled = uiState.rating > 0 && !uiState.isSubmitting,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = TealPrimary,
+                    disabledContainerColor = Color.Gray
+                )
             ) {
                 if (uiState.isSubmitting) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = Color.White
-                    )
+                    CircularProgressIndicator(color = Color.White)
                 } else {
-                    Text("Submit")
+                    Text(
+                        text = "Send Review",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    )
                 }
-            }
-            
-            if (uiState.error != null) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = uiState.error ?: "",
-                    color = MaterialTheme.colorScheme.error
-                )
             }
         }
     }
