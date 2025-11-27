@@ -488,8 +488,8 @@ private fun PatientAssessmentsView(
                         TestTile(
                             title = "Image Description",
                             onClick = {
-                                if (state.currentTask == UserTasks.MEMORY_ASSESSMENT.taskName ||
-                                    state.hasCompletedMemoryAssessment == true
+                                if (state.currentTask == UserTasks.IMAGE_DESCRIPTION.taskName ||
+                                    state.hasCompletedRiskAssessment == true
                                 ) {
                                     onOpenImageDescription()
                                 } else {
