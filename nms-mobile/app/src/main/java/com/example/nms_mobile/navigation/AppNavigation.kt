@@ -5,11 +5,13 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.nms_mobile.navigation.routes.AddPatientRoute
 import com.example.nms_mobile.navigation.routes.CognitiveResultsRoute
 import com.example.nms_mobile.navigation.routes.CognitiveTestRoute
 import com.example.nms_mobile.navigation.routes.DashboardRoute
 import com.example.nms_mobile.navigation.routes.LoginRoute
 import com.example.nms_mobile.navigation.routes.MemoryTestRoute
+import com.example.nms_mobile.navigation.routes.NewsRoute
 import com.example.nms_mobile.navigation.routes.PersonalInfoRoute
 import com.example.nms_mobile.navigation.routes.QuestionnaireRoute
 import com.example.nms_mobile.navigation.routes.SignUpRoute
@@ -139,6 +141,9 @@ fun AppNavigation(
                 },
                 onOpenFeedback = {
                     navController.navigate(Screen.Feedback.route)
+                },
+                onOpenAddPatient = {
+                    navController.navigate(Screen.AddPatient.route)
                 }
             )
         }
@@ -282,6 +287,19 @@ fun AppNavigation(
         composable("news") {
             NewsRoute(
                 onBack = { navController.popBackStack() }
+            )
+        }
+
+        // ADD PATIENT (Caregiver creates a new patient profile)
+        composable(Screen.AddPatient.route) {
+            AddPatientRoute(
+                onBack = { navController.popBackStack() },
+                onPatientCreated = {
+                    navController.navigate(Screen.Dashboard.route) {
+                        popUpTo(Screen.AddPatient.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
     }

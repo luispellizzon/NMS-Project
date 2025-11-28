@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
@@ -24,7 +25,9 @@ fun NmsTopAppBar(
     greeting: String,
     displayName: String,
     onLogoutClick: () -> Unit,
-    onFeedbackClick: () -> Unit
+    onFeedbackClick: () -> Unit,
+    // Add optional parameter for back navigation
+    onBackClick: (() -> Unit)? = null 
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
@@ -34,7 +37,7 @@ fun NmsTopAppBar(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Avatar (Profile picture placeholder)
+                // 1. Avatar (Left Side)
                 Box(
                     modifier = Modifier
                         .size(40.dp)
@@ -51,6 +54,7 @@ fun NmsTopAppBar(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
+                // 2. Text (Middle - takes up remaining space)
                 Column(Modifier.weight(1f)) {
                     Text(
                         text = "$greeting, $displayName",
@@ -65,7 +69,20 @@ fun NmsTopAppBar(
                     )
                 }
 
-                // Menu button
+                // 3. Right Side Elements
+                
+                // BACK BUTTON (Only shows if onBackClick is provided)
+                if (onBackClick != null) {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.Gray // Or TealPrimary depending on your preference
+                        )
+                    }
+                }
+
+                // MENU BUTTON
                 Box {
                     IconButton(onClick = { showMenu = true }) {
                         Icon(

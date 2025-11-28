@@ -1,27 +1,25 @@
 package com.example.nms_mobile.ui.feature.feedback
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.StarBorder
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.*
-import androidx.compose.foundation.background
-import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nms_mobile.ui.TealPrimary
+import com.example.nms_mobile.ui.components.NmsTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,6 +29,7 @@ fun FeedbackScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    // Success Dialog
     if (uiState.isSuccess) {
         AlertDialog(
             onDismissRequest = {
@@ -51,7 +50,17 @@ fun FeedbackScreen(
     }
 
     Scaffold(
-        containerColor = Color.White
+        containerColor = Color.White,
+        topBar = {
+            // Using the shared NmsTopAppBar
+            NmsTopAppBar(
+                greeting = uiState.greeting,
+                displayName = uiState.displayName,
+                onLogoutClick = { /* Optional: Add logout logic if needed */ },
+                onFeedbackClick = { /* Already on feedback screen */ },
+                onBackClick = onBackClick // This places the arrow on the right side
+            )
+        }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -60,45 +69,10 @@ fun FeedbackScreen(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Custom Header
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                // Profile Image Placeholder
-                Box(
-                    modifier = Modifier
-                        .size(50.dp)
-                        .clip(androidx.compose.foundation.shape.CircleShape)
-                        .background(Color.Gray), // Placeholder for image
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = androidx.compose.material.icons.Icons.Default.Person,
-                        contentDescription = "Profile",
-                        tint = Color.White
-                    )
-                }
 
-                Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-                Column {
-                    Text(
-                        text = uiState.greeting,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                    Text(
-                        text = "Welcome ${uiState.displayName}",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = TealPrimary,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
+            // Title
             Text(
                 text = "RATING AND REVIEW\nOUR APP",
                 style = MaterialTheme.typography.titleLarge.copy(
@@ -110,10 +84,10 @@ fun FeedbackScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Rating Card
+            // Rating Score Card
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFF0FDF9)), // Light mint/teal
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(12.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -135,16 +109,16 @@ fun FeedbackScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Stars
+            // Star Selection
             Row(
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 for (i in 1..5) {
                     Icon(
-                        imageVector = Icons.Default.Star, // Always filled star shape
+                        imageVector = Icons.Default.Star,
                         contentDescription = "Star $i",
-                        tint = if (i <= uiState.rating) TealPrimary else Color.LightGray, // Teal for filled, Gray for empty
+                        tint = if (i <= uiState.rating) TealPrimary else Color.LightGray,
                         modifier = Modifier
                             .size(56.dp)
                             .clickable { viewModel.onRatingChanged(i) }
@@ -155,7 +129,7 @@ fun FeedbackScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Comments
+            // Comment Input
             Text(
                 text = "Comments",
                 style = MaterialTheme.typography.bodyMedium,
@@ -168,7 +142,7 @@ fun FeedbackScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(120.dp),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedBorderColor = Color.LightGray,
                     focusedBorderColor = TealPrimary
@@ -180,7 +154,7 @@ fun FeedbackScreen(
             // Audio Message Button (Placeholder UI)
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFF0FDF9)),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -190,16 +164,15 @@ fun FeedbackScreen(
                     Box(
                         modifier = Modifier
                             .size(48.dp)
-                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(8.dp))
                             .background(TealPrimary),
                         contentAlignment = Alignment.Center
                     ) {
-                         // Need a speaker icon, using a placeholder or standard icon
-                         Icon(
-                             imageVector = androidx.compose.material.icons.Icons.Default.VolumeUp,
-                             contentDescription = "Record",
-                             tint = Color.White
-                         )
+                        Icon(
+                            imageVector = Icons.Default.VolumeUp,
+                            contentDescription = "Record",
+                            tint = Color.White
+                        )
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(
@@ -219,7 +192,7 @@ fun FeedbackScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = TealPrimary,
                     disabledContainerColor = Color.Gray

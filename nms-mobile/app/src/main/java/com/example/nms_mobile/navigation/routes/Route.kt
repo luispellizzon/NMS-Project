@@ -206,7 +206,8 @@ fun DashboardRoute(
     onOpenMemory: () -> Unit = {},
     onOpenCognitive: () -> Unit = {},
     onLoggedOut: () -> Unit = {},
-    onOpenFeedback: () -> Unit = {}
+    onOpenFeedback: () -> Unit = {},
+    onOpenAddPatient: () -> Unit = {}
 ) {
     val vm = remember { DashboardViewModel() }
     val state by vm.ui.collectAsState()
@@ -246,7 +247,7 @@ fun DashboardRoute(
         onOpenMemory = onOpenMemory,
         onOpenCognitive = onOpenCognitive,
         onLogoutClick = vm::logout,
-        onAddPatient = {},
+        onAddPatient = onOpenAddPatient,
         onSelectPatient = vm::selectPatient,
         onDeselectPatient = vm::deselectPatient,
         onFeedbackClick = onOpenFeedback
@@ -650,5 +651,16 @@ fun NewsRoute(
         onRefresh = viewModel::loadNews,
         onGenerateNews = { viewModel.generateNews() },
         onSetAudience = viewModel::setAudience
+    )
+}
+
+@Composable
+fun AddPatientRoute(
+    onBack: () -> Unit,
+    onPatientCreated: () -> Unit
+) {
+    com.example.nms_mobile.ui.feature.addpatient.AddPatientScreen(
+        onBack = onBack,
+        onPatientCreated = onPatientCreated
     )
 }
