@@ -21,5 +21,6 @@ sealed class Screen(val route: String) {
     object CognitiveResults : Screen("cognitive_results")
     object Feedback : Screen("feedback")
 
+    object News : Screen("news")
 
 }

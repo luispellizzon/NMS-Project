@@ -21,9 +21,7 @@ import com.example.nms_mobile.ui.feature.cognitive.CognitiveIntroScreen
 import com.example.nms_mobile.ui.questionnaire.QuestionnaireIntroScreen
 import com.example.nms_mobile.ui.feature.feedback.FeedbackScreen
 
-
 // This is the central file that defines all the app screens and how to move between them.
-
 @Composable
 fun AppNavigation(
     navController: NavHostController = rememberNavController() // Keeps track of the screens history (the back stack).
@@ -63,7 +61,7 @@ fun AppNavigation(
         composable(Screen.Login.route) {
             LoginRoute(
                 // After a successful login, navigate back to the Start screen to re-evaluate the user's destination.
-                onNavigateAfterLogin = { _hasProfileIgnored ->
+                onNavigateAfterLogin = { _ ->
                     navController.navigate(Screen.Start.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                         launchSingleTop = true
@@ -115,17 +113,12 @@ fun AppNavigation(
                 onOpenSpeech = {
                     navController.navigate(Screen.SpeechTask.route)
                 },
-
                 onOpenImageDescription = {
                     navController.navigate(Screen.SpeechAssessment.route)
                 },
                 // Open the Speech Results screen (when clicked and analysis is complete)
                 onOpenSpeechResults = {
                     navController.navigate(Screen.SpeechResults.route)
-                },
-                // Open the Cognitive Results screen
-                onOpenCognitiveResults = {
-                    navController.navigate(Screen.CognitiveResults.route)
                 },
                 // Open the Memory Test screen.
                 onOpenMemory = {
@@ -134,6 +127,8 @@ fun AppNavigation(
                 // Open the Cognitive Test Intro screen.
                 onOpenCognitive = {
                     navController.navigate(Screen.CognitiveIntro.route)
+                }, onOpenNews = {
+                    navController.navigate(Screen.News.route)
                 },
                 // When the user logs out, go back to the Login screen and clear ALL history.
                 onLoggedOut = {
@@ -282,6 +277,11 @@ fun AppNavigation(
                         launchSingleTop = true
                     }
                 }
+            )
+        }
+        composable("news") {
+            NewsRoute(
+                onBack = { navController.popBackStack() }
             )
         }
     }

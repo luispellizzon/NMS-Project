@@ -40,6 +40,8 @@ import com.example.nms_mobile.ui.feature.login.LoginScreen
 import com.example.nms_mobile.ui.feature.login.LoginViewModel
 import com.example.nms_mobile.ui.feature.memory.MemoryTestScreen
 import com.example.nms_mobile.ui.feature.memory.MemoryTestViewModel
+import com.example.nms_mobile.ui.feature.news.NewsScreen
+import com.example.nms_mobile.ui.feature.news.NewsViewModel
 import com.example.nms_mobile.ui.feature.speech.SpeechAssessmentEvent
 import com.example.nms_mobile.ui.feature.speech.SpeechAssessmentViewModel
 import com.example.nms_mobile.ui.feature.speech.SpeechTaskEvent
@@ -198,10 +200,9 @@ fun PersonalInfoRoute(onFinished: () -> Unit) {
 fun DashboardRoute(
     onOpenQuestionnaire: () -> Unit,
     onOpenImageDescription:  () -> Unit,
-    onOpenNews: () -> Unit = {},
+    onOpenNews: () -> Unit,
     onOpenSpeech: () -> Unit = {},
     onOpenSpeechResults: () -> Unit = {},
-    onOpenCognitiveResults: () -> Unit = {},
     onOpenMemory: () -> Unit = {},
     onOpenCognitive: () -> Unit = {},
     onLoggedOut: () -> Unit = {},
@@ -633,5 +634,21 @@ fun CognitiveResultsRoute(
     CognitiveResultsScreen(
         onBack = onBack,
         onRedoTest = onRedoTest
+    )
+}
+
+@Composable
+fun NewsRoute(
+    onBack: () -> Unit
+) {
+    val viewModel = remember { NewsViewModel() }
+    val state by viewModel.uiState.collectAsState()
+
+    NewsScreen(
+        state = state,
+        onBack = onBack,
+        onRefresh = viewModel::loadNews,
+        onGenerateNews = { viewModel.generateNews() },
+        onSetAudience = viewModel::setAudience
     )
 }
