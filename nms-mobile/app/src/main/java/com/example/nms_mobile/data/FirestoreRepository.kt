@@ -21,7 +21,11 @@ data class UserProfile(
     val hasCompletedImageDescription: Boolean = false,
     val hasCompletedSpeechAssessment: Boolean = false,
     val hasCompletedMemoryAssessment: Boolean = false,
-    val hasCompletedCognitiveAssessment: Boolean = false
+    val hasCompletedCognitiveAssessment: Boolean = false,
+    val mmseScore: Int = 0,
+    val location: String = "",
+    val dementiaRisk: String = "",
+    val hasCompletedAiAnalysis: Boolean = false
 )
 
 enum class UserTasks(
@@ -31,7 +35,9 @@ enum class UserTasks(
     IMAGE_DESCRIPTION(taskName="image_description_assessment"),
     SPEECH_ASSESSMENT(taskName= "speech_assessment"),
     MEMORY_ASSESSMENT(taskName="memory_assessment"),
-    COGNITIVE_ASSESSMENT(taskName = "cognitive_assessment")
+    COGNITIVE_ASSESSMENT(taskName = "cognitive_assessment"),
+    AI_ASSESSMENT(taskName = "ai_assessment"),
+    COMPLETED(taskName = "completed")
 }
 
 data class CombinedQuestionnaire(
@@ -70,7 +76,7 @@ class FirestoreRepository private constructor(
         val uid = uidOrThrow()
         return userDoc(uid).get().await().exists()
     }
-    private fun uidOrThrow(): String = auth.currentUser?.uid ?: error("No authenticated user")
+    private fun uidOrThrow(): String = PatientSessionManager.getActiveUserId()
     private fun userDoc(uid: String) = db.collection("users").document(uid)
 
     // can be used to display profile info in the UI
@@ -134,4 +140,35 @@ class FirestoreRepository private constructor(
         userDoc(uid).update(taskFlag, true, "currentTask", newTask).await()
     }
 
+    suspend fun updateUserDoc(attr: String, value: Any) {
+        val uid = uidOrThrow()
+        userDoc(uid).update(attr, value).await()
+    }
+
+    suspend fun getLatestRiskAssessment(): Map<String, Any>? {
+        val userId = uidOrThrow()
+
+        val snapshot = db.collection("users")
+            .document(userId)
+            .collection("risk_assessment")
+            .get()
+            .await()
+
+        return snapshot.documents.firstOrNull()?.data
+    }
+
+
+
+
+    suspend fun submitFeedback(rating: Int, review: String) {
+        val uid = uidOrThrow()
+        val feedback = hashMapOf(
+            "userId" to uid,
+            "rating" to rating,
+            "review" to review,
+            "version" to "1.0",
+            "timestamp" to FieldValue.serverTimestamp()
+        )
+        db.collection("feedback").add(feedback).await()
+    }
 }

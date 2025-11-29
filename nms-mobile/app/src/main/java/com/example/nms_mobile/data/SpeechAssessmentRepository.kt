@@ -30,7 +30,7 @@ class SpeechAssessmentRepository private constructor(
      * @return Uploaded audio URL
      */
     suspend fun uploadAudio(audioFile: File): String {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
         val fileName = "${UUID.randomUUID()}.m4a"
         val storageRef = storage.reference
             .child(STORAGE_AUDIO_PATH)
@@ -45,7 +45,7 @@ class SpeechAssessmentRepository private constructor(
      * Saves Speech Assessment to Firestore
      */
     suspend fun saveSpeechAssessment(assessment: SpeechAssessment) {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
 
         val data = hashMapOf(
             "id" to assessment.id,
@@ -75,10 +75,11 @@ class SpeechAssessmentRepository private constructor(
      * Gets all Speech Assessments for the current user
      */
     suspend fun getUserAssessments(): List<SpeechAssessment> {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId() // Gets Patient ID
 
-        val snapshot = firestore.collection(COLLECTION_SPEECH)
-            .whereEqualTo("userId", userId)
+        val snapshot = firestore.collection(USERS)
+            .document(userId)
+            .collection(COLLECTION_SPEECH)
             .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
             .get()
             .await()
@@ -103,7 +104,11 @@ class SpeechAssessmentRepository private constructor(
      * Gets a specific Speech Assessment by ID
      */
     suspend fun getAssessmentById(id: String): SpeechAssessment? {
-        val doc = firestore.collection(COLLECTION_SPEECH)
+        val userId = PatientSessionManager.getActiveUserId() // Gets Patient ID
+
+        val doc = firestore.collection(USERS)
+            .document(userId)
+            .collection(COLLECTION_SPEECH)
             .document(id)
             .get()
             .await()
@@ -134,6 +139,7 @@ class SpeechAssessmentRepository private constructor(
         score: Double? = null,
         status: String = "transcribed"
     ) {
+        val userId = PatientSessionManager.getActiveUserId() // Gets Patient ID
         val updates = hashMapOf<String, Any>(
             "transcription" to transcription,
             "status" to status  // ←
@@ -142,7 +148,9 @@ class SpeechAssessmentRepository private constructor(
         aiAnalysis?.let { updates["aiAnalysis"] = it }
         score?.let { updates["score"] = it }
 
-        firestore.collection(COLLECTION_SPEECH)
+        firestore.collection(USERS)
+            .document(userId)
+            .collection(COLLECTION_SPEECH)
             .document(id)
             .update(updates)
             .await()

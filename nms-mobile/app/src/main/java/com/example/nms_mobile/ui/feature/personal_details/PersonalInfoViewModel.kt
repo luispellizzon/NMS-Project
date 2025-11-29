@@ -8,7 +8,9 @@ import com.example.nms_mobile.data.FirestoreRepository
 import com.example.nms_mobile.data.UserProfile
 import com.example.nms_mobile.data.UserTasks
 import com.google.firebase.Timestamp
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -18,9 +20,19 @@ data class PersonalInfoUiState(
     val email: String = "",
     val role: String = "",
     val dateOfBirth: String = "",
-    val isSubmitting: Boolean = false, // True when saving data to Firestore.
-    val error: String? = null,         // Stores validation or submission error message.
+    val location: String = "",
+    val isCountryDropdownOpen: Boolean = false,
+    val filteredCountries: List<String> = emptyList(),
+    val isSubmitting: Boolean = false,
+    val error: String? = null
 )
+
+private val countryList = listOf(
+    "Ireland", "United Kingdom", "Brazil", "France", "Portugal",
+    "Italy", "Spain", "Germany", "Finland", "Sweden", "Norway",
+    "Denmark", "Estonia", "Latvia", "Lithuania", "Russia", "Poland"
+)
+
 
 // Single events for the UI (like navigation command).
 sealed class PersonalInfoEvent {
@@ -77,6 +89,7 @@ class PersonalInfoViewModel(
             !Patterns.EMAIL_ADDRESS.matcher(s.email).matches() -> "Invalid email format"
             s.role.isBlank() -> "Please select a role (Patient or Caregiver)"
             s.role !in listOf("patient", "caregiver") -> "Invalid role selected"
+            s.location !in countryList -> "Select a country"
             else -> null
         }
 
@@ -148,4 +161,44 @@ class PersonalInfoViewModel(
             }
         }
     }
+
+    private val allCountries = countryList.sorted()
+
+    private var debounceJob: Job? = null
+
+    fun onCountryChange(value: String) {
+        _uiState.update { it.copy(location = value, error = null) }
+
+        debounceJob?.cancel()
+        debounceJob = viewModelScope.launch {
+            delay(300)
+
+            val filtered = if (value.isBlank()) {
+                allCountries                   // show all on first click or cleared text
+            } else {
+                allCountries.filter {
+                    it.contains(value, ignoreCase = true)
+                }
+            }
+
+            _uiState.update { it.copy(filteredCountries = filtered) }
+        }
+    }
+
+    fun onFieldFocused() {
+        _uiState.update {
+            it.copy(filteredCountries = allCountries)
+        }
+    }
+
+    fun onCountrySelected(country: String) {
+        _uiState.update {
+            it.copy(
+                location = country,
+                filteredCountries = emptyList()
+            )
+        }
+    }
+
+
 }
