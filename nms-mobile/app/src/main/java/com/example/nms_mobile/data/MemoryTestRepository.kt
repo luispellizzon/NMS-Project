@@ -22,7 +22,7 @@ class MemoryTestRepository private constructor(
      * Saved under: users/{userId}/memory_tests/{testId}
      */
     suspend fun saveMemoryTest(test: MemoryTest) {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
 
         val data = hashMapOf(
             "id" to test.id,
@@ -49,7 +49,7 @@ class MemoryTestRepository private constructor(
      * Gets all Memory Tests for the current user
      */
     suspend fun getUserMemoryTests(): List<MemoryTest> {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
 
         val snapshot = firestore.collection(COLLECTION_USERS)
             .document(userId)
@@ -76,7 +76,7 @@ class MemoryTestRepository private constructor(
      * Gets a specific Memory Test by ID
      */
     suspend fun getMemoryTestById(id: String): MemoryTest? {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
 
         val doc = firestore.collection(COLLECTION_USERS)
             .document(userId)
@@ -103,7 +103,7 @@ class MemoryTestRepository private constructor(
      * Deletes a Memory Test
      */
     suspend fun deleteMemoryTest(id: String) {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
 
         firestore.collection(COLLECTION_USERS)
             .document(userId)

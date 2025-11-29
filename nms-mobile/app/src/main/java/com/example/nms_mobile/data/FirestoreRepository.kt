@@ -76,7 +76,7 @@ class FirestoreRepository private constructor(
         val uid = uidOrThrow()
         return userDoc(uid).get().await().exists()
     }
-    private fun uidOrThrow(): String = auth.currentUser?.uid ?: error("No authenticated user")
+    private fun uidOrThrow(): String = PatientSessionManager.getActiveUserId()
     private fun userDoc(uid: String) = db.collection("users").document(uid)
 
     // can be used to display profile info in the UI
@@ -146,7 +146,7 @@ class FirestoreRepository private constructor(
     }
 
     suspend fun getLatestRiskAssessment(): Map<String, Any>? {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = uidOrThrow()
 
         val snapshot = db.collection("users")
             .document(userId)

@@ -26,7 +26,7 @@ class AIRepository private constructor(
     }
 
     suspend fun calculateAndStoreMmseScore(): Int {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
 
         val collections = listOf(RISK, SPEECH, MEMORY, COGNITIVE)
         var totalScore = 0
@@ -55,7 +55,7 @@ class AIRepository private constructor(
         return totalScore
     }
     suspend fun getLatestRiskAssessment(): Map<String, Any>? {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
 
         val snapshot = db.collection("users")
             .document(userId)
@@ -67,7 +67,7 @@ class AIRepository private constructor(
     }
 
     suspend fun calcRiskPrediction(score: Int, risk: Map<String, Any>): String {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
         val colRef = db.collection(PATIENTS_PREDICTION_RESULTS)
         val resultJson = sendToHuggingFaceGradioAndGetResult(score, risk)
         var res: String? = null

@@ -27,7 +27,7 @@ class CognitiveRepository private constructor(
      * Uploads a drawing image to Firebase Storage
      */
     suspend fun uploadDrawingImage(bitmap: Bitmap, taskType: String): String {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
         val timestamp = System.currentTimeMillis()
         val filename = "${taskType}_${timestamp}.jpg"
 
@@ -52,7 +52,7 @@ class CognitiveRepository private constructor(
      * Creates a new Cognitive Assessment (parent document)
      */
     suspend fun createCognitiveAssessment(assessmentId: String) {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
 
         val assessment = CognitiveAssessment(
             id = assessmentId,
@@ -79,7 +79,7 @@ class CognitiveRepository private constructor(
         assessmentId: String,
         taskResult: CognitiveTaskResult
     ) {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
 
         // Save task to subcollection
         firestore.collection("users")
@@ -96,7 +96,7 @@ class CognitiveRepository private constructor(
      * Updates the assessment with total score and completion status
      */
     suspend fun updateAssessmentScore(assessmentId: String) {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
 
         // Get all tasks for this assessment
         val tasksSnapshot = firestore.collection("users")
@@ -133,7 +133,7 @@ class CognitiveRepository private constructor(
      */
     @Deprecated("Use saveCognitiveTaskResultToAssessment instead")
     suspend fun saveCognitiveTaskResult(result: CognitiveTaskResult) {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
 
         firestore.collection("users")
             .document(userId)
@@ -147,7 +147,7 @@ class CognitiveRepository private constructor(
      * Gets all cognitive task results for the user
      */
     suspend fun getCognitiveTaskResults(): List<CognitiveTaskResult> {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
 
         val snapshot = firestore.collection("users")
             .document(userId)
@@ -178,7 +178,7 @@ class CognitiveRepository private constructor(
      * Gets all cognitive assessments for the user
      */
     suspend fun getCognitiveAssessments(): List<CognitiveAssessment> {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
 
         val snapshot = firestore.collection("users")
             .document(userId)
@@ -204,7 +204,7 @@ class CognitiveRepository private constructor(
      * Gets tasks for a specific assessment
      */
     suspend fun getAssessmentTasks(assessmentId: String): List<CognitiveTaskResult> {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
 
         val snapshot = firestore.collection("users")
             .document(userId)
@@ -236,7 +236,11 @@ class CognitiveRepository private constructor(
      * Checks if user has completed at least one Cognitive Test task
      */
     suspend fun hasCognitiveTestResults(): Boolean {
-        val userId = auth.currentUser?.uid ?: return false
+        val userId = try {
+            PatientSessionManager.getActiveUserId()
+        } catch (e: Exception) {
+            return false
+        }
 
         return try {
             val snapshot = firestore.collection("users")
@@ -257,7 +261,7 @@ class CognitiveRepository private constructor(
      * Gets cognitive assessment summary
      */
     suspend fun getCognitiveAssessmentSummary(): CognitiveAssessmentSummary {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
         val tasks = getCognitiveTaskResults()
 
         return CognitiveAssessmentSummary(
@@ -273,7 +277,7 @@ class CognitiveRepository private constructor(
      * Deletes a specific task result
      */
     suspend fun deleteCognitiveTaskResult(taskId: String) {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
 
         // First get the result to have the image URL
         val doc = firestore.collection("users")

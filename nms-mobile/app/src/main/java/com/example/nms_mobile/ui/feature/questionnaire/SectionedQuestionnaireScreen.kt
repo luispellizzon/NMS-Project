@@ -551,7 +551,7 @@ fun Section5Medication(
             )
 
             RadioButtonGroup(
-                options = listOf("None", "Diabetes", "Heart Diseases", "Hypertension"),
+                options = listOf("None", "Diabetes", "Heart Disease", "Hypertension"),
                 selectedOption = chronicHealthCondition,
                 onOptionSelected = onChronicConditionChange
             )

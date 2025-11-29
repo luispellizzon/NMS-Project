@@ -15,8 +15,10 @@ import kotlinx.coroutines.launch
 import java.time.LocalTime
 import android.util.Log
 import com.example.nms_mobile.data.AIRepository
-import com.example.nms_mobile.data.Patient
+import com.example.nms_mobile.data.ManagedModeManager
+import com.example.nms_mobile.data.PatientReference
 import com.example.nms_mobile.data.PatientRepository
+import com.example.nms_mobile.data.PatientSessionManager
 import com.example.nms_mobile.data.UserProfile
 import com.example.nms_mobile.data.UserTasks
 import kotlinx.coroutines.Dispatchers
@@ -47,9 +49,10 @@ data class DashboardUiState(
     val speechTotalScore: Int? = null,
 
     // Caregiver stuff for now
-    val patients: List<Patient> = emptyList(),
+    val patients: List<PatientReference> = emptyList(),
     val isLoadingPatients: Boolean = false,
-    val selectedPatient: Patient? = null,  // Currently selected patient
+    val selectedPatient: PatientReference? = null,  // Currently selected patient reference
+    val selectedPatientProfile: UserProfile? = null,  // Full patient profile when viewing details
     val isManagingPatient: Boolean = false
 )
 
@@ -119,23 +122,54 @@ class DashboardViewModel(
     }
 
     // NEW: Select a patient to manage
-    fun selectPatient(patient: Patient) {
-        _ui.update {
-            it.copy(
-                selectedPatient = patient,
-                isManagingPatient = true
-            )
+    // AC-1: Interaction - Allows caregiver to tap on patient to initiate context switch
+    // AC-2: App State Change - Sets patient ID as active context
+    fun selectPatient(patient: PatientReference) = viewModelScope.launch {
+        try {
+            // Set the managed patient context in both managers
+            PatientSessionManager.setManagedPatient(patient.patientId)
+            ManagedModeManager.enterManagedMode(patient.patientId, patient.fullName)
+
+            // Fetch the full patient profile
+            val profile = patientRepo.getPatientProfile(patient.patientId)
+
+            _ui.update {
+                it.copy(
+                    selectedPatient = patient,
+                    selectedPatientProfile = profile,
+                    isManagingPatient = true
+                )
+            }
+
+            Log.d(TAG, "Entered managed mode for patient: ${patient.fullName} (${patient.patientId})")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error loading patient profile", e)
+            _ui.update {
+                it.copy(
+                    selectedPatient = patient,
+                    selectedPatientProfile = null,
+                    isManagingPatient = true
+                )
+            }
         }
     }
 
     // NEW: Go back to patient list
+    // AC-4: Return Navigation - Provides function to exit managed mode
     fun deselectPatient() {
+        // Clear the managed patient context from both managers
+        PatientSessionManager.clearManagedPatient()
+        ManagedModeManager.exitManagedMode()
+
         _ui.update {
             it.copy(
                 selectedPatient = null,
+                selectedPatientProfile = null,
                 isManagingPatient = false
             )
         }
+
+        Log.d(TAG, "Exited managed mode")
     }
 
     // NEW: Refresh patient list

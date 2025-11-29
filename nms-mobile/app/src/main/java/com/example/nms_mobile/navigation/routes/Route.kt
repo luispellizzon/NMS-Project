@@ -29,6 +29,7 @@ import com.example.nms_mobile.data.AuthRepository
 import com.example.nms_mobile.data.FirestoreRepository
 import com.example.nms_mobile.data.SpeechAssessmentsTasksRepository
 import com.example.nms_mobile.ui.cognitive.CubeDrawingScreen
+import com.example.nms_mobile.ui.components.ManagedModeBanner
 import com.example.nms_mobile.ui.feature.cognitive.AnimalNamingScreen
 import com.example.nms_mobile.ui.feature.cognitive.ClockDrawingScreen
 import com.example.nms_mobile.ui.feature.cognitive.CognitiveEvent
@@ -230,28 +231,37 @@ fun DashboardRoute(
         }
     }
 
-    // Connect the Dashboard UI screen to the ViewModel.
-    DashboardScreen(
-        state = state,
-        onOpenNews = onOpenNews,
-        onOpenRiskAssessment = onOpenQuestionnaire, // Opens the questionnaire
-        onOpenImageDescription = onOpenImageDescription,
-        onOpenSpeech = {
-            // Navigate to results if completed, otherwise to speech task
-            if (state.speechAnalysisStatus == SpeechAnalysisStatus.COMPLETED) {
-                onOpenSpeechResults()
-            } else {
-                onOpenSpeech()
-            }
-        },
-        onOpenMemory = onOpenMemory,
-        onOpenCognitive = onOpenCognitive,
-        onLogoutClick = vm::logout,
-        onAddPatient = onOpenAddPatient,
-        onSelectPatient = vm::selectPatient,
-        onDeselectPatient = vm::deselectPatient,
-        onFeedbackClick = onOpenFeedback
-    )
+    // AC-3: UI Indication - Display managed mode banner when active
+    // AC-4: Return Navigation - Provides exit button in banner
+    Box {
+        // Connect the Dashboard UI screen to the ViewModel.
+        DashboardScreen(
+            state = state,
+            onOpenNews = onOpenNews,
+            onOpenRiskAssessment = onOpenQuestionnaire, // Opens the questionnaire
+            onOpenImageDescription = onOpenImageDescription,
+            onOpenSpeech = {
+                // Navigate to results if completed, otherwise to speech task
+                if (state.speechAnalysisStatus == SpeechAnalysisStatus.COMPLETED) {
+                    onOpenSpeechResults()
+                } else {
+                    onOpenSpeech()
+                }
+            },
+            onOpenMemory = onOpenMemory,
+            onOpenCognitive = onOpenCognitive,
+            onLogoutClick = vm::logout,
+            onAddPatient = onOpenAddPatient,
+            onSelectPatient = vm::selectPatient,
+            onDeselectPatient = vm::deselectPatient,
+            onFeedbackClick = onOpenFeedback
+        )
+
+        // Overlay the managed mode banner at the top if in managed mode
+        ManagedModeBanner(
+            onExitManagedMode = vm::deselectPatient
+        )
+    }
 }
 
 // Handles the sequence of questionnaire screens.

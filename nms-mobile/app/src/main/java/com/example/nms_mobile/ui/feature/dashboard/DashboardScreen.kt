@@ -28,7 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.nms_mobile.data.Patient
+import com.example.nms_mobile.data.PatientReference
 import com.example.nms_mobile.data.UserTasks
 import com.example.nms_mobile.ui.BackgroundGray
 import com.example.nms_mobile.ui.Green
@@ -51,7 +51,7 @@ fun DashboardScreen(
     onOpenCognitive: () -> Unit,
     onLogoutClick: () -> Unit,
     onAddPatient: () -> Unit,  // NEW
-    onSelectPatient: (Patient) -> Unit,  // NEW
+    onSelectPatient: (PatientReference) -> Unit,  // NEW
 
     onDeselectPatient: () -> Unit,  // NEW
     onFeedbackClick: () -> Unit // NEW
@@ -102,9 +102,9 @@ fun DashboardScreen(
             // ROLES
             when {
                 // CAREGIVER: Managing a specific patient
-                state.role == "caregiver" && state.isManagingPatient && state.selectedPatient != null -> {
+                state.role == "caregiver" && state.isManagingPatient && state.selectedPatientProfile != null -> {
                     CaregiverManagingPatientView(
-                        patient = state.selectedPatient,
+                        patientProfile = state.selectedPatientProfile,
                         onBack = onDeselectPatient,
                         onOpenRiskAssessment = onOpenRiskAssessment,
                         onOpenSpeech = onOpenSpeech,
@@ -142,7 +142,7 @@ fun DashboardScreen(
     // NEW: Caregiver managing a patient view
     @Composable
     private fun CaregiverManagingPatientView(
-        patient: Patient,
+        patientProfile: com.example.nms_mobile.data.UserProfile,
         onBack: () -> Unit,
         onOpenRiskAssessment: () -> Unit,
         onOpenSpeech: () -> Unit,
@@ -179,7 +179,7 @@ fun DashboardScreen(
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = patient.fullName,
+                    text = patientProfile.fullName,
                     style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
                     color = TealPrimary
                 )
@@ -209,7 +209,7 @@ fun DashboardScreen(
                     .weight(1f)
                     .height(180.dp),
                 pendingColor = TealPrimary,
-                isCompleted = patient.hasCompletedRiskAssessment
+                isCompleted = patientProfile.hasCompletedRiskAssessment
             )
 
             TestTile(
@@ -218,7 +218,7 @@ fun DashboardScreen(
                 modifier = Modifier
                     .weight(1f)
                     .height(180.dp),
-                isCompleted = patient.hasCompletedSpeech
+                isCompleted = patientProfile.hasCompletedSpeechAssessment
             )
         }
 
@@ -234,7 +234,7 @@ fun DashboardScreen(
                 modifier = Modifier
                     .weight(1f)
                     .height(140.dp),
-                isCompleted = patient.hasCompletedMemory
+                isCompleted = patientProfile.hasCompletedMemoryAssessment
             )
             TestTile(
                 title = "Cognitive",
@@ -242,7 +242,7 @@ fun DashboardScreen(
                 modifier = Modifier
                     .weight(1f)
                     .height(140.dp),
-                isCompleted = patient.hasCompletedCognitive
+                isCompleted = patientProfile.hasCompletedCognitiveAssessment
             )
         }
     }
@@ -250,10 +250,10 @@ fun DashboardScreen(
     // NEW: Caregiver patient list view
     @Composable
     private fun CaregiverPatientListView(
-        patients: List<Patient>,
+        patients: List<PatientReference>,
         isLoading: Boolean,
         onAddPatient: () -> Unit,
-        onSelectPatient: (Patient) -> Unit
+        onSelectPatient: (PatientReference) -> Unit
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -320,8 +320,8 @@ fun DashboardScreen(
     // NEW: Patient table
     @Composable
     private fun PatientTable(
-        patients: List<Patient>,
-        onStartPatient: (Patient) -> Unit
+        patients: List<PatientReference>,
+        onStartPatient: (PatientReference) -> Unit
     ) {
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -380,7 +380,7 @@ fun DashboardScreen(
     // NEW: Patient table row
     @Composable
     private fun PatientRow(
-        patient: Patient,
+        patient: PatientReference,
         onStart: () -> Unit
     ) {
         Row(
@@ -397,35 +397,22 @@ fun DashboardScreen(
                 style = MaterialTheme.typography.bodyMedium
             )
 
-            // Risk Level
+            // Date of Birth (simplified display)
             Text(
-                text = patient.riskLevel,
+                text = patient.dateOfBirth,
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center,
-                color = when (patient.riskLevel) {
-                    "High" -> Color.Red
-                    "Medium" -> Color(0xFFFF9800)
-                    "Low" -> Color.Green
-                    else -> Color.Gray
-                },
-                fontWeight = FontWeight.SemiBold,
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray
             )
 
-            // Speech Score
+            // Email or placeholder
             Text(
-                text = patient.speechScore?.toString() ?: "-",
+                text = patient.email?.take(15) ?: "-",
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            // Memory Score
-            Text(
-                text = patient.memoryScore?.toString() ?: "-",
-                modifier = Modifier.weight(1f),
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray
             )
 
             // Action Button
@@ -435,7 +422,7 @@ fun DashboardScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = TealPrimary),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
             ) {
-                Text("Start", fontSize = 12.sp)
+                Text("Manage", fontSize = 12.sp)
             }
         }
     }
