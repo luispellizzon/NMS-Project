@@ -31,6 +31,7 @@ import java.util.*
  */
 @Composable
 fun CognitiveResultsScreen(
+    onViewResults: () -> Unit,
     onBack: () -> Unit,
     onRedoTest: () -> Unit
 ) {
@@ -136,14 +137,14 @@ fun CognitiveResultsScreen(
 
                 // Action Buttons
                 Button(
-                    onClick = onRedoTest,
+                    onClick = onViewResults,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
                 ) {
                     Text(
-                        "Retake Test",
+                        "View Results",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -162,6 +163,21 @@ fun CognitiveResultsScreen(
                         style = MaterialTheme.typography.titleMedium
                     )
                 }
+                Spacer(modifier = Modifier.height(12.dp))
+                Button(
+                    onClick = onRedoTest,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+                ) {
+                    Text(
+                        "Retake Test",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
             }
         }
     }

@@ -14,6 +14,7 @@ import com.example.nms_mobile.navigation.routes.MemoryTestRoute
 import com.example.nms_mobile.navigation.routes.NewsRoute
 import com.example.nms_mobile.navigation.routes.PersonalInfoRoute
 import com.example.nms_mobile.navigation.routes.QuestionnaireRoute
+import com.example.nms_mobile.navigation.routes.ResultsRoute
 import com.example.nms_mobile.navigation.routes.SignUpRoute
 import com.example.nms_mobile.navigation.routes.SpeechAssessmentRoute
 import com.example.nms_mobile.navigation.routes.SpeechResultsRoute
@@ -144,6 +145,9 @@ fun AppNavigation(
                 },
                 onOpenAddPatient = {
                     navController.navigate(Screen.AddPatient.route)
+                },
+                onOpenResults = {
+                    navController.navigate(Screen.Results.route)
                 }
             )
         }
@@ -269,6 +273,12 @@ fun AppNavigation(
         composable(Screen.CognitiveResults.route) {
             CognitiveResultsRoute(
                 // Go back to Dashboard
+                onViewResults = {
+                    navController.navigate(Screen.Results.route) {
+                        popUpTo(Screen.CognitiveResults.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
                 onBack = {
                     navController.navigate(Screen.Dashboard.route) {
                         popUpTo(Screen.CognitiveResults.route) { inclusive = true }
@@ -300,6 +310,20 @@ fun AppNavigation(
                         launchSingleTop = true
                     }
                 }
+            )
+        }
+
+        // Results page (Caregiver creates a new patient profile)
+        composable(Screen.Results.route) {
+            ResultsRoute(
+                onBack = { navController.popBackStack() },
+                onContactDoctor = { navController.popBackStack() }
+//                onContactDoctor = {
+//                    navController.navigate(Screen.Dashboard.route) {
+//                        popUpTo(Screen.AddPatient.route) { inclusive = true }
+//                        launchSingleTop = true
+//                    }
+//                }
             )
         }
     }

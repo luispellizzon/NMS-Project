@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.nms_mobile.data.PatientReference
@@ -49,12 +50,13 @@ fun DashboardScreen(
     onOpenSpeech: () -> Unit,
     onOpenMemory: () -> Unit,
     onOpenCognitive: () -> Unit,
+    onOpenResults: () -> Unit,
     onLogoutClick: () -> Unit,
-    onAddPatient: () -> Unit,  // NEW
-    onSelectPatient: (PatientReference) -> Unit,  // NEW
+    onAddPatient: () -> Unit,
+    onSelectPatient: (PatientReference) -> Unit,
 
-    onDeselectPatient: () -> Unit,  // NEW
-    onFeedbackClick: () -> Unit // NEW
+    onDeselectPatient: () -> Unit,
+    onFeedbackClick: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -131,7 +133,8 @@ fun DashboardScreen(
                         onOpenSpeech = onOpenSpeech,
                         onOpenMemory = onOpenMemory,
                         onOpenCognitive = onOpenCognitive,
-                        onOpenImageDescription = onOpenImageDescription
+                        onOpenImageDescription = onOpenImageDescription,
+                        onOpenResults = onOpenResults
                     )
                 }
             }
@@ -435,7 +438,8 @@ private fun PatientAssessmentsView(
         onOpenSpeech: () -> Unit,
         onOpenMemory: () -> Unit,
         onOpenCognitive: () -> Unit,
-        onOpenImageDescription: () -> Unit
+        onOpenImageDescription: () -> Unit,
+        onOpenResults: () -> Unit
     ) {
         var showWarning by remember { mutableStateOf(false) }
         var prevTask by remember { mutableStateOf("") }
@@ -559,7 +563,7 @@ private fun PatientAssessmentsView(
                     ResultTile(
                         title = "Dementia Level",
                         content = state.dementiaRisk ?: "Pending...",
-                        onClick ={},
+                        onClick = onOpenResults,
                         pendingColor = Color.Magenta,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -636,7 +640,17 @@ private fun ResultTile(
                 Spacer(Modifier.height(8.dp))
                 Text(
                     text = content,
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = Color.White
+                )
+                Spacer(Modifier.height(8.dp))
+
+                Text(
+                    text = "Click here to view results",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        textDecoration = TextDecoration.Underline
+                    ),
                     color = Color.White
                 )
             }

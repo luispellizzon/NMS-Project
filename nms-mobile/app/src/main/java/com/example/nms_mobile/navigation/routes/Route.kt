@@ -30,6 +30,7 @@ import com.example.nms_mobile.data.FirestoreRepository
 import com.example.nms_mobile.data.SpeechAssessmentsTasksRepository
 import com.example.nms_mobile.ui.cognitive.CubeDrawingScreen
 import com.example.nms_mobile.ui.components.ManagedModeBanner
+import com.example.nms_mobile.ui.feature.addpatient.AddPatientScreen
 import com.example.nms_mobile.ui.feature.cognitive.AnimalNamingScreen
 import com.example.nms_mobile.ui.feature.cognitive.ClockDrawingScreen
 import com.example.nms_mobile.ui.feature.cognitive.CognitiveEvent
@@ -52,6 +53,8 @@ import com.example.nms_mobile.ui.feature.speech.results.SpeechResultsScreen
 import com.example.nms_mobile.ui.feature.personal_details.PersonalInfoEvent
 import com.example.nms_mobile.ui.feature.personal_details.PersonalInfoScreen
 import com.example.nms_mobile.ui.feature.personal_details.PersonalInfoViewModel
+import com.example.nms_mobile.ui.feature.results.ResultsScreen
+import com.example.nms_mobile.ui.feature.results.ResultsViewModel
 import com.example.nms_mobile.ui.feature.signup.SignUpViewModel
 import com.example.nms_mobile.ui.questionnaire.SectionedQuestionnaireEvent
 import com.example.nms_mobile.ui.questionnaire.SectionedQuestionnaireScreen
@@ -208,21 +211,22 @@ fun DashboardRoute(
     onOpenCognitive: () -> Unit = {},
     onLoggedOut: () -> Unit = {},
     onOpenFeedback: () -> Unit = {},
-    onOpenAddPatient: () -> Unit = {}
+    onOpenAddPatient: () -> Unit = {},
+    onOpenResults: () -> Unit = {}
 ) {
     val vm = remember { DashboardViewModel() }
     val state by vm.ui.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Watch for the 'LoggedOut' event from the ViewModel.
-    LaunchedEffect(Unit) {
-        vm.events.collect { ev ->
-            when (ev) {
-                // If the ViewModel sends a logout event, navigate to the Login screen.
-                DashboardEvent.LoggedOut -> onLoggedOut()
-            }
-        }
-    }
+//    // Watch for the 'LoggedOut' event from the ViewModel.
+//    LaunchedEffect(Unit) {
+//        vm.events.collect { ev ->
+//            when (ev) {
+//                // If the ViewModel sends a logout event, navigate to the Login screen.
+//                DashboardEvent.LoggedOut -> onLoggedOut()
+//            }
+//        }
+//    }
 
     // Refresh speech assessment status when dashboard is resumed
     LaunchedEffect(lifecycleOwner) {
@@ -250,11 +254,15 @@ fun DashboardRoute(
             },
             onOpenMemory = onOpenMemory,
             onOpenCognitive = onOpenCognitive,
-            onLogoutClick = vm::logout,
+            onLogoutClick = {
+                onLoggedOut()
+                vm::logout
+            },
             onAddPatient = onOpenAddPatient,
             onSelectPatient = vm::selectPatient,
             onDeselectPatient = vm::deselectPatient,
-            onFeedbackClick = onOpenFeedback
+            onFeedbackClick = onOpenFeedback,
+            onOpenResults = onOpenResults
         )
 
         // Overlay the managed mode banner at the top if in managed mode
@@ -639,10 +647,12 @@ fun CognitiveTestRoute(
 // NEW: Cognitive Results screen
 @Composable
 fun CognitiveResultsRoute(
+    onViewResults: () -> Unit,
     onBack: () -> Unit,
     onRedoTest: () -> Unit
 ) {
     CognitiveResultsScreen(
+        onViewResults = onViewResults,
         onBack = onBack,
         onRedoTest = onRedoTest
     )
@@ -669,8 +679,26 @@ fun AddPatientRoute(
     onBack: () -> Unit,
     onPatientCreated: () -> Unit
 ) {
-    com.example.nms_mobile.ui.feature.addpatient.AddPatientScreen(
+    AddPatientScreen(
         onBack = onBack,
         onPatientCreated = onPatientCreated
     )
 }
+
+
+@Composable
+
+fun ResultsRoute(
+    onBack: () -> Unit,
+    onContactDoctor: () -> Unit
+) {
+    val vm = remember { ResultsViewModel() }
+    val state by vm.ui.collectAsState()
+    ResultsScreen(
+        state = state,
+        onNavigateHome = onBack,
+        onContactDoctor = onContactDoctor,
+        onLoadResults = vm::loadResults
+    )
+}
+
