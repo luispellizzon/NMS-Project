@@ -10,6 +10,11 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   OAuthProvider,
+  updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  deleteUser,
+  updateEmail,
 } from 'firebase/auth';
 import { auth } from './config';
 import { getDoctorProfile, createDoctorProfile } from './firestore-service';
@@ -109,4 +114,74 @@ export const getCurrentUser = (): User | null => {
  */
 export const sendPasswordReset = async (email: string): Promise<void> => {
   return sendPasswordResetEmail(auth, email);
+};
+
+/**
+ * Updates the user's profile information (display name and photo URL).
+ * @param displayName The new display name.
+ * @param photoURL The new photo URL.
+ */
+export const updateUserProfile = async (displayName?: string, photoURL?: string): Promise<void> => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('No user is currently signed in.');
+  }
+
+  const updates: { displayName?: string; photoURL?: string } = {};
+  if (displayName !== undefined) updates.displayName = displayName;
+  if (photoURL !== undefined) updates.photoURL = photoURL;
+
+  await updateProfile(user, updates);
+};
+
+/**
+ * Updates the user's email address.
+ * @param newEmail The new email address.
+ */
+export const updateUserEmail = async (newEmail: string): Promise<void> => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('No user is currently signed in.');
+  }
+
+  await updateEmail(user, newEmail);
+};
+
+/**
+ * Changes the user's password.
+ * @param currentPassword The current password for re-authentication.
+ * @param newPassword The new password.
+ */
+export const changePassword = async (currentPassword: string, newPassword: string): Promise<void> => {
+  const user = auth.currentUser;
+  if (!user || !user.email) {
+    throw new Error('No user is currently signed in.');
+  }
+
+  // Re-authenticate the user
+  const credential = EmailAuthProvider.credential(user.email, currentPassword);
+  await reauthenticateWithCredential(user, credential);
+
+  // Update password
+  await updatePassword(user, newPassword);
+};
+
+/**
+ * Deletes the current user's account.
+ * @param currentPassword The current password for re-authentication (required for email/password users).
+ */
+export const deleteUserAccount = async (currentPassword?: string): Promise<void> => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('No user is currently signed in.');
+  }
+
+  // Re-authenticate if password is provided (for email/password users)
+  if (currentPassword && user.email) {
+    const credential = EmailAuthProvider.credential(user.email, currentPassword);
+    await reauthenticateWithCredential(user, credential);
+  }
+
+  // Delete user account
+  await deleteUser(user);
 };

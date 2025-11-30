@@ -7,9 +7,9 @@ interface RiskScoreBadgeProps {
 }
 
 const levelClasses: Record<RiskLevel, string> = {
-  High: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300',
-  Moderate: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300',
-  Low: 'bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-400',
+  High: 'bg-red-200 text-red-800 dark:bg-red-900/70 dark:text-red-200',
+  Moderate: 'bg-yellow-200 text-yellow-800 dark:bg-yellow-900/70 dark:text-yellow-200',
+  Low: 'bg-teal-200 text-teal-800 dark:bg-teal-900/70 dark:text-teal-200',
 };
 
 export default function RiskScoreBadge({ score, level }: RiskScoreBadgeProps) {

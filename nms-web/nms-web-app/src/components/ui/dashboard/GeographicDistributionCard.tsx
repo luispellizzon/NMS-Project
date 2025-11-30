@@ -1,12 +1,13 @@
 'use client';
 
-import { PatientLocation, patientLocations } from '@/lib/mock_data';
+import { PatientLocation } from '@/types/location';
 import DashboardCard from './DashboardCard';
 import GeographicDistributionMap from './GeographicDistributionMap';
 import GenericSearchBar from '../common/SearchBar';
 
 type GeographicDistributionCardProps = {
   targetLocation: PatientLocation | null;
+  patientLocations: PatientLocation[];
   searchTerm: string;
   handleSearchSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   handleSearchChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -16,10 +17,11 @@ type GeographicDistributionCardProps = {
 
 export default function GeographicDistributionCard({
   targetLocation,
+  patientLocations,
   searchTerm,
   handleSearchSubmit,
   handleSearchChange,
-  handleClearSearch, 
+  handleClearSearch,
   handleFilterClick,
 }: GeographicDistributionCardProps) {
   return (
@@ -41,15 +43,19 @@ export default function GeographicDistributionCard({
       }
       footer={
         <div className="flex flex-nowrap gap-2 overflow-x-auto pt-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          {patientLocations.map((loc) => (
-            <button key={loc.city} onClick={() => handleFilterClick(loc)} className="px-3 py-1 text-xs text-white bg-gray-700/60 rounded-full hover:bg-brand-primary transition-colors backdrop-blur-sm flex-shrink-0">
-              {loc.city}
-            </button>
-          ))}
+          {patientLocations.length > 0 ? (
+            patientLocations.map((loc) => (
+              <button key={loc.city} onClick={() => handleFilterClick(loc)} className="px-3 py-1 text-xs text-white bg-gray-700/60 rounded-full hover:bg-brand-primary transition-colors backdrop-blur-sm flex-shrink-0">
+                {loc.city} ({loc.patientCount})
+              </button>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground">No patient locations available</p>
+          )}
         </div>
       }
     >
-      <GeographicDistributionMap targetLocation={targetLocation} />
+      <GeographicDistributionMap targetLocation={targetLocation} patientLocations={patientLocations} />
     </DashboardCard>
   );
 }

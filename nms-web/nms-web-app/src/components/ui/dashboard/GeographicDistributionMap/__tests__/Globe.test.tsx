@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render } from '@testing-library/react';
 import Globe from '../Globe';
-import { patientLocations } from '@/lib/mock_data';
+import { mockPatientLocations } from '@/tests/fixtures/location.fixtures';
 
 // Mock Three.js
 vi.mock('three', () => ({
@@ -73,7 +73,7 @@ describe('Globe', () => {
 
   it('renders without crashing', () => {
     const { container } = render(
-      <Globe targetLocation={null} onHover={mockOnHover} />
+      <Globe patientLocations={mockPatientLocations} targetLocation={null} onHover={mockOnHover} />
     );
 
     const globeContainer = container.querySelector('.absolute.inset-0');
@@ -82,7 +82,7 @@ describe('Globe', () => {
 
   it('creates a div with correct classes', () => {
     const { container } = render(
-      <Globe targetLocation={null} onHover={mockOnHover} />
+      <Globe patientLocations={mockPatientLocations} targetLocation={null} onHover={mockOnHover} />
     );
 
     const globeContainer = container.firstChild;
@@ -90,10 +90,10 @@ describe('Globe', () => {
   });
 
   it('accepts targetLocation prop', () => {
-    const targetLocation = patientLocations[0];
+    const targetLocation = mockPatientLocations[0];
 
     const { container } = render(
-      <Globe targetLocation={targetLocation} onHover={mockOnHover} />
+      <Globe patientLocations={mockPatientLocations} targetLocation={targetLocation} onHover={mockOnHover} />
     );
 
     expect(container.firstChild).toBeInTheDocument();
@@ -102,7 +102,7 @@ describe('Globe', () => {
   it('accepts onHover callback prop', () => {
     const customOnHover = vi.fn();
 
-    render(<Globe targetLocation={null} onHover={customOnHover} />);
+    render(<Globe patientLocations={mockPatientLocations} targetLocation={null} onHover={customOnHover} />);
 
     // Component should render successfully with custom onHover
     expect(customOnHover).toBeDefined();
@@ -110,7 +110,7 @@ describe('Globe', () => {
 
   it('handles null targetLocation', () => {
     const { container } = render(
-      <Globe targetLocation={null} onHover={mockOnHover} />
+      <Globe patientLocations={mockPatientLocations} targetLocation={null} onHover={mockOnHover} />
     );
 
     expect(container.firstChild).toBeInTheDocument();
@@ -118,13 +118,13 @@ describe('Globe', () => {
 
   it('updates when targetLocation changes', () => {
     const { rerender, container } = render(
-      <Globe targetLocation={null} onHover={mockOnHover} />
+      <Globe patientLocations={mockPatientLocations} targetLocation={null} onHover={mockOnHover} />
     );
 
     expect(container.firstChild).toBeInTheDocument();
 
     // Change targetLocation
-    rerender(<Globe targetLocation={patientLocations[0]} onHover={mockOnHover} />);
+    rerender(<Globe patientLocations={mockPatientLocations} targetLocation={mockPatientLocations[0]} onHover={mockOnHover} />);
 
     expect(container.firstChild).toBeInTheDocument();
   });
@@ -134,20 +134,20 @@ describe('Globe', () => {
     const onHover2 = vi.fn();
 
     const { rerender, container } = render(
-      <Globe targetLocation={null} onHover={onHover1} />
+      <Globe patientLocations={mockPatientLocations} targetLocation={null} onHover={onHover1} />
     );
 
     expect(container.firstChild).toBeInTheDocument();
 
     // Change onHover callback
-    rerender(<Globe targetLocation={null} onHover={onHover2} />);
+    rerender(<Globe patientLocations={mockPatientLocations} targetLocation={null} onHover={onHover2} />);
 
     expect(container.firstChild).toBeInTheDocument();
   });
 
   it('cleans up on unmount', () => {
     const { unmount, container } = render(
-      <Globe targetLocation={null} onHover={mockOnHover} />
+      <Globe patientLocations={mockPatientLocations} targetLocation={null} onHover={mockOnHover} />
     );
 
     expect(container.firstChild).toBeInTheDocument();
@@ -159,12 +159,12 @@ describe('Globe', () => {
 
   it('initializes only once', () => {
     const { rerender } = render(
-      <Globe targetLocation={null} onHover={mockOnHover} />
+      <Globe patientLocations={mockPatientLocations} targetLocation={null} onHover={mockOnHover} />
     );
 
     // Re-render with different props
-    rerender(<Globe targetLocation={patientLocations[0]} onHover={mockOnHover} />);
-    rerender(<Globe targetLocation={patientLocations[1]} onHover={mockOnHover} />);
+    rerender(<Globe patientLocations={mockPatientLocations} targetLocation={mockPatientLocations[0]} onHover={mockOnHover} />);
+    rerender(<Globe patientLocations={mockPatientLocations} targetLocation={mockPatientLocations[1]} onHover={mockOnHover} />);
 
     // The component should handle multiple re-renders without re-initializing
     expect(global.requestAnimationFrame).toHaveBeenCalled();
@@ -172,7 +172,7 @@ describe('Globe', () => {
 
   it('renders with different patient locations', () => {
     const { container } = render(
-      <Globe targetLocation={patientLocations[2]} onHover={mockOnHover} />
+      <Globe patientLocations={mockPatientLocations} targetLocation={mockPatientLocations[2]} onHover={mockOnHover} />
     );
 
     expect(container.firstChild).toBeInTheDocument();
