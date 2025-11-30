@@ -47,7 +47,7 @@ export default function TrainingConfig({ onStartTraining }: TrainingConfigProps)
           <select
             value={config.modelType}
             onChange={(e) => setConfig({ ...config, modelType: e.target.value })}
-            className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#0d7377]"
+            className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="speech-analysis">Speech Analysis Model</option>
             <option value="questionnaire">Questionnaire Risk Model</option>
@@ -80,7 +80,7 @@ export default function TrainingConfig({ onStartTraining }: TrainingConfigProps)
                       });
                     }
                   }}
-                  className="w-4 h-4 text-[#0d7377] border-border rounded focus:ring-2 focus:ring-[#0d7377]"
+                  className="w-4 h-4 text-primary border-border rounded focus:ring-2 focus:ring-primary"
                 />
                 <span className="text-foreground capitalize">
                   {source.replace('-', ' ')}
@@ -104,7 +104,7 @@ export default function TrainingConfig({ onStartTraining }: TrainingConfigProps)
               }
               min="1"
               max="1000"
-              className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#0d7377]"
+              className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
 
@@ -120,7 +120,7 @@ export default function TrainingConfig({ onStartTraining }: TrainingConfigProps)
               }
               min="1"
               max="512"
-              className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#0d7377]"
+              className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
 
@@ -137,7 +137,7 @@ export default function TrainingConfig({ onStartTraining }: TrainingConfigProps)
               step="0.0001"
               min="0.0001"
               max="1"
-              className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#0d7377]"
+              className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
 
@@ -154,7 +154,7 @@ export default function TrainingConfig({ onStartTraining }: TrainingConfigProps)
               step="0.05"
               min="0.1"
               max="0.5"
-              className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#0d7377]"
+              className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
         </div>
@@ -167,7 +167,7 @@ export default function TrainingConfig({ onStartTraining }: TrainingConfigProps)
           <select
             value={config.optimizer}
             onChange={(e) => setConfig({ ...config, optimizer: e.target.value })}
-            className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#0d7377]"
+            className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="adam">Adam</option>
             <option value="sgd">SGD</option>
@@ -177,13 +177,13 @@ export default function TrainingConfig({ onStartTraining }: TrainingConfigProps)
         </div>
 
         {/* Warning Message */}
-        <div className="flex items-start gap-2 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+        <div className="flex items-start gap-2 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+          <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-yellow-800">
+            <p className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
               Training Impact
             </p>
-            <p className="text-sm text-yellow-700 mt-1">
+            <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-1">
               Starting a new training job will use significant compute resources. Ensure all
               configuration parameters are correct before proceeding.
             </p>
@@ -194,14 +194,14 @@ export default function TrainingConfig({ onStartTraining }: TrainingConfigProps)
         <div className="flex gap-4">
           <button
             type="submit"
-            className="flex items-center gap-2 px-6 py-3 bg-[#0d7377] text-white rounded-lg hover:bg-[#0a5c5f] transition-colors"
+            className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
           >
             <Play className="w-5 h-5" />
             Start Training
           </button>
           <button
             type="button"
-            className="flex items-center gap-2 px-6 py-3 bg-background border border-border text-foreground rounded-lg hover:bg-accent transition-colors"
+            className="flex items-center gap-2 px-6 py-3 bg-background border border-border text-foreground rounded-lg hover:bg-muted transition-colors"
           >
             <Save className="w-5 h-5" />
             Save Configuration

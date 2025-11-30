@@ -97,12 +97,12 @@ export default function PatientSelectionTable({
 
   if (loading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      <div className="bg-card border border-border rounded-lg shadow-md p-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
-          <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
-          <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
-          <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div className="h-6 bg-muted rounded w-1/3"></div>
+          <div className="h-10 bg-muted rounded"></div>
+          <div className="h-10 bg-muted rounded"></div>
+          <div className="h-10 bg-muted rounded"></div>
         </div>
       </div>
     );
@@ -110,13 +110,13 @@ export default function PatientSelectionTable({
 
   if (error) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <div className="text-red-600 dark:text-red-400">
+      <div className="bg-card border border-border rounded-lg shadow-md p-6">
+        <div className="text-destructive">
           <p className="font-semibold">Error loading patients</p>
           <p className="text-sm mt-1">{error}</p>
           <button
             onClick={fetchEligiblePatients}
-            className="mt-3 text-sm px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="mt-3 text-sm px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
           >
             Retry
           </button>
@@ -130,27 +130,27 @@ export default function PatientSelectionTable({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"
+      className="bg-card border border-border rounded-lg shadow-md p-6"
     >
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
+          <h2 className="text-xl font-semibold text-foreground">
             Eligible Patients
           </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             {patients.length} patient{patients.length !== 1 ? 's' : ''} available for anonymization
           </p>
         </div>
         <button
           onClick={fetchEligiblePatients}
-          className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+          className="text-sm text-primary hover:underline"
         >
           Refresh
         </button>
       </div>
 
       {patients.length === 0 ? (
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+        <div className="text-center py-8 text-muted-foreground">
           <p>No eligible patients found.</p>
           <p className="text-sm mt-2">
             Patients must meet ALL criteria to be eligible:
@@ -165,22 +165,22 @@ export default function PatientSelectionTable({
       ) : (
         <>
           {/* Selection Actions */}
-          <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-4 pb-4 border-b border-border">
             <div className="flex items-center gap-4">
               <button
                 onClick={handleSelectAll}
-                className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                className="text-sm text-primary hover:underline"
               >
                 {selectedIds.size === patients.length ? 'Deselect All' : 'Select All'}
               </button>
-              <span className="text-sm text-gray-600 dark:text-gray-400">
+              <span className="text-sm text-muted-foreground">
                 {selectedIds.size} selected
               </span>
             </div>
             <button
               onClick={handleAnonymize}
               disabled={selectedIds.size === 0 || processing}
-              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {processing ? 'Processing...' : `Anonymize Selected (${selectedIds.size})`}
             </button>
@@ -189,71 +189,71 @@ export default function PatientSelectionTable({
           {/* Table */}
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-700">
+              <thead className="bg-muted">
                 <tr>
                   <th className="px-4 py-3 text-left">
                     <input
                       type="checkbox"
                       checked={selectedIds.size === patients.length}
                       onChange={handleSelectAll}
-                      className="w-4 h-4 text-blue-600 rounded"
+                      className="w-4 h-4 text-primary rounded"
                     />
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-foreground uppercase">
                     Name
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-foreground uppercase">
                     Patient ID
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-foreground uppercase">
                     Risk Level
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-foreground uppercase">
                     MMSE Score
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-foreground uppercase">
                     Status
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className="divide-y divide-border">
                 {patients.map((patient) => (
                   <tr
                     key={patient.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    className="hover:bg-muted/50 transition-colors"
                   >
                     <td className="px-4 py-3">
                       <input
                         type="checkbox"
                         checked={selectedIds.has(patient.id)}
                         onChange={() => handleSelectOne(patient.id)}
-                        className="w-4 h-4 text-blue-600 rounded"
+                        className="w-4 h-4 text-primary rounded"
                       />
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
+                    <td className="px-4 py-3 text-sm text-foreground">
                       {patient.fullName}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                    <td className="px-4 py-3 text-sm text-muted-foreground">
                       {patient.maskedId}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                    <td className="px-4 py-3 text-sm text-muted-foreground">
                       {patient.riskLevel}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                    <td className="px-4 py-3 text-sm text-muted-foreground">
                       {patient.mmseScore}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         {patient.consentGiven && (
-                          <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded">
+                          <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-500/10 border border-green-500/20 text-green-700 dark:text-green-300 rounded">
                             Consent
                           </span>
                         )}
-                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded">
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-primary/10 border border-primary/20 text-primary rounded">
                           Ready
                         </span>
                         {patient.alreadyAnonymized && (
-                          <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded">
+                          <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-purple-500/10 border border-purple-500/20 text-purple-700 dark:text-purple-300 rounded">
                             Anonymized
                           </span>
                         )}

@@ -93,7 +93,7 @@ export default function TrainingPage() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors ${
                     activeTab === tab.id
-                      ? 'border-[#0d7377] text-[#0d7377]'
+                      ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground'
                   }`}
                 >
@@ -127,17 +127,6 @@ export default function TrainingPage() {
                   onAnonymize={handleAnonymize}
                 />
               )}
-
-              {/* Model Retraining Panel */}
-              {user && (
-                <ModelRetrainingPanel
-                  doctorId={user.uid}
-                  onRetrainingStarted={handleRetrainingStarted}
-                />
-              )}
-
-              {/* Retraining History */}
-              <RetrainingHistoryTable refreshTrigger={retrainingRefreshTrigger} />
             </motion.div>
           )}
 
@@ -148,7 +137,19 @@ export default function TrainingPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.2 }}
+              className="space-y-6"
             >
+              {/* Model Retraining Panel */}
+              {user && (
+                <ModelRetrainingPanel
+                  doctorId={user.uid}
+                  onRetrainingStarted={handleRetrainingStarted}
+                />
+              )}
+
+              {/* Retraining History */}
+              <RetrainingHistoryTable refreshTrigger={retrainingRefreshTrigger} />
+
               <TrainingConfig />
             </motion.div>
           )}

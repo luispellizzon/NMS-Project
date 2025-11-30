@@ -54,6 +54,7 @@ export interface MemoryTest {
   score: number;
   status: 'completed' | 'in_progress' | 'abandoned';
   testType: string;
+  totalScore?: number;
   timestamp: string | Timestamp | Date;
   totalQuestions: number;
 }

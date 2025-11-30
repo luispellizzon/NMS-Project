@@ -2,13 +2,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import GeographicDistributionCard from '../GeographicDistributionCard';
-import { patientLocations } from '@/lib/mock_data';
+import { mockPatientLocations } from '@/tests/fixtures/location.fixtures';
 
 // Mock the GeographicDistributionMap component since it uses Three.js
 vi.mock('../GeographicDistributionMap', () => ({
-  default: ({ targetLocation }: any) => (
+  default: ({ targetLocation, patientLocations }: any) => (
     <div data-testid="geographic-map">
       {targetLocation && <div>Target: {targetLocation.city}</div>}
+      {/* Mock the map but let the actual footer render */}
     </div>
   ),
 }));
@@ -29,6 +30,7 @@ describe('GeographicDistributionCard', () => {
     render(
       <GeographicDistributionCard
         targetLocation={null}
+        patientLocations={mockPatientLocations}
         searchTerm=""
         {...mockHandlers}
       />
@@ -41,6 +43,7 @@ describe('GeographicDistributionCard', () => {
     render(
       <GeographicDistributionCard
         targetLocation={null}
+        patientLocations={mockPatientLocations}
         searchTerm=""
         {...mockHandlers}
       />
@@ -53,13 +56,17 @@ describe('GeographicDistributionCard', () => {
     render(
       <GeographicDistributionCard
         targetLocation={null}
+        patientLocations={mockPatientLocations}
         searchTerm=""
         {...mockHandlers}
       />
     );
 
-    patientLocations.forEach((location) => {
-      expect(screen.getByText(location.city)).toBeInTheDocument();
+    mockPatientLocations.forEach((location) => {
+      // Use a flexible matcher since the button contains "City (count)"
+      expect(screen.getByText((content, element) => {
+        return element?.tagName === 'BUTTON' && content.includes(location.city);
+      })).toBeInTheDocument();
     });
   });
 
@@ -67,6 +74,7 @@ describe('GeographicDistributionCard', () => {
     render(
       <GeographicDistributionCard
         targetLocation={null}
+        patientLocations={mockPatientLocations}
         searchTerm=""
         {...mockHandlers}
       />
@@ -82,6 +90,7 @@ describe('GeographicDistributionCard', () => {
     render(
       <GeographicDistributionCard
         targetLocation={null}
+        patientLocations={mockPatientLocations}
         searchTerm="test"
         {...mockHandlers}
       />
@@ -97,6 +106,7 @@ describe('GeographicDistributionCard', () => {
     render(
       <GeographicDistributionCard
         targetLocation={null}
+        patientLocations={mockPatientLocations}
         searchTerm="test"
         {...mockHandlers}
       />
@@ -113,21 +123,26 @@ describe('GeographicDistributionCard', () => {
     render(
       <GeographicDistributionCard
         targetLocation={null}
+        patientLocations={mockPatientLocations}
         searchTerm=""
         {...mockHandlers}
       />
     );
 
-    const locationButton = screen.getByText(patientLocations[0].city);
+    // Use a flexible matcher since the button contains "City (count)"
+    const locationButton = screen.getByText((content, element) => {
+      return element?.tagName === 'BUTTON' && content.includes(mockPatientLocations[0].city);
+    });
     fireEvent.click(locationButton);
 
-    expect(mockHandlers.handleFilterClick).toHaveBeenCalledWith(patientLocations[0]);
+    expect(mockHandlers.handleFilterClick).toHaveBeenCalledWith(mockPatientLocations[0]);
   });
 
   it('renders GeographicDistributionMap component', () => {
     render(
       <GeographicDistributionCard
         targetLocation={null}
+        patientLocations={mockPatientLocations}
         searchTerm=""
         {...mockHandlers}
       />
@@ -137,11 +152,12 @@ describe('GeographicDistributionCard', () => {
   });
 
   it('passes targetLocation to GeographicDistributionMap', () => {
-    const targetLocation = patientLocations[0];
+    const targetLocation = mockPatientLocations[0];
 
     render(
       <GeographicDistributionCard
         targetLocation={targetLocation}
+        patientLocations={mockPatientLocations}
         searchTerm=""
         {...mockHandlers}
       />
@@ -154,6 +170,7 @@ describe('GeographicDistributionCard', () => {
     render(
       <GeographicDistributionCard
         targetLocation={null}
+        patientLocations={mockPatientLocations}
         searchTerm="London"
         {...mockHandlers}
       />
@@ -167,6 +184,7 @@ describe('GeographicDistributionCard', () => {
     const { container } = render(
       <GeographicDistributionCard
         targetLocation={null}
+        patientLocations={mockPatientLocations}
         searchTerm=""
         {...mockHandlers}
       />

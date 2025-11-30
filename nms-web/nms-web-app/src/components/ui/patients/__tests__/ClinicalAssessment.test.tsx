@@ -281,16 +281,29 @@ describe('ClinicalAssessment', () => {
     const user = userEvent.setup();
     render(<ClinicalAssessment patientId="patient-123" />);
 
+    // When not logged in, should show the "Add Assessment" button instead of the form
+    await waitFor(() => {
+      expect(screen.getByText('No clinical assessment available yet.')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Add Assessment/i })).toBeInTheDocument();
+    });
+
+    // Click the "Add Assessment" button to open the form
+    const addButton = screen.getByRole('button', { name: /Add Assessment/i });
+    await user.click(addButton);
+
+    // Now the form should be visible
     await waitFor(() => {
       expect(screen.getByLabelText(/Risk Level/i)).toBeInTheDocument();
     });
 
+    // Select a risk level and try to save
     const selectElement = screen.getByLabelText(/Risk Level/i);
     await user.selectOptions(selectElement, 'Low');
 
     const saveButton = screen.getByRole('button', { name: /Save Assessment/i });
     fireEvent.click(saveButton);
 
+    // Should show error message
     await waitFor(() => {
       expect(screen.getByText('You must be logged in to save an assessment')).toBeInTheDocument();
     });

@@ -26,7 +26,7 @@ const TestHistory = ({ testHistory }: TestHistoryProps) => {
         return <Brain className="w-4 h-4 text-gray-500" />;
     }
   };
-
+  console.log("Test History: ", testHistory)
   const handleDownload = (item: TestHistoryItem) => {
     // TODO: Implement download functionality
     console.log('Download test result:', item.id);

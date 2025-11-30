@@ -2,14 +2,14 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import GeographicDistributionMap from '../index';
-import { patientLocations } from '@/lib/mock_data';
+import { mockPatientLocations } from '@/tests/fixtures/location.fixtures';
 
 // Mock Globe component
 vi.mock('../Globe', () => ({
   default: ({ targetLocation, onHover }: any) => (
     <div data-testid="globe-component">
       {targetLocation && <div>Target: {targetLocation.city}</div>}
-      <button onClick={() => onHover(patientLocations[0], { x: 100, y: 200 })}>
+      <button onClick={() => onHover(mockPatientLocations[0], { x: 100, y: 200 })}>
         Trigger Hover
       </button>
     </div>
@@ -51,7 +51,7 @@ describe('GeographicDistributionMap', () => {
   });
 
   it('passes targetLocation to Globe', () => {
-    const targetLocation = patientLocations[0];
+    const targetLocation = mockPatientLocations[0];
 
     render(<GeographicDistributionMap targetLocation={targetLocation} />);
 
@@ -73,7 +73,7 @@ describe('GeographicDistributionMap', () => {
 
     // After hover, tooltip should show the location data
     await waitFor(() => {
-      expect(screen.getByText(`City: ${patientLocations[0].city}`)).toBeInTheDocument();
+      expect(screen.getByText(`City: ${mockPatientLocations[0].city}`)).toBeInTheDocument();
       expect(screen.getByText('Position: 100, 200')).toBeInTheDocument();
     });
   });

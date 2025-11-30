@@ -9,7 +9,7 @@ describe('RiskScoreBadge', () => {
 
     expect(screen.getByText('8.5 / 10')).toBeInTheDocument();
     const badge = screen.getByText('8.5 / 10');
-    expect(badge).toHaveClass('bg-red-100', 'text-red-700');
+    expect(badge).toHaveClass('bg-red-200', 'text-red-800');
   });
 
   it('renders moderate risk badge correctly', () => {
@@ -17,7 +17,7 @@ describe('RiskScoreBadge', () => {
 
     expect(screen.getByText('5.3 / 10')).toBeInTheDocument();
     const badge = screen.getByText('5.3 / 10');
-    expect(badge).toHaveClass('bg-yellow-100', 'text-yellow-700');
+    expect(badge).toHaveClass('bg-yellow-200', 'text-yellow-800');
   });
 
   it('renders low risk badge correctly', () => {
@@ -25,7 +25,7 @@ describe('RiskScoreBadge', () => {
 
     expect(screen.getByText('2.1 / 10')).toBeInTheDocument();
     const badge = screen.getByText('2.1 / 10');
-    expect(badge).toHaveClass('bg-teal-100', 'text-teal-700');
+    expect(badge).toHaveClass('bg-teal-200', 'text-teal-800');
   });
 
   it('formats score to one decimal place', () => {

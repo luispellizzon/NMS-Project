@@ -67,6 +67,7 @@ export const getPatientMemoryTests = async (patientId: string): Promise<MemoryTe
         testType: data.testType,
         timestamp: data.timestamp,
         totalQuestions: data.totalQuestions,
+        totalScore: data.totalScore,
       } as MemoryTest;
     });
   } catch (error) {
@@ -83,17 +84,30 @@ export const getPatientMemoryTests = async (patientId: string): Promise<MemoryTe
 export const getPatientCognitiveAssessments = async (patientId: string): Promise<any[]> => {
   try {
     const cognitiveAssessmentsRef = collection(db, 'users', patientId, 'cognitive_assessments');
-    const q = query(cognitiveAssessmentsRef, orderBy('time', 'desc'));
-    const querySnapshot = await getDocs(q);
+    // Try ordering by different field names as the structure may vary
+    let querySnapshot;
+    try {
+      const q = query(cognitiveAssessmentsRef, orderBy('completedAt', 'desc'));
+      querySnapshot = await getDocs(q);
+    } catch {
+      try {
+        const q = query(cognitiveAssessmentsRef, orderBy('date', 'desc'));
+        querySnapshot = await getDocs(q);
+      } catch {
+        // Fallback: get all documents without ordering
+        querySnapshot = await getDocs(cognitiveAssessmentsRef);
+      }
+    }
 
     return querySnapshot.docs.map(doc => {
       const data = doc.data();
       return {
         id: doc.id,
-        FinalScore: data.FinalScore,
-        State: data.State,
-        time: data.time,
-        tests: data.tests || {},
+        // Support both old and new field names
+        FinalScore: data.FinalScore || data.totalScore || 0,
+        State: data.State || data.state || 'unknown',
+        time: data.time || data.completedAt || data.date || data.startedAt,
+        tests: data.tests || data.tasks || {},
       };
     });
   } catch (error) {
@@ -149,7 +163,7 @@ export const getPatientTestHistory = async (patientId: string): Promise<TestHist
       getPatientImageDescriptionAssessments(patientId),
     ]);
 
-    // Convert speech assessments to unified format
+    // Convert speech assessments to unified format (part of MMSE)
     const speechHistory: TestHistoryItem[] = speechAssessments
       .filter(assessment => assessment.isCompleted)
       .map(assessment => {
@@ -175,7 +189,7 @@ export const getPatientTestHistory = async (patientId: string): Promise<TestHist
         return {
           id: assessment.id,
           date: formatDate(assessment.completedAt),
-          test: 'Speech Assessment',
+          test: 'Speech Assessment (MMSE)',
           testType: 'speech' as const,
           timeTaken: formatDuration(durationInSeconds),
           score: `${assessment.totalScore}/${maxScore}`,
@@ -183,37 +197,44 @@ export const getPatientTestHistory = async (patientId: string): Promise<TestHist
         };
       });
 
-    // Convert memory tests to unified format
+    // Convert memory tests to unified format (part of MMSE)
     const memoryHistory: TestHistoryItem[] = memoryTests
       .filter(test => test.status === 'completed')
       .map(test => ({
         id: test.id,
         date: formatDate(test.timestamp),
-        test: test.testType === 'memory_mcq' ? 'Memory Test (MCQ)' : 'Memory Test',
+        test: test.testType === 'memory_mcq' ? 'Memory Assessment (MMSE)' : 'Memory Assessment (MMSE)',
         testType: 'memory' as const,
         timeTaken: formatDuration(test.completionTime),
         score: `${test.score}/${test.totalQuestions}`,
         rawData: test,
       }));
 
-    // Convert cognitive assessments to unified format
+    // Convert cognitive assessments to unified format (part of MMSE)
     const cognitiveHistory: TestHistoryItem[] = cognitiveAssessments
-      .filter(assessment => assessment.State === 'completed')
+      .filter(assessment => {
+        const state = (assessment.State || '').toLowerCase();
+        return state === 'completed' || state === 'complete';
+      })
       .map(assessment => {
-        // Calculate total duration from all tests if available
+        // Calculate total duration from all tests/tasks if available
         const tests = assessment.tests || {};
         const totalDuration = Object.values(tests).reduce(
           (sum: number, test: any) => sum + (test.duration || 0),
           0
         );
 
+        // Count number of tasks/tests
+        const totalTasks = Object.keys(tests).length;
+        const finalScore = assessment.FinalScore || 0;
+
         return {
           id: assessment.id,
           date: formatDate(assessment.time),
-          test: 'Cognitive Assessment',
+          test: 'Cognitive Assessment (MMSE)',
           testType: 'cognitive' as const,
           timeTaken: totalDuration > 0 ? formatDuration(totalDuration) : 'N/A',
-          score: `${assessment.FinalScore}/100`,
+          score: `${finalScore}/${totalTasks}`,
           rawData: assessment,
         };
       });

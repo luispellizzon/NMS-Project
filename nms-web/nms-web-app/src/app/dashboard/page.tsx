@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { motion, Variants } from 'framer-motion';
-import { PatientLocation, patientLocations, appointmentsListData } from '@/lib/mock_data';
+import { PatientLocation } from '@/types/location';
+import { appointmentsListData } from '@/lib/mock_data';
 import GeographicDistributionCard from '@/components/ui/dashboard/GeographicDistributionCard';
 import DashboardCard from '@/components/ui/dashboard/DashboardCard';
 import NewsFeed from '@/components/ui/dashboard/News/NewsFeed';
@@ -13,6 +14,7 @@ import AvgRiskAssessmentChart from '@/components/ui/dashboard/AvgRiskAssessmentC
 import OverallAppointmentsChart from '@/components/ui/dashboard/OverallAppointmentsChart';
 import AppointmentsList from '@/components/ui/dashboard/AppointmentsList';
 import { getDashboardStats, DashboardStats } from '@/lib/services/dashboardAggregationService';
+import { getPatientLocationData } from '@/lib/firebase/services/patient-location-service';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 
@@ -43,6 +45,7 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [locationSearchTerm, setLocationSearchTerm] = useState('');
   const [targetLocation, setTargetLocation] = useState<PatientLocation | null>(null);
+  const [patientLocations, setPatientLocations] = useState<PatientLocation[]>([]);
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -52,7 +55,7 @@ export default function DashboardPage() {
   const upcomingAppointments = appointmentsListData.filter(a => a.type === 'upcoming').sort((a, b) => a.date.getTime() - b.date.getTime());
   const previousAppointments = appointmentsListData.filter(a => a.type === 'previous').sort((a, b) => b.date.getTime() - a.date.getTime());
 
-  // Fetch dashboard statistics on mount
+  // Fetch dashboard statistics and patient locations on mount
   useEffect(() => {
     const fetchDashboardData = async () => {
       if (!user) {
@@ -63,10 +66,17 @@ export default function DashboardPage() {
       try {
         setLoading(true);
         setError('');
-        const stats = await getDashboardStats(user.uid);
+
+        // Fetch both dashboard stats and patient locations in parallel
+        const [stats, locations] = await Promise.all([
+          getDashboardStats(user.uid),
+          getPatientLocationData(user.uid)
+        ]);
+
         setDashboardStats(stats);
+        setPatientLocations(locations);
       } catch (err) {
-        console.error('Error fetching dashboard statistics:', err);
+        console.error('Error fetching dashboard data:', err);
         setError('Failed to load dashboard data. Please try again.');
       } finally {
         setLoading(false);
@@ -146,6 +156,7 @@ export default function DashboardPage() {
             <motion.div className="md:col-span-3" variants={itemVariants}>
               <GeographicDistributionCard
                 targetLocation={targetLocation}
+                patientLocations={patientLocations}
                 searchTerm={locationSearchTerm}
                 handleSearchSubmit={handleLocationSearchSubmit}
                 handleSearchChange={handleLocationSearchChange}

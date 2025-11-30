@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { pdf } from '@react-pdf/renderer';
 import { PatientReportPDF } from '@/components/ui/patients/PatientReportPDF';
 import { getPatientById, getPatientRiskAssessment, getPatientTestHistory } from '@/lib/firebase/firestore-service';
-import { PatientProfile } from '@/lib/mock_data';
+import { PatientProfile } from '@/types/patient';
 import { TestHistoryItem } from '@/types/testHistory';
 
 // Animation variants
@@ -158,25 +158,49 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
         // Calculate age from date of birth
         const age = riskAssessment?.age || calculateAge(patientData.dateOfBirth);
 
+        // Calculate risk score from MMSE score (0-30 scale)
+        const mmseScore = patientData.mmseScore || 0;
+        const riskScore = mmseScore > 0 ? Math.round((30 - mmseScore) / 3 * 10) / 10 : 0;
+
+        // Map dementiaRisk string to RiskLevel enum
+        let riskLevel: 'High' | 'Moderate' | 'Low' = 'Low';
+        const dementiaRisk = patientData.dementiaRisk || '';
+
+        if (dementiaRisk.includes('High') || dementiaRisk.includes('Severe') || mmseScore < 18) {
+          riskLevel = 'High';
+        } else if (dementiaRisk.includes('Moderate') || dementiaRisk.includes('Mild') || mmseScore < 24) {
+          riskLevel = 'Moderate';
+        } else {
+          riskLevel = 'Low';
+        }
+
+        // Calculate cognitive and speech scores from MMSE (0-30 -> 0-5 scale)
+        const cognitiveScore = mmseScore > 0 ? Math.round((mmseScore / 30) * 5 * 10) / 10 : 0;
+        const speechScore = cognitiveScore;
+
         // Combine all data into PatientProfile
         const patientProfile: PatientProfile = {
           id: patientData.id,
           name: patientData.fullName,
           email: patientData.email,
+          // Age and gender from risk assessment questionnaire
           age,
           gender: riskAssessment?.gender || 'Female',
           avatarUrl: '/images/Avatar.jpg',
-          riskScore: riskAssessment?.riskScore || 0,
-          riskLevel: riskAssessment?.riskLevel || 'Low',
-          trend: riskAssessment?.trend || 'Stable',
+          // Risk score calculated from MMSE
+          riskScore,
+          riskLevel,
+          trend: patientData.trend || 'Stable',
+          // Assessment scores derived from MMSE
           assessments: {
-            cognitive: riskAssessment?.assessments?.cognitive || 0,
-            speech: riskAssessment?.assessments?.speech || 0,
+            cognitive: cognitiveScore,
+            speech: speechScore,
           },
-          lastCheck: riskAssessment?.lastCheck || new Date().toISOString().split('T')[0],
-          nextAppointment: riskAssessment?.nextAppointment || 'Not set',
-          smoker: riskAssessment?.smoker || 'No',
-          lastPlayed: riskAssessment?.lastPlayed || 'Never',
+          lastCheck: new Date().toISOString().split('T')[0],
+          nextAppointment: 'Not set',
+          // Additional fields from risk assessment
+          smoker: riskAssessment?.smoking_status === 'Current smoker' ? 'Yes' : 'No',
+          lastPlayed: 'Never', // This should come from game activity tracking
           gameScores: {
             // Scores are now calculated from test history in real-time
             speech: 0,

@@ -8,6 +8,7 @@ interface PatientsDistributionChartProps {
   stats: DashboardStats | null;
 }
 
+
 export default function PatientsDistributionChart({ stats }: PatientsDistributionChartProps) {
   const { resolvedTheme } = useTheme();
   const themeMode = resolvedTheme === 'dark' ? 'dark' : 'light';

@@ -137,7 +137,7 @@ export const getPatientById = async (patientId: string): Promise<any | null> => 
         hasCompletedSpeechAssessment: data.hasCompletedSpeechAssessment,
 
         // AI model prediction
-        dementiaModelPrediction: data.dementiaModelPrediction,
+        dementiaModelPrediction: data.dementiaRisk,
 
         // Data usage consent
         dataUsageConsent: data.dataUsageConsent,

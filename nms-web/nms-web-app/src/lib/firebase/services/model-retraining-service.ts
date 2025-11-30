@@ -60,14 +60,12 @@ export async function triggerModelRetraining(
     await setDoc(doc(db, 'model_retraining_logs', trainingId), logEntry);
 
     // Call Hugging Face Space endpoint
-    const response = await fetch(`${HF_SPACE_URL}/retrain`, {
+    // Note: The HF Space expects 'doctor_key' as a query parameter
+    const response = await fetch(`${HF_SPACE_URL}/retrain?doctor_key=${encodeURIComponent(HF_ADMIN_SECRET)}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        admin_key: HF_ADMIN_SECRET,
-      }),
     });
 
     if (!response.ok) {

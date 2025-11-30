@@ -6,29 +6,6 @@ export type RiskLevel = 'High' | 'Moderate' | 'Low';
 export type Trend = 'Up' | 'Down' | 'Stable';
 export type Gender = 'Male' | 'Female' | 'Other';
 
-/**
- * AI Model Output: Lifestyle + MMSE Dementia Risk Estimator
- * Stores the raw results from the Hugging Face model
- */
-export interface DementiaModelPrediction {
-  // "Lifestyle Severity (0–1)"
-  lifestyleSeverity: number; 
-  
-  // "MMSE → Severity (0–1)"
-  mmseSeverity: number;
-  
-  // "Fused Severity (0–1)"
-  fusedSeverity: number;
-  
-  // "Estimated Fused MMSE (0–30)"
-  estimatedFusedMMSE: number;
-  
-  // "Dementia Risk"
-  dementiaRiskLabel: string;
-  
-  // Timestamp when this specific prediction was generated
-  generatedAt: Timestamp | Date | string;
-}
 
 /**
  * Main User Document Structure (from users collection)
@@ -64,7 +41,7 @@ export interface UserDocument {
 
   // --- Detailed AI Results ---
   // Stores the specific output from the Lifestyle + MMSE model
-  dementiaModelPrediction?: DementiaModelPrediction;
+  dementiaModelPrediction?: string;
 
   // --- Data Usage Consent ---
   // Consent for anonymized data usage in model training
@@ -251,4 +228,21 @@ export interface ClinicalAssessmentData {
   doctorId: string;
   riskLevel: RiskLevel;
   notes?: string;
+}
+
+/**
+ * Extended Patient Profile for detailed patient view and PDF reports
+ * Combines Patient interface with additional fields needed for reports
+ */
+export interface PatientProfile extends Patient {
+  email: string;
+  smoker: 'Yes' | 'No';
+  lastPlayed: string;
+  gameScores: {
+    speech: number;
+    cognitive: number;
+    memory: number;
+    avg: number;
+  };
+  testHistory: import('@/types/testHistory').TestHistoryItem[];
 }

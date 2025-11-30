@@ -40,8 +40,7 @@ const PatientTableRow = ({ patient, onView, onReport, onContact, onDelete }: Pat
 
   return (
     <motion.tr
-      className="border-b border-border"
-      whileHover={{ backgroundColor: 'var(--color-accent)' }}
+      className="border-b border-border hover:bg-accent/30 transition-colors duration-150"
     >
       {/* Patient Info */}
       <td className="p-4 align-middle">

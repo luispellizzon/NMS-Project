@@ -199,11 +199,18 @@ export async function getDashboardStats(doctorId: string): Promise<DashboardStat
       }
 
       // Completion rates
-      if (riskAssessment?.hasCompletedCognitiveAssessment) completedCognitive++;
-      if (riskAssessment?.hasCompletedSpeechAssessment) completedSpeech++;
-      if (riskAssessment?.hasCompletedMemoryAssessment) completedMemory++;
-      if (riskAssessment) completedRisk++;
-      if (riskAssessment?.hasCompletedImageDescription) completedImageDesc++;
+      if (patientInfo.hasCompletedCognitiveAssessment) completedCognitive++;
+      if (patientInfo.hasCompletedSpeechAssessment) completedSpeech++;
+      if (patientInfo.hasCompletedMemoryAssessment) completedMemory++;
+      if (patientInfo.hasCompletedRiskAssessment) completedRisk++;
+      if (patientInfo.hasCompletedImageDescription) completedImageDesc++;
+
+      // Use MMSE score as a proxy for cognitive assessment (0-30 scale, normalize to 0-100)
+      if (patientInfo.mmseScore !== undefined && patientInfo.mmseScore !== null) {
+        const normalizedMMSE = (patientInfo.mmseScore / 30) * 100;
+        cognitiveScores.push(normalizedMMSE);
+        overallScores.push(normalizedMMSE);
+      }
 
       // Test history analysis
       const totalTests = testHistory.length;
