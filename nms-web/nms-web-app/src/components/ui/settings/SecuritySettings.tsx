@@ -130,10 +130,11 @@ export default function SecuritySettings() {
 
         <form onSubmit={handlePasswordChange} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
+            <label htmlFor="current-password" className="block text-sm font-medium text-foreground mb-2">
               Current Password
             </label>
             <input
+              id="current-password"
               type="password"
               value={passwordData.currentPassword}
               onChange={(e) =>
@@ -146,10 +147,11 @@ export default function SecuritySettings() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
+            <label htmlFor="new-password" className="block text-sm font-medium text-foreground mb-2">
               New Password
             </label>
             <input
+              id="new-password"
               type="password"
               value={passwordData.newPassword}
               onChange={(e) =>
@@ -166,10 +168,11 @@ export default function SecuritySettings() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
+            <label htmlFor="confirm-password" className="block text-sm font-medium text-foreground mb-2">
               Confirm New Password
             </label>
             <input
+              id="confirm-password"
               type="password"
               value={passwordData.confirmPassword}
               onChange={(e) =>
@@ -271,10 +274,11 @@ export default function SecuritySettings() {
         </h2>
 
         <div className="mb-6">
-          <label className="block text-sm font-medium text-foreground mb-2">
+          <label htmlFor="session-timeout" className="block text-sm font-medium text-foreground mb-2">
             Session Timeout
           </label>
           <select
+            id="session-timeout"
             value={sessionTimeout}
             onChange={(e) => setSessionTimeout(e.target.value)}
             className="w-full md:w-1/2 px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#0d7377]"
