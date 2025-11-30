@@ -1,0 +1,14 @@
+pandas
+numpy
+scikit-learn==1.6.1
+tensorflow
+joblib
+gradio
+jupyterlab
+matplotlib
+seaborn
+fastapi
+uvicorn
+python-multipart
+firebase-admin
+huggingface_hub
