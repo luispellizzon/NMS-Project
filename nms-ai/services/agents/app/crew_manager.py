@@ -1,11 +1,11 @@
 import os
 import logging
 import yaml
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional, Literal
 from pathlib import Path
 from crewai import Agent, Task, Crew, Process
 from .tools import ArxivSearchTool, WebSearchTool, SummarizerTool
-from crewai import LLM
+from .llm_config import get_llm_provider, LLMProvider
 
 logging.basicConfig(level=logging.INFO)
 
@@ -14,35 +14,36 @@ class NewsCrewManager:
     """
     Manages CrewAI agents for news generation and risk assessment.
     Loads agent and task configurations from YAML files.
+    Supports multiple LLM providers (Gemini, Ollama).
     """
-    
-    def __init__(self):
-        # Initialize Gemini LLM
-        gemini_api_key = os.getenv("GEMINI_API_KEY")
-        if not gemini_api_key:
-            raise ValueError("GEMINI_API_KEY environment variable not set")
-        
-        self.llm = LLM(
-            model="gemini/gemini-2.5-flash",
-            api_key=gemini_api_key,
-            temperature=0.7,
-            timeout=60.0,
-            max_retries=3,  # Increased retries
-            # Add exponential backoff
-            retry_config={"max_wait": 30, "exponential_base": 2}
-        )
-        
+
+    def __init__(self, llm_provider: Optional[Literal["gemini", "ollama"]] = None):
+        """
+        Initialize the NewsCrewManager with configurable LLM provider.
+
+        Args:
+            llm_provider: LLM provider to use ("gemini" or "ollama").
+                         If None, uses DEFAULT_LLM_PROVIDER from env
+        """
+        # Initialize LLM provider manager
+        self.llm_provider = get_llm_provider()
+        self.selected_provider = llm_provider
+
+        # Get default LLM for general use
+        self.llm = self.llm_provider.get_llm(provider=llm_provider)
+
         # Initialize tools
         self.arxiv_tool = ArxivSearchTool()
         self.web_search_tool = WebSearchTool()
         self.summarizer_tool = SummarizerTool(self.llm)
-        
+
         # Load configuration from YAML files
         self.config_dir = Path(__file__).parent
         self.agents_config = self._load_yaml(self.config_dir / "agents.yaml")
         self.tasks_config = self._load_yaml(self.config_dir / "tasks.yaml")
-        
-        logging.info("NewsCrewManager initialized with Gemini LLM and YAML configs")
+
+        provider_name = llm_provider or self.llm_provider.default_provider
+        logging.info(f"NewsCrewManager initialized with {provider_name.upper()} LLM and YAML configs")
     
     def _load_yaml(self, file_path: Path) -> Dict[str, Any]:
         """Load and parse a YAML configuration file."""
@@ -55,28 +56,43 @@ class NewsCrewManager:
             logging.error(f"Failed to load {file_path}: {e}")
             raise
     
-    def _create_agent_from_config(self, agent_name: str, tools: List = None) -> Agent:
+    def _create_agent_from_config(
+        self,
+        agent_name: str,
+        tools: List = None,
+        llm_override: Optional[Literal["gemini", "ollama"]] = None
+    ) -> Agent:
         """
         Create an agent from YAML configuration.
-        
+
         Args:
             agent_name: Name of the agent in the YAML config
             tools: List of tools to give the agent
-            
+            llm_override: Optional LLM provider override for this specific agent
+
         Returns:
             Configured Agent instance
         """
         if agent_name not in self.agents_config:
             raise ValueError(f"Agent '{agent_name}' not found in agents.yaml")
-        
+
         config = self.agents_config[agent_name]
-        
+
+        # Get agent-specific LLM if override is provided
+        agent_llm = self.llm
+        if llm_override:
+            agent_llm = self.llm_provider.get_llm_for_agent(
+                agent_type=agent_name,
+                provider=llm_override
+            )
+            logging.info(f"Agent '{agent_name}' using {llm_override.upper()} LLM")
+
         return Agent(
             role=config["role"],
             goal=config["goal"],
             backstory=config["backstory"],
             tools=tools or [],
-            llm=self.llm,
+            llm=agent_llm,
             verbose=config.get("verbose", True),
             allow_delegation=config.get("allow_delegation", False)
         )

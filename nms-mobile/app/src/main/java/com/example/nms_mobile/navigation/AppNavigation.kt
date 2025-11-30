@@ -5,21 +5,26 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.nms_mobile.navigation.routes.AddPatientRoute
+import com.example.nms_mobile.navigation.routes.CognitiveResultsRoute
+import com.example.nms_mobile.navigation.routes.CognitiveTestRoute
 import com.example.nms_mobile.navigation.routes.DashboardRoute
 import com.example.nms_mobile.navigation.routes.LoginRoute
 import com.example.nms_mobile.navigation.routes.MemoryTestRoute
+import com.example.nms_mobile.navigation.routes.NewsRoute
 import com.example.nms_mobile.navigation.routes.PersonalInfoRoute
 import com.example.nms_mobile.navigation.routes.QuestionnaireRoute
+import com.example.nms_mobile.navigation.routes.ResultsRoute
 import com.example.nms_mobile.navigation.routes.SignUpRoute
 import com.example.nms_mobile.navigation.routes.SpeechAssessmentRoute
 import com.example.nms_mobile.navigation.routes.SpeechResultsRoute
 import com.example.nms_mobile.navigation.routes.SpeechTaskRoute
 import com.example.nms_mobile.navigation.routes.StartRoute
+import com.example.nms_mobile.ui.feature.cognitive.CognitiveIntroScreen
 import com.example.nms_mobile.ui.questionnaire.QuestionnaireIntroScreen
-
+import com.example.nms_mobile.ui.feature.feedback.FeedbackScreen
 
 // This is the central file that defines all the app screens and how to move between them.
-
 @Composable
 fun AppNavigation(
     navController: NavHostController = rememberNavController() // Keeps track of the screens history (the back stack).
@@ -59,7 +64,7 @@ fun AppNavigation(
         composable(Screen.Login.route) {
             LoginRoute(
                 // After a successful login, navigate back to the Start screen to re-evaluate the user's destination.
-                onNavigateAfterLogin = { _hasProfileIgnored ->
+                onNavigateAfterLogin = { _ ->
                     navController.navigate(Screen.Start.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                         launchSingleTop = true
@@ -107,18 +112,26 @@ fun AppNavigation(
                 onOpenQuestionnaire = {
                     navController.navigate(Screen.QuestionnaireIntro.route)
                 },
-                // Open the Speech Assessment screen.
+                // Open the Speech Task screen.
                 onOpenSpeech = {
                     navController.navigate(Screen.SpeechTask.route)
+                },
+                onOpenImageDescription = {
+                    navController.navigate(Screen.SpeechAssessment.route)
                 },
                 // Open the Speech Results screen (when clicked and analysis is complete)
                 onOpenSpeechResults = {
                     navController.navigate(Screen.SpeechResults.route)
                 },
-
-                // Open the Speech Assessment screen.
+                // Open the Memory Test screen.
                 onOpenMemory = {
                     navController.navigate(Screen.MemoryTest.route)
+                },
+                // Open the Cognitive Test Intro screen.
+                onOpenCognitive = {
+                    navController.navigate(Screen.CognitiveIntro.route)
+                }, onOpenNews = {
+                    navController.navigate(Screen.News.route)
                 },
                 // When the user logs out, go back to the Login screen and clear ALL history.
                 onLoggedOut = {
@@ -126,7 +139,23 @@ fun AppNavigation(
                         popUpTo(0) { inclusive = true }
                         launchSingleTop = true
                     }
+                },
+                onOpenFeedback = {
+                    navController.navigate(Screen.Feedback.route)
+                },
+                onOpenAddPatient = {
+                    navController.navigate(Screen.AddPatient.route)
+                },
+                onOpenResults = {
+                    navController.navigate(Screen.Results.route)
                 }
+            )
+        }
+
+        // FEEDBACK
+        composable(Screen.Feedback.route) {
+            FeedbackScreen(
+                onBackClick = { navController.popBackStack() }
             )
         }
 
@@ -158,13 +187,18 @@ fun AppNavigation(
             )
         }
 
-        // SPEECH ASSESSMENT (Audio recording and transcription)
+        // SPEECH ASSESSMENT (Audio recording and transcription - OLD)
         composable(Screen.SpeechAssessment.route) {
             SpeechAssessmentRoute(
                 // Go back to Dashboard
                 onBack = { navController.popBackStack() },
                 // When completed, return to Dashboard
-                onCompleted = {}
+                onCompleted = {
+                    navController.navigate(Screen.Dashboard.route) {
+                        popUpTo(Screen.SpeechAssessment.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
 
@@ -198,11 +232,98 @@ fun AppNavigation(
             )
         }
 
-        composable(Screen.MemoryTest.route){
+        // MEMORY TEST
+        composable(Screen.MemoryTest.route) {
             MemoryTestRoute(
                 onBack = { navController.popBackStack() },
                 onCompleted = {
-                    navController.popBackStack() }
+                    navController.navigate(Screen.Dashboard.route) {
+                        popUpTo(Screen.MemoryTest.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+
+        // COGNITIVE TEST INTRO (Instructions for cognitive assessment)
+        composable(Screen.CognitiveIntro.route) {
+            CognitiveIntroScreen(
+                onStart = {
+                    navController.navigate(Screen.CognitiveTest.route)
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // COGNITIVE TEST (The actual cognitive tasks)
+        composable(Screen.CognitiveTest.route) {
+            CognitiveTestRoute(
+                onCompleted = {
+                    // Navigate to results screen after completion
+                    navController.navigate(Screen.CognitiveResults.route) {
+                        popUpTo(Screen.CognitiveTest.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // COGNITIVE RESULTS (Show detailed results after test completion)
+        composable(Screen.CognitiveResults.route) {
+            CognitiveResultsRoute(
+                // Go back to Dashboard
+                onViewResults = {
+                    navController.navigate(Screen.Results.route) {
+                        popUpTo(Screen.CognitiveResults.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onBack = {
+                    navController.navigate(Screen.Dashboard.route) {
+                        popUpTo(Screen.CognitiveResults.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                // Redo test - navigate back to Cognitive Intro
+                onRedoTest = {
+                    navController.navigate(Screen.CognitiveIntro.route) {
+                        popUpTo(Screen.CognitiveResults.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+        composable("news") {
+            NewsRoute(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // ADD PATIENT (Caregiver creates a new patient profile)
+        composable(Screen.AddPatient.route) {
+            AddPatientRoute(
+                onBack = { navController.popBackStack() },
+                onPatientCreated = {
+                    navController.navigate(Screen.Dashboard.route) {
+                        popUpTo(Screen.AddPatient.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+
+        // Results page (Caregiver creates a new patient profile)
+        composable(Screen.Results.route) {
+            ResultsRoute(
+                onBack = { navController.popBackStack() },
+                onContactDoctor = { navController.popBackStack() }
+//                onContactDoctor = {
+//                    navController.navigate(Screen.Dashboard.route) {
+//                        popUpTo(Screen.AddPatient.route) { inclusive = true }
+//                        launchSingleTop = true
+//                    }
+//                }
             )
         }
     }

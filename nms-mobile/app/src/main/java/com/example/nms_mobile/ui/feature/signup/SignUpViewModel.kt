@@ -1,5 +1,6 @@
-package com.example.nms_mobile.ui.signup
+package com.example.nms_mobile.ui.feature.signup
 
+import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nms_mobile.data.AuthRepository
@@ -28,13 +29,13 @@ class SignUpViewModel(
     fun onPasswordChange(v: String) = _uiState.update { it.copy(password = v, error = null) }
     fun onConfirmPasswordChange(v: String) = _uiState.update { it.copy(confirmPassword = v, error = null) }
 
+    // Email/Password sign up
     fun signUp() {
         val s = _uiState.value
 
-        // Validación completa
         val err = when {
             s.email.isBlank() -> "Email is required"
-            !android.util.Patterns.EMAIL_ADDRESS.matcher(s.email).matches() -> "Invalid email format"
+            !Patterns.EMAIL_ADDRESS.matcher(s.email).matches() -> "Invalid email format"
             s.password.isBlank() -> "Password is required"
             s.password.length < 6 -> "Password must be at least 6 characters"
             s.confirmPassword.isBlank() -> "Please confirm your password"
@@ -50,8 +51,6 @@ class SignUpViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                // Solo crear cuenta en Firebase Auth
-                // PersonalInfo capturará el resto de la información
                 repository.signUpAuth(s.email, s.password)
                 _uiState.update { it.copy(isLoading = false, success = true) }
             } catch (e: Exception) {
@@ -62,6 +61,40 @@ class SignUpViewModel(
                     )
                 }
             }
+        }
+    }
+
+    // ==================== SOCIAL SIGN-UP ====================
+    // Note: For social providers, "sign up" and "sign in" are the same operation
+    // Firebase automatically creates an account if one doesn't exist
+
+    fun signUpWithGoogle(idToken: String) = socialSignUp(
+        action = { repository.signInWithGoogle(idToken) }
+    )
+
+    fun signUpWithFacebook(accessToken: String) = socialSignUp(
+        action = { repository.signInWithFacebook(accessToken) }
+    )
+
+    /**
+     * Shared social sign-up handler
+     */
+    private fun socialSignUp(action: suspend () -> Unit) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+
+            runCatching { action() }
+                .onSuccess {
+                    _uiState.update { it.copy(isLoading = false, success = true) }
+                }
+                .onFailure { e ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            error = e.localizedMessage ?: "Authentication failed"
+                        )
+                    }
+                }
         }
     }
 

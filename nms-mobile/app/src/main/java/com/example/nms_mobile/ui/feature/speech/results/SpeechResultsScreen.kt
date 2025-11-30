@@ -21,6 +21,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.nms_mobile.ui.Green
+import com.example.nms_mobile.ui.Orange
+import com.example.nms_mobile.ui.Red
 import com.example.nms_mobile.ui.TealPrimary
 import com.example.nms_mobile.ui.White
 
@@ -316,9 +319,9 @@ private fun ScoreBadge(
     maxScore: Int
 ) {
     val backgroundColor = when {
-        score == maxScore -> Color(0xFF4CAF50) // Green for perfect
-        score >= maxScore * 0.5 -> Color(0xFFFF9800) // Orange for partial
-        else -> Color(0xFFF44336) // Red for low
+        score == maxScore -> Green // Green for perfect
+        score >= maxScore * 0.5 -> Orange// Orange for partial
+        else -> Red // Red for low
     }
 
     Surface(

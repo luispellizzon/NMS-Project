@@ -7,20 +7,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.nms_mobile.R
 
-// Main component that groups the three social sign-in buttons.
 @Composable
 fun SocialLoginButtons(
     onGoogleClick: () -> Unit,
-    onAppleClick: () -> Unit,
     onFacebookClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    // This parameter is included but not actively used in the button rendering logic.
-    showOrDivider: Boolean = true
 ) {
     Column() {
 
@@ -56,35 +50,6 @@ fun SocialLoginButtons(
             }
         }
 
-        // Apple Button
-        OutlinedButton(
-            onClick = onAppleClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp)
-                .padding(top = 10.dp),
-            border = ButtonDefaults.outlinedButtonBorder.copy(width = 1.dp),
-            colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = Color(0xFFF2F2F2),
-                contentColor = Color.Black
-            ),
-            shape = MaterialTheme.shapes.medium
-        ) {
-            // Try to load the Apple icon safely.
-            val a = runCatching { painterResource(id = R.drawable.ic_apple) }.getOrNull()
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (a != null) {
-                    // Display the Apple icon, typically tinted black.
-                    Icon(painter = a, contentDescription = "Apple", tint = Color.Black)
-                    Spacer(Modifier.width(12.dp))
-                }
-                Text("Continue With Apple")
-            }
-        }
 
         // Facebook Button
         OutlinedButton(
@@ -116,40 +81,4 @@ fun SocialLoginButtons(
             }
         }
     }
-}
-
-// Helper composable defined but not used in the main SocialLoginButtons function.
-@Composable
-private fun SocialRow(
-    icon: Painter?,
-    label: String,
-    iconTint: Color,
-    textColor: Color
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
-    ) {
-        if (icon != null) {
-            Icon(
-                painter = icon,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = iconTint
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-        }
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            color = textColor
-        )
-    }
-}
-
-// Helper function to safely load an image resource.
-@Composable
-private fun safePainterOrNull(resId: Int): Painter? {
-    return runCatching { painterResource(id = resId) }.getOrNull()
 }

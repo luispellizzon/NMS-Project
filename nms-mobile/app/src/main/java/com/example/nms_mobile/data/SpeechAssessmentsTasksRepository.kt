@@ -14,13 +14,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.delay
 
-class SpeechAssessmentsTasks private constructor(
+class SpeechAssessmentsTasksRepository private constructor(
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
+    private val userdb: FirestoreRepository = FirestoreRepository.instance
 ) {
 
     companion object {
-        val instance: SpeechAssessmentsTasks by lazy { SpeechAssessmentsTasks() }
+        val instance: SpeechAssessmentsTasksRepository by lazy { SpeechAssessmentsTasksRepository() }
         private const val TAG = "SpeechAssessmentTasks"
         private const val COLLECTION_USERS = "users"
         private const val SUBCOLLECTION_SPEECH = "speech_assessment"
@@ -32,7 +33,7 @@ class SpeechAssessmentsTasks private constructor(
      * Returns existing incomplete session or creates a new one
      */
     suspend fun getOrCreateAssessment(): SpeechAssessmentDocument {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
 
         try {
             // Check for existing incomplete assessment
@@ -85,7 +86,7 @@ class SpeechAssessmentsTasks private constructor(
      * Saves or updates the entire assessment document
      */
     suspend fun saveAssessment(assessment: SpeechAssessmentDocument) {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
 
         firestore.collection(COLLECTION_USERS)
             .document(userId)
@@ -106,7 +107,7 @@ class SpeechAssessmentsTasks private constructor(
         taskResult: TaskResult,
         nextTaskId: String?
     ) {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
 
         try {
             val docRef = firestore.collection(COLLECTION_USERS)
@@ -135,7 +136,7 @@ class SpeechAssessmentsTasks private constructor(
      * Marks assessment as completed and sets aiAnalysis to "processing"
      */
     suspend fun completeAssessment(assessmentId: String) {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
 
         firestore.collection(COLLECTION_USERS)
             .document(userId)
@@ -149,6 +150,10 @@ class SpeechAssessmentsTasks private constructor(
                 )
             )
             .await()
+
+        userdb.updateTask("hasCompletedSpeechAssessment", UserTasks.MEMORY_ASSESSMENT.taskName)
+
+        Log.d(TAG, "Assessment marked as completed: $assessmentId")
 
         Log.d(TAG, "Assessment completed: $assessmentId, AI analysis status: processing")
     }
@@ -199,7 +204,7 @@ class SpeechAssessmentsTasks private constructor(
      * Gets all completed assessments
      */
     suspend fun getCompletedAssessments(): List<SpeechAssessmentDocument> {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
 
         return try {
             val snapshot = firestore.collection(COLLECTION_USERS)
@@ -221,7 +226,7 @@ class SpeechAssessmentsTasks private constructor(
      * Gets the most recent completed assessment (to check analysis status)
      */
     suspend fun getMostRecentCompletedAssessment(): SpeechAssessmentDocument? {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
 
         return try {
             val snapshot = firestore.collection(COLLECTION_USERS)
@@ -244,7 +249,7 @@ class SpeechAssessmentsTasks private constructor(
      * Checks if the AI analysis is complete for a given assessment
      */
     suspend fun checkAnalysisStatus(assessmentId: String): String? {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
 
         return try {
             val snapshot = firestore.collection(COLLECTION_USERS)
@@ -267,7 +272,7 @@ class SpeechAssessmentsTasks private constructor(
      * Returns a Flow that emits the current aiAnalysis status
      */
     fun pollForAnalysisCompletion(assessmentId: String): Flow<String?> = flow {
-        val userId = auth.currentUser?.uid ?: throw Exception("User not authenticated")
+        val userId = PatientSessionManager.getActiveUserId()
 
         while (true) {
             try {
@@ -297,7 +302,11 @@ class SpeechAssessmentsTasks private constructor(
         assessmentId: String,
         onStatusChange: (String?) -> Unit
     ): ListenerRegistration? {
-        val userId = auth.currentUser?.uid ?: return null
+        val userId = try {
+            PatientSessionManager.getActiveUserId()
+        } catch (e: Exception) {
+            return null
+        }
 
         return try {
             firestore.collection(COLLECTION_USERS)

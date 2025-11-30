@@ -22,6 +22,8 @@ import com.example.nms_mobile.auth.ProvideAuth
 import com.example.nms_mobile.navigation.*
 import com.example.nms_mobile.ui.NMSmobileTheme
 import kotlinx.coroutines.delay
+import androidx.core.net.toUri
+import androidx.lifecycle.compose.LocalLifecycleOwner
 
 /**
  * MainActivity - Simplified version
@@ -55,9 +57,6 @@ class MainActivity : ComponentActivity() {
 /**
  * Compose component that checks and requests exact alarm permission
  * Only needed on Android 12 (API 31) and above
- *
- * 🔧 FIXED: Added lifecycle checks and delays to prevent crashes
- * ✅ NO EXTERNAL DEPENDENCIES REQUIRED
  */
 @Composable
 fun AlarmPermissionCheck() {
@@ -67,7 +66,7 @@ fun AlarmPermissionCheck() {
     var permissionChecked by remember { mutableStateOf(false) }
 
     // 🔧 FIX: Monitor lifecycle state without collectAsState
-    val lifecycleOwner = LocalLifecycleOwner.current
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     var isResumed by remember { mutableStateOf(false) }
 
     DisposableEffect(lifecycleOwner) {
@@ -87,15 +86,13 @@ fun AlarmPermissionCheck() {
             delay(500) // 500ms delay to ensure stable state
 
             permissionChecked = true
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                try {
-                    val alarmManager = context.getSystemService(AlarmManager::class.java)
-                    if (alarmManager?.canScheduleExactAlarms() == false) {
-                        showDialog = true
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.e("AlarmPermission", "Error checking alarm permission", e)
+            try {
+                val alarmManager = context.getSystemService(AlarmManager::class.java)
+                if (alarmManager?.canScheduleExactAlarms() == false) {
+                    showDialog = true
                 }
+            } catch (e: Exception) {
+                android.util.Log.e("AlarmPermission", "Error checking alarm permission", e)
             }
         }
     }
@@ -110,15 +107,13 @@ fun AlarmPermissionCheck() {
             },
             confirmButton = {
                 Button(onClick = {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        try {
-                            val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
-                                data = android.net.Uri.parse("package:${context.packageName}")
-                            }
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            android.util.Log.e("AlarmPermission", "Error opening settings", e)
+                    try {
+                        val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                            data = "package:${context.packageName}".toUri()
                         }
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        android.util.Log.e("AlarmPermission", "Error opening settings", e)
                     }
                     showDialog = false
                 }) {

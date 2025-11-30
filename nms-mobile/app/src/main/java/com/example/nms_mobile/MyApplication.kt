@@ -5,6 +5,7 @@ import com.example.nms_mobile.services.TTSManager
 import com.google.firebase.FirebaseApp
 import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
+import org.opencv.android.OpenCVLoader
 
 /**
  * Custom Application class for initializing Firebase and AppCheck
@@ -25,9 +26,17 @@ class MyApplication : Application() {
                 PlayIntegrityAppCheckProviderFactory.getInstance()
             )
             android.util.Log.d("MyApplication", "Firebase and AppCheck initialized successfully")
+            // Initialize OpenCV
+            if (OpenCVLoader.initLocal()) {
+                android.util.Log.d("MyApplication", "OpenCV loaded successfully")
+            } else {
+                android.util.Log.e("MyApplication", "OpenCV initialization failed")
+            }
         } catch (e: Exception) {
-            android.util.Log.e("MyApplication", "Error initializing Firebase/AppCheck", e)
+            android.util.Log.e("MyApplication", "Error initializing", e)
         }
+
+
     }
     override fun onTerminate() {
         TTSManager.getInstance(this).shutdown()

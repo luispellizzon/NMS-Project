@@ -1,5 +1,7 @@
 package com.example.nms_mobile.api
 
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.http.Body
@@ -11,7 +13,6 @@ data class ProcessAssessmentRequest(
     val userId: String,
     val assessmentId: String
 )
-
 data class ProcessAssessmentResponse(
     val status: String,
     val userId: String,
@@ -19,15 +20,30 @@ data class ProcessAssessmentResponse(
     val message: String
 )
 
+data class ProcessImageDescriptionRequest(
+    val userId: String,
+    val documentId: String,
+    val audioUrl: String,
+)
+
+data class ProcessImageDescriptionResponse(
+    val status: String,
+    val documentId: String,
+    val message: String
+)
+
 interface TranscriptionApi {
     @POST("/process-assessment")
     suspend fun processAssessment(@Body body: ProcessAssessmentRequest): ProcessAssessmentResponse
+
+    @POST("/transcribe-from-url")
+    suspend fun processImageDescription(@Body body: ProcessImageDescriptionRequest): ProcessImageDescriptionResponse
 }
 
 object TranscriptionApiClient {
     // For Android Emulator use 10.0.2.2; change to LAN IP for physical device testing
-    private const val BASE_URL = "http://192.168.0.90:8001"
-
+   // private const val BASE_URL = "http://192.168.0.90:8001"
+    private const val BASE_URL = "http://10.0.2.2:8001"
     private val okHttp = OkHttpClient.Builder()
         .callTimeout(60, TimeUnit.SECONDS)
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -35,10 +51,14 @@ object TranscriptionApiClient {
         .writeTimeout(60, TimeUnit.SECONDS)
         .build()
 
+    val moshi = Moshi.Builder()
+        .add(KotlinJsonAdapterFactory())
+        .build()
+
     val api: TranscriptionApi = Retrofit.Builder()
         .baseUrl(BASE_URL)
         .client(okHttp)
-        .addConverterFactory(MoshiConverterFactory.create())
+        .addConverterFactory(MoshiConverterFactory.create(moshi))
         .build()
         .create(TranscriptionApi::class.java)
 }

@@ -261,7 +261,7 @@ fun Section1BasicInfo(
                 color = Color.Black
             )
             RadioButtonGroup(
-                options = listOf("Male", "Female", "Other"),
+                options = listOf("Male", "Female"),
                 selectedOption = gender,
                 onOptionSelected = onGenderChange
             )
@@ -297,7 +297,7 @@ fun Section2Education(
                 color = Color.Black
             )
             RadioButtonGroup(
-                options = listOf("Primary", "Secondary", "Tertiary"),
+                options = listOf("No School","Primary", "Secondary", "Tertiary"),
                 selectedOption = educationLevel,
                 onOptionSelected = onEducationLevelChange
             )
@@ -312,7 +312,7 @@ fun Section2Education(
                 color = Color.Black
             )
             RadioButtonGroup(
-                options = listOf("Never Smoking", "Former Smoker", "Current Smoker"),
+                options = listOf("Never Smoked", "Former Smoker", "Current Smoker"),
                 selectedOption = smokingStatus,
                 onOptionSelected = onSmokingStatusChange
             )
@@ -328,7 +328,7 @@ fun Section2Education(
             )
 
             RadioButtonGroup(
-                options = listOf("No Drinker", "Occasional", "Regular"),
+                options = listOf("Non-Drinker", "Occasional", "Regular"),
                 selectedOption = alcoholUse,
                 onOptionSelected = onAlcoholUseChange
             )
@@ -381,7 +381,7 @@ fun Section3HealthHabits(
             )
 
             RadioButtonGroup(
-                options = listOf("Balanced Diet", "Low Carb Diet", "Mediterranean Diet"),
+                options = listOf("Balanced Diet", "Low-Carb Diet", "Mediterranean Diet"),
                 selectedOption = nutritionDiet,
                 onOptionSelected = onNutritionDietChange
             )
@@ -551,7 +551,7 @@ fun Section5Medication(
             )
 
             RadioButtonGroup(
-                options = listOf("None", "Diabetes", "Heart Diseases", "Hypertension"),
+                options = listOf("None", "Diabetes", "Heart Disease", "Hypertension"),
                 selectedOption = chronicHealthCondition,
                 onOptionSelected = onChronicConditionChange
             )

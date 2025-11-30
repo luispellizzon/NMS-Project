@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -25,26 +27,39 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.nms_mobile.data.AuthRepository
 import com.example.nms_mobile.data.FirestoreRepository
-import com.example.nms_mobile.data.SpeechAssessmentsTasks
+import com.example.nms_mobile.data.SpeechAssessmentsTasksRepository
+import com.example.nms_mobile.ui.cognitive.CubeDrawingScreen
+import com.example.nms_mobile.ui.components.ManagedModeBanner
+import com.example.nms_mobile.ui.feature.addpatient.AddPatientScreen
+import com.example.nms_mobile.ui.feature.cognitive.AnimalNamingScreen
+import com.example.nms_mobile.ui.feature.cognitive.ClockDrawingScreen
+import com.example.nms_mobile.ui.feature.cognitive.CognitiveEvent
+import com.example.nms_mobile.ui.feature.cognitive.CognitiveResultsScreen
+import com.example.nms_mobile.ui.feature.cognitive.CognitiveViewModel
+import com.example.nms_mobile.ui.feature.cognitive.TrailMakingScreen
 import com.example.nms_mobile.ui.feature.dashboard.DashboardScreen
+import com.example.nms_mobile.ui.feature.login.LoginScreen
+import com.example.nms_mobile.ui.feature.login.LoginViewModel
 import com.example.nms_mobile.ui.feature.memory.MemoryTestScreen
 import com.example.nms_mobile.ui.feature.memory.MemoryTestViewModel
+import com.example.nms_mobile.ui.feature.news.NewsScreen
+import com.example.nms_mobile.ui.feature.news.NewsViewModel
 import com.example.nms_mobile.ui.feature.speech.SpeechAssessmentEvent
 import com.example.nms_mobile.ui.feature.speech.SpeechAssessmentViewModel
 import com.example.nms_mobile.ui.feature.speech.SpeechTaskEvent
 import com.example.nms_mobile.ui.feature.speech.SpeechTaskScreen
 import com.example.nms_mobile.ui.feature.speech.SpeechTaskViewModel
 import com.example.nms_mobile.ui.feature.speech.results.SpeechResultsScreen
-import com.example.nms_mobile.ui.login.LoginScreen
-import com.example.nms_mobile.ui.login.LoginViewModel
-import com.example.nms_mobile.ui.personaldetails.PersonalInfoEvent
-import com.example.nms_mobile.ui.personaldetails.PersonalInfoScreen
-import com.example.nms_mobile.ui.personaldetails.PersonalInfoViewModel
+import com.example.nms_mobile.ui.feature.personal_details.PersonalInfoEvent
+import com.example.nms_mobile.ui.feature.personal_details.PersonalInfoScreen
+import com.example.nms_mobile.ui.feature.personal_details.PersonalInfoViewModel
+import com.example.nms_mobile.ui.feature.results.ResultsScreen
+import com.example.nms_mobile.ui.feature.results.ResultsViewModel
+import com.example.nms_mobile.ui.feature.signup.SignUpViewModel
 import com.example.nms_mobile.ui.questionnaire.SectionedQuestionnaireEvent
 import com.example.nms_mobile.ui.questionnaire.SectionedQuestionnaireScreen
 import com.example.nms_mobile.ui.questionnaire.SectionedQuestionnaireViewModel
 import com.example.nms_mobile.ui.signup.SignUpScreen
-import com.example.nms_mobile.ui.signup.SignUpViewModel
 import com.example.nms_mobile.ui.speech.SpeechAssessmentScreen
 
 // The starting screen: checks if the user is logged in and if they have a profile.
@@ -69,7 +84,7 @@ fun StartRoute(
         // Check the Firestore database to see if the user profile exists.
         val hasProfile = try {
             db.hasCompletedProfile()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
 
@@ -94,30 +109,29 @@ fun LoginRoute(
     onNavigateAfterLogin: (hasProfile: Boolean) -> Unit,
     onNavigateToSignUp: () -> Unit
 ) {
-    // Create and remember the ViewModel (the logic).
     val viewModel = remember { LoginViewModel() }
-    // Watch the current status of the ViewModel.
     val state by viewModel.uiState.collectAsState()
 
     // When the login attempt succeeds, navigate away.
     LaunchedEffect(state.success) {
         if (state.success) {
-            // We pass 'false' to indicate we still need to check the profile status later.
             onNavigateAfterLogin(false)
         }
     }
 
-    // Connect the UI screen to the ViewModel's data and functions.
     LoginScreen(
         state = state,
         onEmailChange = viewModel::onEmailChange,
         onPasswordChange = viewModel::onPasswordChange,
         onLoginClick = viewModel::login,
-        onSignUpClick = onNavigateToSignUp
+        onSignUpClick = onNavigateToSignUp,
+        onGoogleLogin = viewModel::loginWithGoogle,
+        onFacebookLogin = viewModel::loginWithFacebook,
+        onConfirmProviderLink = viewModel::confirmProviderLink
     )
 }
 
-// Handles the sign-up logic and navigation.
+// Replace the existing SignUpRoute with this:
 @Composable
 fun SignUpRoute(
     onNavigateToPersonalInfo: () -> Unit,
@@ -132,7 +146,6 @@ fun SignUpRoute(
         if (state.success) onNavigateToPersonalInfo()
     }
 
-    // Connect the UI screen to the ViewModel.
     SignUpScreen(
         state = state,
         onEmailChange = vm::onEmailChange,
@@ -140,9 +153,14 @@ fun SignUpRoute(
         onConfirmPasswordChange = vm::onConfirmPasswordChange,
         onSignUpClick = vm::signUp,
         onLoginClick = onLoginInstead,
-        onGoogleClick = { /* TODO: Google sign-in */ },
-        onFacebookClick = { /* TODO: Facebook sign-in */ },
-        onAppleClick = { /* TODO: Apple sign-in */ }
+        onGoogleSignUp = { idToken ->
+            // For sign-up, we use the same login methods since
+            // social providers automatically create accounts if they don't exist
+            vm.signUpWithGoogle(idToken)
+        },
+        onFacebookSignUp = { accessToken ->
+            vm.signUpWithFacebook(accessToken)
+        },
     )
 }
 
@@ -172,6 +190,9 @@ fun PersonalInfoRoute(onFinished: () -> Unit) {
         state = state,
         onFullNameChange = vm::onFullNameChange,
         onDateOfBirthChange = vm::onDateOfBirthChange,
+        onCountryChange = vm::onCountryChange,
+        onCountrySelected = vm::onCountrySelected,
+        onCountryFocused = vm::onFieldFocused,
         onEmailChange = vm::onEmailChange,
         onRoleChange = vm::onRoleChange,
         onSubmit = vm::submit
@@ -182,26 +203,30 @@ fun PersonalInfoRoute(onFinished: () -> Unit) {
 @Composable
 fun DashboardRoute(
     onOpenQuestionnaire: () -> Unit,
-    onOpenNews: () -> Unit = {},
+    onOpenImageDescription:  () -> Unit,
+    onOpenNews: () -> Unit,
     onOpenSpeech: () -> Unit = {},
-    onOpenSpeechResults: () -> Unit = {},  // NEW
+    onOpenSpeechResults: () -> Unit = {},
     onOpenMemory: () -> Unit = {},
     onOpenCognitive: () -> Unit = {},
-    onLoggedOut: () -> Unit = {}
+    onLoggedOut: () -> Unit = {},
+    onOpenFeedback: () -> Unit = {},
+    onOpenAddPatient: () -> Unit = {},
+    onOpenResults: () -> Unit = {}
 ) {
     val vm = remember { DashboardViewModel() }
     val state by vm.ui.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Watch for the 'LoggedOut' event from the ViewModel.
-    LaunchedEffect(Unit) {
-        vm.events.collect { ev ->
-            when (ev) {
-                // If the ViewModel sends a logout event, navigate to the Login screen.
-                DashboardEvent.LoggedOut -> onLoggedOut()
-            }
-        }
-    }
+//    // Watch for the 'LoggedOut' event from the ViewModel.
+//    LaunchedEffect(Unit) {
+//        vm.events.collect { ev ->
+//            when (ev) {
+//                // If the ViewModel sends a logout event, navigate to the Login screen.
+//                DashboardEvent.LoggedOut -> onLoggedOut()
+//            }
+//        }
+//    }
 
     // Refresh speech assessment status when dashboard is resumed
     LaunchedEffect(lifecycleOwner) {
@@ -210,23 +235,41 @@ fun DashboardRoute(
         }
     }
 
-    // Connect the Dashboard UI screen to the ViewModel.
-    DashboardScreen(
-        state = state,
-        onOpenNews = onOpenNews,
-        onOpenRiskAssessment = onOpenQuestionnaire, // Opens the questionnaire
-        onOpenSpeech = {
-            // Navigate to results if completed, otherwise to speech task
-            if (state.speechAnalysisStatus == SpeechAnalysisStatus.COMPLETED) {
-                onOpenSpeechResults()
-            } else {
-                onOpenSpeech()
-            }
-        },
-        onOpenMemory = onOpenMemory,
-        onOpenCognitive = onOpenCognitive,
-        onLogoutClick = vm::logout
-    )
+    // AC-3: UI Indication - Display managed mode banner when active
+    // AC-4: Return Navigation - Provides exit button in banner
+    Box {
+        // Connect the Dashboard UI screen to the ViewModel.
+        DashboardScreen(
+            state = state,
+            onOpenNews = onOpenNews,
+            onOpenRiskAssessment = onOpenQuestionnaire, // Opens the questionnaire
+            onOpenImageDescription = onOpenImageDescription,
+            onOpenSpeech = {
+                // Navigate to results if completed, otherwise to speech task
+                if (state.speechAnalysisStatus == SpeechAnalysisStatus.COMPLETED) {
+                    onOpenSpeechResults()
+                } else {
+                    onOpenSpeech()
+                }
+            },
+            onOpenMemory = onOpenMemory,
+            onOpenCognitive = onOpenCognitive,
+            onLogoutClick = {
+                onLoggedOut()
+                vm::logout
+            },
+            onAddPatient = onOpenAddPatient,
+            onSelectPatient = vm::selectPatient,
+            onDeselectPatient = vm::deselectPatient,
+            onFeedbackClick = onOpenFeedback,
+            onOpenResults = onOpenResults
+        )
+
+        // Overlay the managed mode banner at the top if in managed mode
+        ManagedModeBanner(
+            onExitManagedMode = vm::deselectPatient
+        )
+    }
 }
 
 // Handles the sequence of questionnaire screens.
@@ -425,7 +468,7 @@ fun SpeechResultsRoute(
     onBack: () -> Unit,
     onRedoTest: () -> Unit
 ) {
-    val speechRepo = remember { SpeechAssessmentsTasks.instance }
+    val speechRepo = remember { SpeechAssessmentsTasksRepository.instance }
     var assessment by remember { mutableStateOf<SpeechAssessmentDocument?>(null) }
 
     // Load the most recent completed assessment
@@ -444,7 +487,7 @@ fun SpeechResultsRoute(
 fun MemoryTestRoute(
     onBack: () -> Unit,
     onCompleted: () -> Unit
-){
+) {
     val vm = remember { MemoryTestViewModel() }
 
     MemoryTestScreen(
@@ -452,6 +495,210 @@ fun MemoryTestRoute(
         onBack = onBack,
         onCompleted = onCompleted
     )
+}
 
+@Composable
+fun CognitiveTestRoute(
+    onCompleted: () -> Unit,
+    onBack: () -> Unit
+) {
+    val context = LocalContext.current
+    val vm = remember { CognitiveViewModel() }
+    val state by vm.uiState.collectAsState()
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Listen for events
+    LaunchedEffect(vm) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            vm.events.collect { event ->
+                when (event) {
+                    is CognitiveEvent.AllTasksCompleted -> {
+                        onCompleted()
+                    }
+                    else -> {}
+                }
+            }
+        }
+    }
+
+    // Main screen switcher
+    when (state.currentTask) {
+        0 -> {
+            LaunchedEffect(Unit) {
+                vm.startTask(1)
+            }
+        }
+
+        1 -> {
+            // Cube Drawing Task
+            CubeDrawingScreen(
+                state = state,
+                onPlayInstruction = {
+                    vm.playInstruction(
+                        context,
+                        "Draw a 3D cube using your finger on the screen. Try to make it look like a cube with depth."
+                    )
+                },
+                elapsedTime = state.elapsedTime,
+                onPathsChanged = vm::updatePaths,
+                onClear = vm::clearCanvas,
+                onNext = { bitmap ->
+                    vm.submitCubeDrawing(bitmap)
+                    vm.startTask(2)
+                },
+                onBack = onBack
+            )
+        }
+
+        2 -> {
+            // Trail Making Task
+            TrailMakingScreen(
+                state = state,
+                onPlayInstruction = {
+                    vm.playInstruction(
+                        context,
+                        "Connect the circles in order, alternating between numbers and letters: 1-A-2-B-3-C-4-D-5-E"
+                    )
+                },
+                elapsedTime = state.elapsedTime,
+                touchSequence = state.touchSequence,
+                expectedSequence = state.expectedSequence,
+                onNodeTouched = vm::registerNodeTouch,
+                onNext = { bitmap ->
+                    vm.submitTrailMaking(bitmap)
+                    vm.startTask(3)
+                },
+                onBack = {
+                    vm.startTask(1)
+                }
+            )
+        }
+
+        3 -> {
+            // Clock Drawing Task
+            ClockDrawingScreen(
+                state = state,
+                onPlayInstruction = {
+                    vm.playInstruction(
+                        context,
+                        "Select the clock that shows 11:10 (ten past eleven)."
+                    )
+                },
+                elapsedTime = state.elapsedTime,
+                onNext = { selectedClock ->
+                    vm.submitClockDrawing(selectedClock)
+                    vm.startTask(4)
+                },
+                onBack = {
+                    vm.startTask(2)
+                }
+            )
+        }
+
+        4 -> {
+            // Animal Naming Task
+            AnimalNamingScreen(
+                state = state,
+                currentQuestion = state.currentAnimalQuestion,
+                onPlayInstruction = {
+                    vm.playInstruction(
+                        context,
+                        "Several pictures of animals will appear. Tap on the correct name for each one."
+                    )
+                },
+                elapsedTime = state.elapsedTime,
+                onAnswerSelected = { answer ->
+                    vm.submitAnimalAnswer(answer)
+                },
+                onNext = {
+                    // Move to next animal question
+                    vm.nextAnimalQuestion()
+                },
+                onSubmit = {
+                    vm.submitAnimalNaming()
+                    // Don't call onCompleted here, wait for event
+                },
+                onBack = {
+                    if (state.currentAnimalQuestion > 0) {
+                        vm.previousAnimalQuestion()
+                    } else {
+                        vm.startTask(3)
+                    }
+                }
+            )
+        }
+    }
+
+    // Error dialog (only once)
+    if (state.error != null) {
+        AlertDialog(
+            onDismissRequest = { /* Do nothing */ },
+            title = { Text("Error") },
+            text = { Text(state.error!!) },
+            confirmButton = {
+                Button(onClick = { vm.reset() }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+}
+
+// NEW: Cognitive Results screen
+@Composable
+fun CognitiveResultsRoute(
+    onViewResults: () -> Unit,
+    onBack: () -> Unit,
+    onRedoTest: () -> Unit
+) {
+    CognitiveResultsScreen(
+        onViewResults = onViewResults,
+        onBack = onBack,
+        onRedoTest = onRedoTest
+    )
+}
+
+@Composable
+fun NewsRoute(
+    onBack: () -> Unit
+) {
+    val viewModel = remember { NewsViewModel() }
+    val state by viewModel.uiState.collectAsState()
+
+    NewsScreen(
+        state = state,
+        onBack = onBack,
+        onRefresh = viewModel::loadNews,
+        onGenerateNews = { viewModel.generateNews() },
+        onSetAudience = viewModel::setAudience
+    )
+}
+
+@Composable
+fun AddPatientRoute(
+    onBack: () -> Unit,
+    onPatientCreated: () -> Unit
+) {
+    AddPatientScreen(
+        onBack = onBack,
+        onPatientCreated = onPatientCreated
+    )
+}
+
+
+@Composable
+
+fun ResultsRoute(
+    onBack: () -> Unit,
+    onContactDoctor: () -> Unit
+) {
+    val vm = remember { ResultsViewModel() }
+    val state by vm.ui.collectAsState()
+    ResultsScreen(
+        state = state,
+        onNavigateHome = onBack,
+        onContactDoctor = onContactDoctor,
+        onLoadResults = vm::loadResults
+    )
 }
 
