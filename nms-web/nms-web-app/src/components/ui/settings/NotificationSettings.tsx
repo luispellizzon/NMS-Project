@@ -11,25 +11,31 @@ import {
 
 export default function NotificationSettings() {
   const { user } = useAuth();
-  const [emailNotifications, setEmailNotifications] = useState({
+
+  // Define defaults to reuse them for reset or merging
+  const defaultEmailSettings = {
     newPatient: true,
     riskAlert: true,
     weeklyReport: false,
     systemUpdates: true,
-  });
+  };
 
-  const [pushNotifications, setPushNotifications] = useState({
+  const defaultPushSettings = {
     newPatient: true,
     riskAlert: true,
     messages: false,
-  });
+  };
 
-  const [inAppNotifications, setInAppNotifications] = useState({
+  const defaultInAppSettings = {
     newPatient: true,
     riskAlert: true,
     messages: true,
     mentions: true,
-  });
+  };
+
+  const [emailNotifications, setEmailNotifications] = useState(defaultEmailSettings);
+  const [pushNotifications, setPushNotifications] = useState(defaultPushSettings);
+  const [inAppNotifications, setInAppNotifications] = useState(defaultInAppSettings);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
@@ -44,23 +50,23 @@ export default function NotificationSettings() {
       try {
         const settings = await getNotificationSettings(user.uid);
         if (settings) {
-          setEmailNotifications(settings.email || {
-            newPatient: true,
-            riskAlert: true,
-            weeklyReport: false,
-            systemUpdates: true,
-          });
-          setPushNotifications(settings.push || {
-            newPatient: true,
-            riskAlert: true,
-            messages: false,
-          });
-          setInAppNotifications(settings.inApp || {
-            newPatient: true,
-            riskAlert: true,
-            messages: true,
-            mentions: true,
-          });
+          // Use 'as any' to bypass the Record<string, boolean> mismatch.
+          // Merging with defaults (...defaultX, ...settings.X) is safer to prevent undefined keys.
+          
+          setEmailNotifications((prev) => ({
+            ...prev,
+            ...(settings.email || {})
+          } as any));
+
+          setPushNotifications((prev) => ({
+            ...prev,
+            ...(settings.push || {})
+          } as any));
+
+          setInAppNotifications((prev) => ({
+            ...prev,
+            ...(settings.inApp || {})
+          } as any));
         }
       } catch (error) {
         console.error('Error loading notification settings:', error);
@@ -71,6 +77,7 @@ export default function NotificationSettings() {
 
     loadSettings();
   }, [user]);
+
 
   const handleSave = async () => {
     if (!user) return;
