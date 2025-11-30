@@ -54,8 +54,9 @@ logging.info("Whisper model loaded successfully.")
 
 # --- Pydantic Models for API Request Validation ---
 class TranscriptionRequest(BaseModel):
-    audioUrl: HttpUrl  # Pydantic validates this is a valid URL
+    userId: str
     documentId: str
+    audioUrl: HttpUrl  # Pydantic validates this is a valid URL
 
 class ProcessAssessmentJob(BaseModel):
     userId: str
@@ -175,6 +176,7 @@ async def process_assessment_document(user_id: str, assessment_id: str):
             batch_updates[f"content.{task_key}.result.error"] = str(e)
 
     batch_updates["totalScore"] = total_score
+    batch_updates["aiAnalysis"] = "processed"
     doc_ref.update(batch_updates)
 
 async def _bg_process_assessment(job: ProcessAssessmentJob):
@@ -193,7 +195,7 @@ async def process_transcription(req: TranscriptionRequest):
     Downloads audio from a URL, runs transcription, and updates Firestore.
     Designed to be run as a background task.
     """
-    document_ref = db.collection("speech_assessments").document(req.documentId)
+    document_ref = db.collection("users").document(req.userId).collection("image_description_assessment").document(req.documentId)
     tmp_file_path = None
     
     try:
@@ -221,7 +223,8 @@ async def process_transcription(req: TranscriptionRequest):
         # 4. Update the Firestore document with the result
         document_ref.update({
             "transcription": transcribed_text,
-            "status": "transcribed" # As per your mobile app's data model
+            "status": "transcribed", # As per your mobile app's data model
+            "aiAnalysis": "processed"
         })
         logging.info(f"[{req.documentId}] Firestore document updated successfully.")
 

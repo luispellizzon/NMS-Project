@@ -7,27 +7,16 @@ import kotlinx.coroutines.tasks.await
 import android.util.Log
 
 /**
- * Patient data model - represents a patient managed by a caregiver
+ * Patient reference data model - stored in caregiver's patients subcollection
+ * Links to the full UserProfile document in users/{patientId}
  */
-data class Patient(
-    val id: String = "",
+data class PatientReference(
+    val patientId: String = "",           // UID of the patient's user document
     val fullName: String = "",
     val dateOfBirth: String = "",
     val email: String? = null,
     val caregiverId: String = "",
-    val createdAt: Timestamp = Timestamp.now(),
-
-    // Test results (mocked for now, will be real later)
-    val riskLevel: String = "Not assessed",  // "Low", "Medium", "High", "Not assessed"
-    val speechScore: Int? = null,
-    val cognitiveScore: Int? = null,
-    val memoryScore: Int? = null,
-
-    // Assessment completion flags
-    val hasCompletedSpeech: Boolean = false,
-    val hasCompletedCognitive: Boolean = false,
-    val hasCompletedMemory: Boolean = false,
-    val hasCompletedRiskAssessment: Boolean = false
+    val addedAt: Timestamp = Timestamp.now()
 )
 
 /**
@@ -47,35 +36,67 @@ class PatientRepository private constructor(
 
     /**
      * Add a new patient to the caregiver's patient list
+     * Creates a full UserProfile document for the patient and stores a reference in caregiver's subcollection
      */
     suspend fun addPatient(
         fullName: String,
         dateOfBirth: String,
         email: String?
-    ): Patient {
+    ): PatientReference {
         val caregiverId = auth.currentUser?.uid
             ?: throw Exception("Caregiver not authenticated")
 
         try {
-            // Create a new patient document
-            val patientRef = firestore.collection(COLLECTION_USERS)
-                .document(caregiverId)
-                .collection(SUBCOLLECTION_PATIENTS)
-                .document()
+            // Step 1: Generate a new UID for the patient
+            val patientId = firestore.collection(COLLECTION_USERS).document().id
 
-            val patient = Patient(
-                id = patientRef.id,
+            // Step 2: Create a full UserProfile document for the patient (like normal patient registration)
+            val patientUserProfile = UserProfile(
+                uid = patientId,
+                fullName = fullName,
+                dateOfBirth = dateOfBirth,
+                email = email ?: "",
+                role = "patient",  // Patients created by caregivers are regular patients
+                createdAt = Timestamp.now(),
+                currentTask = UserTasks.RISK_ASSESSMENT.taskName,
+                hasCompletedRiskAssessment = false,
+                hasCompletedImageDescription = false,
+                hasCompletedSpeechAssessment = false,
+                hasCompletedMemoryAssessment = false,
+                hasCompletedCognitiveAssessment = false,
+                mmseScore = 0,
+                location = "",
+                dementiaRisk = "",
+                hasCompletedAiAnalysis = false
+            )
+
+            // Save the full patient user profile to users/{patientId}
+            firestore.collection(COLLECTION_USERS)
+                .document(patientId)
+                .set(patientUserProfile)
+                .await()
+
+            Log.d(TAG, "Created full user profile for patient: $patientId")
+
+            // Step 3: Create a reference in the caregiver's patients subcollection
+            val patientReference = PatientReference(
+                patientId = patientId,
                 fullName = fullName,
                 dateOfBirth = dateOfBirth,
                 email = email,
                 caregiverId = caregiverId,
-                createdAt = Timestamp.now()
+                addedAt = Timestamp.now()
             )
 
-            patientRef.set(patient).await()
+            firestore.collection(COLLECTION_USERS)
+                .document(caregiverId)
+                .collection(SUBCOLLECTION_PATIENTS)
+                .document(patientId)  // Use same patientId as document ID for easy lookup
+                .set(patientReference)
+                .await()
 
-            Log.d(TAG, "Patient added successfully: ${patient.fullName}")
-            return patient
+            Log.d(TAG, "Patient reference added to caregiver: ${patientReference.fullName}")
+            return patientReference
 
         } catch (e: Exception) {
             Log.e(TAG, "Error adding patient", e)
@@ -84,24 +105,23 @@ class PatientRepository private constructor(
     }
 
     /**
-     * Get all patients for the current caregiver
+     * Get all patient references for the current caregiver
      */
-    suspend fun getCaregiverPatients(): List<Patient> {
+    suspend fun getCaregiverPatients(): List<PatientReference> {
         val caregiverId = auth.currentUser?.uid
             ?: throw Exception("Caregiver not authenticated")
 
         Log.d(TAG, "Fetching patients for caregiver: $caregiverId")
-        Log.d("SUBCOLLECTION_PATIENTS", SUBCOLLECTION_PATIENTS)
         return try {
             val snapshot = firestore.collection(COLLECTION_USERS)
                 .document(caregiverId)
                 .collection(SUBCOLLECTION_PATIENTS)
                 .get()
                 .await()
-            Log.d(TAG, "Fetched ${snapshot.size()} patients")
+            Log.d(TAG, "Fetched ${snapshot.size()} patient references")
 
             snapshot.documents.mapNotNull {
-                it.toObject(Patient::class.java)
+                it.toObject(PatientReference::class.java)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error fetching patients", e)
@@ -110,9 +130,9 @@ class PatientRepository private constructor(
     }
 
     /**
-     * Get a specific patient by ID
+     * Get a specific patient's reference by ID from caregiver's subcollection
      */
-    suspend fun getPatient(patientId: String): Patient? {
+    suspend fun getPatientReference(patientId: String): PatientReference? {
         val caregiverId = auth.currentUser?.uid
             ?: throw Exception("Caregiver not authenticated")
 
@@ -124,57 +144,31 @@ class PatientRepository private constructor(
                 .get()
                 .await()
 
-            snapshot.toObject(Patient::class.java)
+            snapshot.toObject(PatientReference::class.java)
         } catch (e: Exception) {
-            Log.e(TAG, "Error fetching patient", e)
+            Log.e(TAG, "Error fetching patient reference", e)
             null
         }
     }
 
     /**
-     * Update patient test results (for when assessments are completed)
+     * Get the full UserProfile for a patient
+     * This fetches the complete patient data from users/{patientId}
      */
-    suspend fun updatePatientResults(
-        patientId: String,
-        riskLevel: String? = null,
-        speechScore: Int? = null,
-        cognitiveScore: Int? = null,
-        memoryScore: Int? = null,
-        hasCompletedSpeech: Boolean? = null,
-        hasCompletedCognitive: Boolean? = null,
-        hasCompletedMemory: Boolean? = null,
-        hasCompletedRiskAssessment: Boolean? = null
-    ) {
-        val caregiverId = auth.currentUser?.uid
-            ?: throw Exception("Caregiver not authenticated")
+    suspend fun getPatientProfile(patientId: String): UserProfile? {
+        return try {
+            val snapshot = firestore.collection(COLLECTION_USERS)
+                .document(patientId)
+                .get()
+                .await()
 
-        try {
-            val updates = mutableMapOf<String, Any>()
-
-            riskLevel?.let { updates["riskLevel"] = it }
-            speechScore?.let { updates["speechScore"] = it }
-            cognitiveScore?.let { updates["cognitiveScore"] = it }
-            memoryScore?.let { updates["memoryScore"] = it }
-            hasCompletedSpeech?.let { updates["hasCompletedSpeech"] = it }
-            hasCompletedCognitive?.let { updates["hasCompletedCognitive"] = it }
-            hasCompletedMemory?.let { updates["hasCompletedMemory"] = it }
-            hasCompletedRiskAssessment?.let { updates["hasCompletedRiskAssessment"] = it }
-
-            if (updates.isNotEmpty()) {
-                firestore.collection(COLLECTION_USERS)
-                    .document(caregiverId)
-                    .collection(SUBCOLLECTION_PATIENTS)
-                    .document(patientId)
-                    .update(updates)
-                    .await()
-
-                Log.d(TAG, "Patient results updated for $patientId")
-            }
+            snapshot.toObject(UserProfile::class.java)
         } catch (e: Exception) {
-            Log.e(TAG, "Error updating patient results", e)
-            throw e
+            Log.e(TAG, "Error fetching patient profile", e)
+            null
         }
     }
+
 
     /**
      * Delete a patient

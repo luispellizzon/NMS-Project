@@ -57,7 +57,7 @@ sealed class SpeechTaskEvent {
 }
 
 class SpeechTaskViewModel(
-    private val repository: SpeechAssessmentsTasks = SpeechAssessmentsTasks.instance,
+    private val repository: SpeechAssessmentsTasksRepository = SpeechAssessmentsTasksRepository.instance,
     private val storage: StorageRepository = StorageRepository.instance,
     private val auth: AuthRepository = AuthRepository.instance
 ) : ViewModel() {
@@ -474,8 +474,8 @@ class SpeechTaskViewModel(
                 // Fire-and-forget the local API call
                 launch(Dispatchers.IO)  {
                     try {
-                        val userId = auth.currentUser()?.uid // add a helper or reuse auth.currentUser!!.uid
-                        val resp = callProcessAssessmentRetry(userId!!, assessmentId)
+                        val userId = PatientSessionManager.getActiveUserId()
+                        val resp = callProcessAssessmentRetry(userId, assessmentId)
 
                         Log.d(TAG, "Transcription kickoff: ${resp?.status} ${resp?.message}")
                     } catch (e: Exception) {

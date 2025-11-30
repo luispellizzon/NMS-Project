@@ -19,7 +19,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { pdf } from '@react-pdf/renderer';
 import { PatientReportPDF } from '@/components/ui/patients/PatientReportPDF';
-import { PatientProfile } from '@/lib/mock_data';
+import { PatientProfile } from '@/types/patient';
 
 const ITEMS_PER_PAGE = 5;
 
@@ -65,7 +65,7 @@ export default function PatientsPage() {
   const [error, setError] = useState('');
   const [doctorId, setDoctorId] = useState<string>('');
   const [assignedPatientIds, setAssignedPatientIds] = useState<string[]>([]); // State for assigned IDs
-
+  console.log("All Patients: ", allPatients)
   // --- STATE FOR ACTIONS ---
   const [patientToView, setPatientToView] = useState<Patient | null>(null);
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
@@ -115,24 +115,49 @@ export default function PatientsPage() {
         if (!querySnapshot.empty) {
           const patientData = querySnapshot.docs[0].data();
 
-          // Fetch risk assessment data for this patient
+          // Fetch risk assessment data for this patient (for age, gender from questionnaire)
           const riskAssessment = await getPatientRiskAssessment(patientId);
+
+          // Calculate risk score from MMSE score (0-30 scale)
+          // Convert to 0-10 scale: lower MMSE = higher risk
+          const mmseScore = patientData.mmseScore || 0;
+          const riskScore = mmseScore > 0 ? Math.round((30 - mmseScore) / 3 * 10) / 10 : 0;
+
+          // Map dementiaRisk string to RiskLevel enum
+          let riskLevel: 'High' | 'Moderate' | 'Low' = 'Low';
+          const dementiaRisk = patientData.dementiaRisk || '';
+
+          if (dementiaRisk.includes('High') || dementiaRisk.includes('Severe') || mmseScore < 18) {
+            riskLevel = 'High';
+          } else if (dementiaRisk.includes('Moderate') || dementiaRisk.includes('Mild') || mmseScore < 24) {
+            riskLevel = 'Moderate';
+          } else {
+            riskLevel = 'Low';
+          }
+
+          // Calculate cognitive and speech scores from MMSE components (approximation)
+          // Since you don't have separate scores, use MMSE as basis (0-30 -> 0-5 scale)
+          const cognitiveScore = mmseScore > 0 ? Math.round((mmseScore / 30) * 5 * 10) / 10 : 0;
+          const speechScore = cognitiveScore; // Same approximation for now
 
           patientDetails.push({
             id: patientId,
             name: patientData.fullName || 'Unknown',
+            // Age and gender come from risk assessment questionnaire
             age: riskAssessment?.age || 0,
             gender: riskAssessment?.gender || 'Female',
             avatarUrl: '/images/Avatar.jpg',
-            riskScore: riskAssessment?.riskScore || 0,
-            riskLevel: riskAssessment?.riskLevel || 'Low',
-            trend: riskAssessment?.trend || 'Stable',
+            // Risk score calculated from MMSE
+            riskScore,
+            riskLevel,
+            trend: patientData.trend || 'Stable',
+            // Assessment scores derived from MMSE
             assessments: {
-              cognitive: riskAssessment?.assessments?.cognitive || 0,
-              speech: riskAssessment?.assessments?.speech || 0,
+              cognitive: cognitiveScore,
+              speech: speechScore,
             },
-            lastCheck: riskAssessment?.lastCheck || new Date().toISOString().split('T')[0],
-            nextAppointment: riskAssessment?.nextAppointment || 'Not set',
+            lastCheck: new Date().toISOString().split('T')[0],
+            nextAppointment: 'Not set',
           });
         }
       }

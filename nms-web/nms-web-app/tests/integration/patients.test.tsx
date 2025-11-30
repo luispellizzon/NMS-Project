@@ -34,14 +34,14 @@ vi.mock('firebase/firestore', async () => {
   const actual = await vi.importActual('firebase/firestore');
 
   const mockPatientData: Record<string, any> = {
-    '1': { fullName: 'Jenny Wilson' },
-    '2': { fullName: 'Robert Fox' },
-    '3': { fullName: 'Wade Warren' },
-    '4': { fullName: 'Esther Howard' },
-    '5': { fullName: 'Cameron Williamson' },
-    '6': { fullName: 'Brooklyn Simmons' },
-    '7': { fullName: 'Eleanor Pena' },
-    '8': { fullName: 'Kristin Watson' },
+    '1': { fullName: 'Jenny Wilson', mmseScore: 15, dementiaRisk: 'High' },
+    '2': { fullName: 'Robert Fox', mmseScore: 16, dementiaRisk: 'High' },
+    '3': { fullName: 'Wade Warren', mmseScore: 17, dementiaRisk: 'High' },
+    '4': { fullName: 'Esther Howard', mmseScore: 20, dementiaRisk: 'Moderate' },
+    '5': { fullName: 'Cameron Williamson', mmseScore: 22, dementiaRisk: 'Moderate' },
+    '6': { fullName: 'Brooklyn Simmons', mmseScore: 23, dementiaRisk: 'Moderate' },
+    '7': { fullName: 'Eleanor Pena', mmseScore: 27, dementiaRisk: 'Low' },
+    '8': { fullName: 'Kristin Watson', mmseScore: 14, dementiaRisk: 'High' },
   };
 
   return {
@@ -79,14 +79,14 @@ vi.mock('@/lib/firebase/firestore-service', () => ({
   getDoctorPatients: vi.fn().mockResolvedValue(['1', '2', '3', '4', '5', '6', '7', '8']),
   getPatientRiskAssessment: vi.fn((patientId: string) => {
     const riskData: Record<string, any> = {
-      '1': { age: 35, gender: 'Female', riskScore: 85, riskLevel: 'High', trend: 'Increasing', assessments: { cognitive: 82, speech: 88 }, lastCheck: '2025-01-10', nextAppointment: '2025-02-10' },
-      '2': { age: 40, gender: 'Male', riskScore: 78, riskLevel: 'High', trend: 'Stable', assessments: { cognitive: 75, speech: 81 }, lastCheck: '2025-01-08', nextAppointment: '2025-02-08' },
-      '3': { age: 50, gender: 'Male', riskScore: 82, riskLevel: 'High', trend: 'Increasing', assessments: { cognitive: 80, speech: 84 }, lastCheck: '2025-01-05', nextAppointment: '2025-02-05' },
-      '4': { age: 33, gender: 'Female', riskScore: 55, riskLevel: 'Moderate', trend: 'Stable', assessments: { cognitive: 52, speech: 58 }, lastCheck: '2025-01-12', nextAppointment: '2025-02-12' },
-      '5': { age: 37, gender: 'Male', riskScore: 48, riskLevel: 'Moderate', trend: 'Decreasing', assessments: { cognitive: 45, speech: 51 }, lastCheck: '2025-01-09', nextAppointment: '2025-02-09' },
-      '6': { age: 30, gender: 'Female', riskScore: 52, riskLevel: 'Moderate', trend: 'Stable', assessments: { cognitive: 50, speech: 54 }, lastCheck: '2025-01-11', nextAppointment: '2025-02-11' },
-      '7': { age: 45, gender: 'Female', riskScore: 25, riskLevel: 'Low', trend: 'Stable', assessments: { cognitive: 20, speech: 30 }, lastCheck: '2025-01-07', nextAppointment: '2025-02-07' },
-      '8': { age: 32, gender: 'Female', riskScore: 88, riskLevel: 'High', trend: 'Increasing', assessments: { cognitive: 85, speech: 91 }, lastCheck: '2025-01-06', nextAppointment: '2025-02-06' },
+      '1': { age: 35, gender: 'Female', riskScore: 8.5, riskLevel: 'High', trend: 'Increasing', assessments: { cognitive: 8.2, speech: 8.8 }, lastCheck: '2025-01-10', nextAppointment: '2025-02-10' },
+      '2': { age: 40, gender: 'Male', riskScore: 7.8, riskLevel: 'High', trend: 'Stable', assessments: { cognitive: 7.5, speech: 8.1 }, lastCheck: '2025-01-08', nextAppointment: '2025-02-08' },
+      '3': { age: 50, gender: 'Male', riskScore: 8.2, riskLevel: 'High', trend: 'Increasing', assessments: { cognitive: 8.0, speech: 8.4 }, lastCheck: '2025-01-05', nextAppointment: '2025-02-05' },
+      '4': { age: 33, gender: 'Female', riskScore: 5.5, riskLevel: 'Moderate', trend: 'Stable', assessments: { cognitive: 5.2, speech: 5.8 }, lastCheck: '2025-01-12', nextAppointment: '2025-02-12' },
+      '5': { age: 37, gender: 'Male', riskScore: 4.8, riskLevel: 'Moderate', trend: 'Decreasing', assessments: { cognitive: 4.5, speech: 5.1 }, lastCheck: '2025-01-09', nextAppointment: '2025-02-09' },
+      '6': { age: 30, gender: 'Female', riskScore: 5.2, riskLevel: 'Moderate', trend: 'Stable', assessments: { cognitive: 5.0, speech: 5.4 }, lastCheck: '2025-01-11', nextAppointment: '2025-02-11' },
+      '7': { age: 45, gender: 'Female', riskScore: 2.5, riskLevel: 'Low', trend: 'Stable', assessments: { cognitive: 2.0, speech: 3.0 }, lastCheck: '2025-01-07', nextAppointment: '2025-02-07' },
+      '8': { age: 32, gender: 'Female', riskScore: 8.8, riskLevel: 'High', trend: 'Increasing', assessments: { cognitive: 8.5, speech: 9.1 }, lastCheck: '2025-01-06', nextAppointment: '2025-02-06' },
     };
     return Promise.resolve(riskData[patientId] || null);
   }),

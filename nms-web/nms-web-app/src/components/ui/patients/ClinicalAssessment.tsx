@@ -28,9 +28,14 @@ export default function ClinicalAssessment({ patientId }: ClinicalAssessmentProp
   // Fetch existing assessment on component mount
   useEffect(() => {
     const fetchAssessment = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
-        const existingAssessment = await getClinicalAssessment(patientId);
+        const existingAssessment = await getClinicalAssessment(user.uid, patientId);
         if (existingAssessment) {
           setAssessment(existingAssessment);
         } else {
@@ -46,7 +51,7 @@ export default function ClinicalAssessment({ patientId }: ClinicalAssessmentProp
     };
 
     fetchAssessment();
-  }, [patientId]);
+  }, [patientId, user]);
 
   const handleEdit = () => {
     if (assessment) {
@@ -93,7 +98,7 @@ export default function ClinicalAssessment({ patientId }: ClinicalAssessmentProp
       });
 
       // Fetch the updated assessment
-      const updatedAssessment = await getClinicalAssessment(patientId);
+      const updatedAssessment = await getClinicalAssessment(user.uid, patientId);
       setAssessment(updatedAssessment);
       setIsEditing(false);
       setSuccessMessage('Assessment saved successfully');

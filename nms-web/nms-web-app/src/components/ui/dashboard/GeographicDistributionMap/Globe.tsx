@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { patientLocations, PatientLocation } from '@/lib/mock_data';
+import { PatientLocation } from '@/types/location';
 
 const latLonToVector3 = (
   lat: number,
@@ -20,14 +20,17 @@ const latLonToVector3 = (
 
 type GlobeProps = {
   targetLocation: PatientLocation | null;
+  patientLocations: PatientLocation[];
   onHover: (data: PatientLocation | null, pos: { x: number; y: number }) => void;
 };
 
-export default function Globe({ targetLocation, onHover }: GlobeProps) {
+export default function Globe({ targetLocation, patientLocations, onHover }: GlobeProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const isInitialized = useRef(false);
   const targetPositionRef = useRef<THREE.Vector3 | null>(null);
   const mousePosRef = useRef({ x: 0, y: 0 });
+  const patientMeshesRef = useRef<THREE.Mesh[]>([]);
+  const globeRef = useRef<THREE.Mesh | null>(null);
 
   const onHoverRef = useRef(onHover);
 
@@ -44,6 +47,33 @@ export default function Globe({ targetLocation, onHover }: GlobeProps) {
       );
     }
   }, [targetLocation]);
+
+  // Update markers when patientLocations change
+  useEffect(() => {
+    if (!globeRef.current) return;
+
+    // Remove old markers
+    patientMeshesRef.current.forEach(mesh => {
+      globeRef.current?.remove(mesh);
+      mesh.geometry.dispose();
+      (mesh.material as THREE.Material).dispose();
+    });
+    patientMeshesRef.current = [];
+
+    // Add new markers
+    const newMeshes: THREE.Mesh[] = patientLocations.map((loc) => {
+      const marker = new THREE.Mesh(
+        new THREE.SphereGeometry(0.015 * loc.scale, 20, 20),
+        new THREE.MeshBasicMaterial({ color: loc.color })
+      );
+      marker.position.copy(latLonToVector3(loc.lat, loc.lon, 1.01));
+      marker.userData = loc;
+      globeRef.current?.add(marker);
+      return marker;
+    });
+
+    patientMeshesRef.current = newMeshes;
+  }, [patientLocations]);
 
   useEffect(() => {
     if (!mountRef.current || isInitialized.current) return;
@@ -78,7 +108,9 @@ export default function Globe({ targetLocation, onHover }: GlobeProps) {
       })
     );
     scene.add(globe);
+    globeRef.current = globe;
 
+    // Initial markers will be added by the patientLocations useEffect
     const patientMeshes: THREE.Mesh[] = patientLocations.map((loc) => {
       const marker = new THREE.Mesh(
         new THREE.SphereGeometry(0.015 * loc.scale, 20, 20),
@@ -89,6 +121,7 @@ export default function Globe({ targetLocation, onHover }: GlobeProps) {
       globe.add(marker);
       return marker;
     });
+    patientMeshesRef.current = patientMeshes;
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -124,7 +157,7 @@ export default function Globe({ targetLocation, onHover }: GlobeProps) {
 
       controls.update();
       raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(patientMeshes);
+      const intersects = raycaster.intersectObjects(patientMeshesRef.current);
 
       if (intersects.length > 0) {
         const loc = intersects[0].object.userData as PatientLocation;

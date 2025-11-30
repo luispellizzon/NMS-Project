@@ -1,21 +1,14 @@
 package com.example.nms_mobile.ui.feature.memory
 
 import android.content.Context
-import android.os.Build
-import android.speech.tts.TextToSpeech
-import android.speech.tts.UtteranceProgressListener
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nms_mobile.data.*
 import com.example.nms_mobile.services.TTSManager
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.util.Locale
-import java.util.UUID
-import kotlin.text.get
 
 data class MemoryTestUiState(
     val testState: MemoryTestState = MemoryTestState.IDLE,
@@ -307,7 +300,7 @@ class MemoryTestViewModel(
                 val memoryTest = MemoryTest(
                     id = testId,
                     userId = "", // Will be set by repository
-                    score = state.correctAnswers,  // 0-7 points
+                    totalScore = state.correctAnswers,  // 0-7 points
                     totalQuestions = state.totalQuestions,
                     completionTime = completionTime,
                     status = "completed"
@@ -363,4 +356,5 @@ class MemoryTestViewModel(
         _uiState.update { it.copy(isInstructionPlaying = false) }
     }
 }
+
 

@@ -1,5 +1,6 @@
 package com.example.nms_mobile.ui.feature.cognitive
 
+import android.annotation.SuppressLint
 import androidx.compose.ui.graphics.nativeCanvas
 import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
@@ -7,10 +8,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,12 +28,15 @@ import androidx.compose.ui.unit.sp
 import com.example.nms_mobile.ui.TealPrimary
 import com.example.nms_mobile.ui.components.CustomTopAppBar
 import kotlin.math.sqrt
+import androidx.core.graphics.createBitmap
 
 /**
  * Trail Making Test - Responsive Version (Supports any screen size)
  */
 @Composable
 fun TrailMakingScreen(
+    state: CognitiveUiState,
+    onPlayInstruction: () -> Unit,
     elapsedTime: Long,
     touchSequence: List<String>,
     expectedSequence: List<String>,
@@ -86,7 +91,10 @@ fun TrailMakingScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Instruction card
-            InstructionCard()
+            InstructionCard(
+                state = state,
+                onPlayInstruction = onPlayInstruction
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -218,7 +226,7 @@ fun TrailMakingScreen(
 
                 Button(
                     onClick = {
-                        val bitmap = Bitmap.createBitmap(900, 1200, Bitmap.Config.ARGB_8888)
+                        val bitmap = createBitmap(900, 1200)
                         onNext(bitmap)
                     },
                     modifier = Modifier.weight(1f),
@@ -235,7 +243,10 @@ private var lastCanvasSize by mutableStateOf<androidx.compose.ui.geometry.Size?>
 
 /** Instruction Card UI */
 @Composable
-private fun InstructionCard() {
+private fun InstructionCard(
+    state: CognitiveUiState,
+    onPlayInstruction: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(Color(0xFFE0F2F1)),
@@ -247,12 +258,20 @@ private fun InstructionCard() {
                 shape = RoundedCornerShape(8.dp),
                 color = Color(0xFF00796B)
             ) {
-                Icon(
-                    imageVector = Icons.Default.VolumeUp,
-                    contentDescription = "Instructions",
-                    tint = Color.White,
-                    modifier = Modifier.padding(12.dp)
-                )
+                IconButton(
+                    onClick = onPlayInstruction,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(TealPrimary, CircleShape),
+                    enabled = !state.isInstructionPlaying
+                ){
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                        contentDescription = "Play instructions",
+                        tint = Color.White,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
             }
             Spacer(modifier = Modifier.width(12.dp))
             Text(
@@ -269,7 +288,8 @@ private fun InstructionCard() {
 data class Node(val id: String, val xPercent: Float, val yPercent: Float)
 
 /** Format MM:SS */
-private fun formatTime(seconds: Long): String {
+@SuppressLint("DefaultLocale")
+fun formatTime(seconds: Long): String {
     val mins = seconds / 60
     val secs = seconds % 60
     return String.format("%02d:%02d", mins, secs)

@@ -9,10 +9,10 @@ data class MemoryTest(
     val id: String = "",
     val userId: String = "",
     val testType: String = "memory_mcq",
-    val score: Int = 0,              // Points earned (0-7)
+    val totalScore: Int = 0,              // Points earned (0-7)
     val totalQuestions: Int = 7,     // Total possible points
     val completionTime: Long = 0,    // In seconds
-    val timestamp: Timestamp = Timestamp.now(),
+    val startedAt: Timestamp = Timestamp.now(),
     val status: String = "completed"
 )
 

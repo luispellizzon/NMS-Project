@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import AppointmentsList from '../AppointmentsList';
-import type { Appointment } from '@/lib/mock_data';
+import type { Appointment } from '@/lib/mock_data'; // Appointment type is still in mock_data (appointments not yet migrated)
 
 describe('AppointmentsList', () => {
   const mockAppointments: Appointment[] = [

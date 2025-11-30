@@ -1,7 +1,7 @@
 'use client';
 
 import { forwardRef } from 'react';
-import { PatientLocation } from '@/lib/mock_data';
+import { PatientLocation } from '@/types/location';
 
 type TooltipProps = {
   visible: boolean;
