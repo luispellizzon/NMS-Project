@@ -40,7 +40,7 @@ interface HuggingFaceApi {
 // Retrofit Client
 // -----------------------------
 object HuggingFaceApiClient {
-    private const val BASE_URL = "https://blackjesus420-nms-project.hf.space"
+    private const val BASE_URL = "https://JDrizzle-nms-project.hf.space"
 
     private val okHttp = OkHttpClient.Builder()
         .connectTimeout(20, TimeUnit.SECONDS)
