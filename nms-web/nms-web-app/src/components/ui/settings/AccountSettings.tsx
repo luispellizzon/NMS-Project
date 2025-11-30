@@ -38,9 +38,11 @@ export default function AccountSettings() {
           setLanguage(prefs.language || 'en');
           setTimezone(prefs.timezone || 'America/New_York');
           setDateFormat(prefs.dateFormat || 'MM/DD/YYYY');
-          setProfileVisibility(prefs.profileVisibility ?? true);
-          setActivityStatus(prefs.activityStatus ?? true);
-          setDataSharing(prefs.dataSharing ?? false);
+          if (prefs.privacy) {
+            setProfileVisibility(prefs.privacy.profileVisibility ?? true);
+            setActivityStatus(prefs.privacy.activityStatus ?? true);
+            setDataSharing(prefs.privacy.dataSharing ?? false);
+          }
         }
       } catch (error) {
         console.error('Error loading preferences:', error);
@@ -64,9 +66,11 @@ export default function AccountSettings() {
         language,
         timezone,
         dateFormat,
-        profileVisibility,
-        activityStatus,
-        dataSharing,
+        privacy: {
+          profileVisibility,
+          activityStatus,
+          dataSharing,
+        },
       });
 
       setSuccessMessage('Account settings saved successfully!');
@@ -130,10 +134,11 @@ export default function AccountSettings() {
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
+            <label htmlFor="language" className="block text-sm font-medium text-foreground mb-2">
               Language
             </label>
             <select
+              id="language"
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
               className="w-full md:w-1/2 px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#0d7377]"
@@ -146,10 +151,11 @@ export default function AccountSettings() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
+            <label htmlFor="timezone" className="block text-sm font-medium text-foreground mb-2">
               Timezone
             </label>
             <select
+              id="timezone"
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
               className="w-full md:w-1/2 px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#0d7377]"
@@ -164,10 +170,11 @@ export default function AccountSettings() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
+            <label htmlFor="date-format" className="block text-sm font-medium text-foreground mb-2">
               Date Format
             </label>
             <select
+              id="date-format"
               value={dateFormat}
               onChange={(e) => setDateFormat(e.target.value)}
               className="w-full md:w-1/2 px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#0d7377]"
@@ -347,10 +354,11 @@ export default function AccountSettings() {
             {/* Password field for email/password users */}
             {user?.providerData.some((p) => p.providerId === 'password') && (
               <div className="mt-4">
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label htmlFor="confirm-password" className="block text-sm font-medium text-foreground mb-2">
                   Confirm Password
                 </label>
                 <input
+                  id="confirm-password"
                   type="password"
                   value={deletePassword}
                   onChange={(e) => setDeletePassword(e.target.value)}

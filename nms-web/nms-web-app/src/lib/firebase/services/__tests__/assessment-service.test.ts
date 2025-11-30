@@ -22,13 +22,14 @@ import {
 
 // Mock firebase/firestore
 vi.mock('firebase/firestore', () => ({
-  collection: vi.fn(),
-  doc: vi.fn(),
+  getFirestore: vi.fn(() => ({})),
+  collection: vi.fn(() => ({})),
+  doc: vi.fn(() => ({})),
   setDoc: vi.fn(),
   getDoc: vi.fn(),
   getDocs: vi.fn(),
-  query: vi.fn(),
-  orderBy: vi.fn(),
+  query: vi.fn(() => ({})),
+  orderBy: vi.fn(() => ({})),
   serverTimestamp: vi.fn(() => 'mock-timestamp'),
 }));
 

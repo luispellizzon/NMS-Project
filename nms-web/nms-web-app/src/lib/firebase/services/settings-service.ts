@@ -72,6 +72,9 @@ export const saveAccountPreferences = async (
   preferences: {
     language?: string;
     timezone?: string;
+    profileVisibility?: boolean,
+    activityStatus?: boolean,
+    dataSharing?: boolean,
     dateFormat?: string;
     privacy?: Record<string, boolean>;
   }
@@ -100,6 +103,9 @@ export const saveAccountPreferences = async (
 export const getAccountPreferences = async (
   uid: string
 ): Promise<{
+  profileVisibility: boolean;
+  activityStatus: boolean;
+  dataSharing: boolean;
   language?: string;
   timezone?: string;
   dateFormat?: string;
