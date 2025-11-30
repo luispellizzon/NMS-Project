@@ -25,7 +25,8 @@ data class UserProfile(
     val mmseScore: Int = 0,
     val location: String = "",
     val dementiaRisk: String = "",
-    val hasCompletedAiAnalysis: Boolean = false
+    val hasCompletedAiAnalysis: Boolean = false,
+    val dataUsageConsent: Boolean = false
 )
 
 enum class UserTasks(

@@ -21,10 +21,11 @@ data class PersonalInfoUiState(
     val role: String = "",
     val dateOfBirth: String = "",
     val location: String = "",
+    val dataUsageConsent: Boolean = false, 
     val isCountryDropdownOpen: Boolean = false,
     val filteredCountries: List<String> = emptyList(),
     val isSubmitting: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
 )
 
 private val countryList = listOf(
@@ -73,7 +74,9 @@ class PersonalInfoViewModel(
     fun onDateOfBirthChange(value: String) = _uiState.update { it.copy(dateOfBirth = value, error = null) }
     fun onEmailChange(value: String) = _uiState.update { it.copy(email = value, error = null) }
     fun onRoleChange(value: String) = _uiState.update { it.copy(role = value, error = null) }
-
+    fun onConsentChange(isChecked: Boolean) = _uiState.update { 
+        it.copy(dataUsageConsent = isChecked, error = null) 
+    }
     fun submit() {
         val s = _uiState.value
 
@@ -98,6 +101,11 @@ class PersonalInfoViewModel(
             return
         }
 
+        if (!s.dataUsageConsent) {
+             _uiState.update { it.copy(error = "You must consent to data usage to proceed.") }
+             return
+        }
+
         // --- AUTHENTICATION CHECK ---
         val uid = auth.currentUser()?.uid
         if (uid == null) {
@@ -113,6 +121,8 @@ class PersonalInfoViewModel(
                 dateOfBirth = s.dateOfBirth,
                 email = s.email.trim(),
                 role = s.role,
+                location = s.location,
+                dataUsageConsent = s.dataUsageConsent,
                 createdAt = Timestamp.now(),
                 currentTask = UserTasks.RISK_ASSESSMENT.taskName,
                 hasCompletedRiskAssessment = false,
@@ -127,6 +137,7 @@ class PersonalInfoViewModel(
                 dateOfBirth = s.dateOfBirth,
                 email = s.email.trim(),
                 role = s.role,
+                dataUsageConsent = s.dataUsageConsent,
                 createdAt = Timestamp.now(),
                 currentTask = UserTasks.RISK_ASSESSMENT.taskName,
                 hasCompletedRiskAssessment = false,
@@ -199,6 +210,4 @@ class PersonalInfoViewModel(
             )
         }
     }
-
-
 }

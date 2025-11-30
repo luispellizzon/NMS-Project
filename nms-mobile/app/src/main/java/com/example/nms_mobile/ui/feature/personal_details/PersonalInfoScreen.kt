@@ -39,6 +39,7 @@ fun PersonalInfoScreen(
     onCountryChange: (String) -> Unit,
     onCountrySelected: (String) -> Unit,
     onCountryFocused: () -> Unit,
+    onConsentChange: (Boolean) -> Unit, 
     onEmailChange: (String) -> Unit,        // Function to update email (though field is read-only).
     onRoleChange: (String) -> Unit,         // Function to update the selected role.
     onSubmit: () -> Unit                    // Function to submit the data.
@@ -152,6 +153,14 @@ fun PersonalInfoScreen(
 
             Spacer(Modifier.height(20.dp))
 
+            // --- DATA CONSENT CHECKBOX ---
+            DataConsentCheckbox(
+                isChecked = state.dataUsageConsent,
+                onCheckedChange = onConsentChange
+            )
+
+            Spacer(Modifier.height(20.dp))
+
             // --- Error Message ---
             if (state.error != null) {
                 Text(
@@ -184,6 +193,46 @@ fun PersonalInfoScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun DataConsentCheckbox(
+    isChecked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                shape = RoundedCornerShape(8.dp)
+            )
+            .padding(8.dp)
+            // Make the entire row clickable for better UX
+            .selectable(
+                selected = isChecked,
+                onClick = { onCheckedChange(!isChecked) },
+                role = Role.Checkbox
+            ),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(
+            checked = isChecked,
+            onCheckedChange = null, // Handled by the Row selection
+            colors = CheckboxDefaults.colors(
+                checkedColor = TealPrimary,
+                checkmarkColor = White
+            )
+        )
+        
+        Spacer(Modifier.width(8.dp))
+        
+        Text(
+            text = "I consent to the use of my anonymized data for training the dementia prediction model.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 

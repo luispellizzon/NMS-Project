@@ -195,6 +195,7 @@ fun PersonalInfoRoute(onFinished: () -> Unit) {
         onCountryFocused = vm::onFieldFocused,
         onEmailChange = vm::onEmailChange,
         onRoleChange = vm::onRoleChange,
+        onConsentChange = vm::onConsentChange,
         onSubmit = vm::submit
     )
 }

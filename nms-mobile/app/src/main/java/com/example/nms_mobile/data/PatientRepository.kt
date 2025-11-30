@@ -41,7 +41,9 @@ class PatientRepository private constructor(
     suspend fun addPatient(
         fullName: String,
         dateOfBirth: String,
-        email: String?
+        email: String,
+        location: String,
+        dataUsageConsent: Boolean
     ): PatientReference {
         val caregiverId = auth.currentUser?.uid
             ?: throw Exception("Caregiver not authenticated")
@@ -55,7 +57,8 @@ class PatientRepository private constructor(
                 uid = patientId,
                 fullName = fullName,
                 dateOfBirth = dateOfBirth,
-                email = email ?: "",
+                email = email,
+                dataUsageConsent = dataUsageConsent,
                 role = "patient",  // Patients created by caregivers are regular patients
                 createdAt = Timestamp.now(),
                 currentTask = UserTasks.RISK_ASSESSMENT.taskName,
@@ -65,7 +68,7 @@ class PatientRepository private constructor(
                 hasCompletedMemoryAssessment = false,
                 hasCompletedCognitiveAssessment = false,
                 mmseScore = 0,
-                location = "",
+                location = location,
                 dementiaRisk = "",
                 hasCompletedAiAnalysis = false
             )
