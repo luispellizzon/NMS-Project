@@ -14,10 +14,10 @@ class NewsCrewManager:
     """
     Manages CrewAI agents for news generation and risk assessment.
     Loads agent and task configurations from YAML files.
-    Supports multiple LLM providers (Gemini, Ollama).
+    Supports multiple LLM providers (Gemini, Groq, Ollama).
     """
 
-    def __init__(self, llm_provider: Optional[Literal["gemini", "ollama"]] = None):
+    def __init__(self, llm_provider: Optional[Literal["gemini", "ollama", "groq"]] = None):
         """
         Initialize the NewsCrewManager with configurable LLM provider.
 
@@ -60,7 +60,7 @@ class NewsCrewManager:
         self,
         agent_name: str,
         tools: List = None,
-        llm_override: Optional[Literal["gemini", "ollama"]] = None
+        llm_override: Optional[Literal["gemini", "ollama", "groq"]] = None
     ) -> Agent:
         """
         Create an agent from YAML configuration.
@@ -209,9 +209,19 @@ class NewsCrewManager:
     def _generate_medical_news(self, topic: str, max_articles: int) -> List[Dict[str, Any]]:
         """Generate medical research news from arXiv using YAML-configured agents and tasks."""
 
-        # Create agents from YAML config
-        researcher = self._create_agent_from_config("medical_researcher", tools=[self.arxiv_tool])
-        summarizer = self._create_agent_from_config("summarizer", tools=[self.summarizer_tool])
+        # Create agents from YAML config with different LLM providers
+        # Use Gemini for research (powerful, comprehensive)
+        # Use Groq for summarization (fast inference, structured output)
+        researcher = self._create_agent_from_config(
+            "medical_researcher",
+            tools=[self.arxiv_tool],
+            llm_override="gemini"
+        )
+        summarizer = self._create_agent_from_config(
+            "summarizer",
+            tools=[self.summarizer_tool],
+            llm_override="groq"
+        )
 
         # Create tasks from YAML config
         research_task = self._create_task_from_config(
@@ -252,9 +262,19 @@ class NewsCrewManager:
 
         time.sleep(2.5)  # Smooth delay for UI
 
-        # Create agents from YAML config
-        researcher = self._create_agent_from_config("medical_researcher", tools=[self.arxiv_tool])
-        summarizer = self._create_agent_from_config("summarizer", tools=[self.summarizer_tool])
+        # Create agents from YAML config with different LLM providers
+        # Use Gemini for research (powerful, comprehensive)
+        # Use Groq for summarization (fast inference, structured output)
+        researcher = self._create_agent_from_config(
+            "medical_researcher",
+            tools=[self.arxiv_tool],
+            llm_override="gemini"
+        )
+        summarizer = self._create_agent_from_config(
+            "summarizer",
+            tools=[self.summarizer_tool],
+            llm_override="groq"
+        )
 
         # Create tasks from YAML config
         research_task = self._create_task_from_config(
@@ -345,9 +365,19 @@ class NewsCrewManager:
     def _generate_patient_news(self, topic: str, max_articles: int) -> List[Dict[str, Any]]:
         """Generate patient-friendly news articles using YAML-configured agents and tasks."""
 
-        # Create agents from YAML config
-        researcher = self._create_agent_from_config("patient_researcher", tools=[self.web_search_tool])
-        summarizer = self._create_agent_from_config("summarizer", tools=[self.summarizer_tool])
+        # Create agents from YAML config with different LLM providers
+        # Use Gemini for research (powerful, comprehensive)
+        # Use Groq for summarization (fast inference, structured output)
+        researcher = self._create_agent_from_config(
+            "patient_researcher",
+            tools=[self.web_search_tool],
+            llm_override="gemini"
+        )
+        summarizer = self._create_agent_from_config(
+            "summarizer",
+            tools=[self.summarizer_tool],
+            llm_override="groq"
+        )
 
         # Create tasks from YAML config
         research_task = self._create_task_from_config(
@@ -388,9 +418,19 @@ class NewsCrewManager:
 
         time.sleep(1.5)  # Smooth delay for UI
 
-        # Create agents from YAML config
-        researcher = self._create_agent_from_config("patient_researcher", tools=[self.web_search_tool])
-        summarizer = self._create_agent_from_config("summarizer", tools=[self.summarizer_tool])
+        # Create agents from YAML config with different LLM providers
+        # Use Gemini for research (powerful, comprehensive)
+        # Use Groq for summarization (fast inference, structured output)
+        researcher = self._create_agent_from_config(
+            "patient_researcher",
+            tools=[self.web_search_tool],
+            llm_override="gemini"
+        )
+        summarizer = self._create_agent_from_config(
+            "summarizer",
+            tools=[self.summarizer_tool],
+            llm_override="groq"
+        )
 
         # Create tasks from YAML config
         research_task = self._create_task_from_config(
@@ -481,18 +521,22 @@ class NewsCrewManager:
     def calculate_risk(self, patient_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Calculate dementia risk for a patient using YAML-configured Risk Calculator Agent.
-        
+
         Args:
-            patient_data: Patient assessment data including questionnaire, 
+            patient_data: Patient assessment data including questionnaire,
                          transcription, cognitive test results
-                         
+
         Returns:
             Risk assessment dictionary
         """
         logging.info("Calculating dementia risk assessment")
-        
+
         # Create the risk calculator agent from YAML config
-        risk_agent = self._create_agent_from_config("risk_calculator")
+        # Use Groq for risk calculation (fast inference, structured output)
+        risk_agent = self._create_agent_from_config(
+            "risk_calculator",
+            llm_override="groq"
+        )
         
         # Create the risk assessment task from YAML config
         risk_task = self._create_task_from_config(
