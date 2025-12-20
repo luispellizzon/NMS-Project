@@ -9,6 +9,7 @@ import {
   query,
   where,
   serverTimestamp,
+  updateDoc,
 } from 'firebase/firestore';
 import { db } from '../config';
 
@@ -175,5 +176,32 @@ export const getPatientGameScores = async (patientId: string): Promise<any | nul
   } catch (error) {
     console.error("Error fetching patient game scores:", error);
     return null;
+  }
+};
+
+/**
+ * Updates a patient's basic information in the 'users' collection.
+ * @param patientId The patient's UID.
+ * @param updates Partial patient data to update.
+ * @returns void
+ */
+export const updatePatient = async (
+  patientId: string,
+  updates: Partial<{
+    fullName: string;
+    email: string;
+    dateOfBirth: string;
+    location: string;
+  }>
+): Promise<void> => {
+  try {
+    const patientDocRef = doc(db, 'users', patientId);
+    await updateDoc(patientDocRef, {
+      ...updates,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error("Error updating patient:", error);
+    throw new Error("Could not update patient.");
   }
 };
