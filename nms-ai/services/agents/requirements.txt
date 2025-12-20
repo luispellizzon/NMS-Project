@@ -8,10 +8,13 @@ crewai==0.86.0
 crewai-tools==0.17.0
 langchain==0.3.7
 
-# Google GenAI + LangChain Integration (compatibility fixed)
+# Google GenAI + LangChain Integration
 google-generativeai==0.7.2
 google-ai-generativelanguage==0.6.6
 langchain-google-genai==2.0.0
+
+# Groq Integration (2nd online LLM - fast inference)
+langchain-groq==0.2.0
 
 # Firebase
 firebase-admin==6.5.0
