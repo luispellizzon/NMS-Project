@@ -7,7 +7,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import FullScreenLoader from '@/components/ui/common/FullScreenLoader';
 
 export default function ProtectedLayout({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, userRole, isAdmin } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -15,12 +15,30 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     // redirect them to the sign-in page.
     if (!loading && !user) {
       router.push('/signin');
+      return;
     }
-  }, [user, loading, router]);
+
+    // Redirect admins to the admin dashboard
+    if (!loading && user && isAdmin) {
+      router.push('/admin/dashboard');
+      return;
+    }
+
+    // Redirect admins to the admin dashboard
+    if (!loading && user  && userRole !== "doctor") {
+          router.push('/');
+          return;
+        }
+  }, [user, loading, userRole, isAdmin, router]);
 
   // While the authentication state is being checked, display a full-screen loader.
   // Also, if there's no user, continue showing the loader until the redirect kicks in.
   if (loading || !user) {
+    return <FullScreenLoader />;
+  }
+
+  // If user is admin, show loader while redirecting
+  if (isAdmin) {
     return <FullScreenLoader />;
   }
 

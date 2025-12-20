@@ -6,6 +6,7 @@ import {
   getPatientRiskAssessment,
   getPatientById,
   getPatientGameScores,
+  updatePatient,
 } from '../patient-service';
 import {
   collection,
@@ -17,6 +18,7 @@ import {
   query,
   where,
   serverTimestamp,
+  updateDoc,
 } from 'firebase/firestore';
 
 // Mock firebase/firestore
@@ -31,6 +33,7 @@ vi.mock('firebase/firestore', () => ({
   query: vi.fn(() => ({})),
   where: vi.fn(() => ({})),
   serverTimestamp: vi.fn(() => 'mock-timestamp'),
+  updateDoc: vi.fn(),
 }));
 
 
@@ -327,6 +330,78 @@ describe('patient-service', () => {
       const result = await getPatientGameScores('patient-123');
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('updatePatient', () => {
+    it('should update patient data successfully', async () => {
+      const patientId = 'patient-123';
+      const updates = {
+        fullName: 'John Updated',
+        email: 'john.updated@example.com',
+      };
+
+      vi.mocked(updateDoc).mockResolvedValue(undefined as any);
+
+      await updatePatient(patientId, updates);
+
+      expect(doc).toHaveBeenCalledWith({}, 'users', patientId);
+      expect(updateDoc).toHaveBeenCalledWith(
+        expect.anything(),
+        {
+          ...updates,
+          updatedAt: 'mock-timestamp',
+        }
+      );
+    });
+
+    it('should update patient with partial data', async () => {
+      const patientId = 'patient-123';
+      const updates = {
+        fullName: 'Jane Doe',
+      };
+
+      vi.mocked(updateDoc).mockResolvedValue(undefined as any);
+
+      await updatePatient(patientId, updates);
+
+      expect(updateDoc).toHaveBeenCalledWith(
+        expect.anything(),
+        {
+          fullName: 'Jane Doe',
+          updatedAt: 'mock-timestamp',
+        }
+      );
+    });
+
+    it('should update patient location', async () => {
+      const patientId = 'patient-123';
+      const updates = {
+        location: 'New York',
+      };
+
+      vi.mocked(updateDoc).mockResolvedValue(undefined as any);
+
+      await updatePatient(patientId, updates);
+
+      expect(updateDoc).toHaveBeenCalledWith(
+        expect.anything(),
+        {
+          location: 'New York',
+          updatedAt: 'mock-timestamp',
+        }
+      );
+    });
+
+    it('should throw an error if updateDoc fails', async () => {
+      const patientId = 'patient-123';
+      const updates = {
+        fullName: 'John Doe',
+      };
+
+      vi.mocked(updateDoc).mockRejectedValue(new Error('Firestore error'));
+
+      await expect(updatePatient(patientId, updates)).rejects.toThrow('Could not update patient.');
     });
   });
 });
