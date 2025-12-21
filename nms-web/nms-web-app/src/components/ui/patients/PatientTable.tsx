@@ -20,9 +20,10 @@ interface PatientTableRowProps {
   onReport: (patient: Patient) => void;
   onContact: (patient: Patient) => void;
   onDelete: (patient: Patient) => void;
+  onEdit: (patient: Patient) => void;
 }
 
-const PatientTableRow = ({ patient, onView, onReport, onContact, onDelete }: PatientTableRowProps) => {
+const PatientTableRow = ({ patient, onView, onReport, onContact, onDelete, onEdit }: PatientTableRowProps) => {
   const [isMenuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   
@@ -82,7 +83,7 @@ const PatientTableRow = ({ patient, onView, onReport, onContact, onDelete }: Pat
                   exit={{ opacity: 0, y: -10 }}
                   className="absolute right-0 mt-1 w-40 bg-card border border-border rounded-md shadow-lg z-10"
                 >
-                  <button className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent">
+                  <button onClick={() => { onEdit(patient); setMenuOpen(false); }} className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent">
                     <Edit className="w-4 h-4" /> Edit Patient
                   </button>
                   <button onClick={() => { onDelete(patient); setMenuOpen(false); }} className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-accent">
@@ -104,9 +105,10 @@ interface PatientTableProps {
     onReport: (patient: Patient) => void;
     onContact: (patient: Patient) => void;
     onDelete: (patient: Patient) => void;
+    onEdit: (patient: Patient) => void;
   }
-  
-  export default function PatientTable({ patients, onView, onReport, onContact, onDelete }: PatientTableProps) {
+
+  export default function PatientTable({ patients, onView, onReport, onContact, onDelete, onEdit }: PatientTableProps) {
     const headers = ['Patient', 'Risk Score', 'Trend', 'Assessments', 'Last Check', 'Next Appointment', 'Actions'];
     return (
       <div className="bg-card rounded-lg border shadow-sm overflow-x-auto">
@@ -118,7 +120,7 @@ interface PatientTableProps {
           </thead>
           <tbody>
             {patients.map((patient) => (
-              <PatientTableRow key={patient.id} patient={patient} onView={onView} onReport={onReport} onContact={onContact} onDelete={onDelete} />
+              <PatientTableRow key={patient.id} patient={patient} onView={onView} onReport={onReport} onContact={onContact} onDelete={onDelete} onEdit={onEdit} />
             ))}
           </tbody>
         </table>

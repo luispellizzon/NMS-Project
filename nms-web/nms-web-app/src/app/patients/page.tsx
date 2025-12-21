@@ -13,6 +13,7 @@ import Modal from '@/components/ui/common/Modal';
 import { motion, Variants } from 'framer-motion';
 import AddPatientModal from '@/components/ui/patients/AddPatientModal';
 import AssignPatientModal from '@/components/ui/patients/AssignPatientModal';
+import EditPatientModal from '@/components/ui/patients/EditPatientModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDoctorProfile, getDoctorPatients, removePatientFromDoctor, getPatientRiskAssessment, getPatientById, getPatientGameScores, getPatientTestHistory } from '@/lib/firebase/firestore-service';
 import { collection, query, where, getDocs } from 'firebase/firestore';
@@ -69,6 +70,7 @@ export default function PatientsPage() {
   // --- STATE FOR ACTIONS ---
   const [patientToView, setPatientToView] = useState<Patient | null>(null);
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
+  const [patientToEdit, setPatientToEdit] = useState<Patient | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
@@ -297,6 +299,14 @@ export default function PatientsPage() {
     loadDoctorPatients();
   };
 
+  // --- Handler for patient edit ---
+  const handlePatientUpdated = (updatedPatient: Patient) => {
+    setAllPatients(prev =>
+      prev.map(p => p.id === updatedPatient.id ? updatedPatient : p)
+    );
+    setPatientToEdit(null);
+  };
+
   // Loading state
   if (authLoading || dataLoading) {
     return (
@@ -388,12 +398,13 @@ export default function PatientsPage() {
 
         {/* Patient Table */}
         <motion.div variants={itemVariants}>
-          <PatientTable 
+          <PatientTable
             patients={paginatedPatients}
             onView={(patient) => setPatientToView(patient)}
             onReport={handleGenerateReport}
             onContact={handleContactPatient}
             onDelete={(patient) => setPatientToDelete(patient)}
+            onEdit={(patient) => setPatientToEdit(patient)}
           />
         </motion.div>
 
@@ -429,6 +440,15 @@ export default function PatientsPage() {
         onClose={() => setPatientToView(null)}
         patient={patientToView}
       />
+
+      {patientToEdit && (
+        <EditPatientModal
+          isOpen={!!patientToEdit}
+          onClose={() => setPatientToEdit(null)}
+          patient={patientToEdit}
+          onPatientUpdated={handlePatientUpdated}
+        />
+      )}
 
       <Modal
         isOpen={!!patientToDelete}

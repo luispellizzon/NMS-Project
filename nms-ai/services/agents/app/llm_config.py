@@ -10,12 +10,14 @@ logging.basicConfig(level=logging.INFO)
 class LLMProvider:
     """
     Manages multiple LLM providers for the NMS agents system.
-    Supports Gemini API and Ollama (locally-hosted models).
+    Supports Gemini API, Groq, and Ollama (locally-hosted models).
     """
 
     def __init__(self):
         """Initialize LLM provider with environment variables."""
         self.gemini_api_key = os.getenv("GEMINI_API_KEY")
+        self.groq_api_key = os.getenv("GROQ_API_KEY")
+        self.groq_model = os.getenv("GROQ_MODEL", "moonshotai/kimi-k2-instruct")
         self.ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         self.ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2")
 
@@ -26,7 +28,7 @@ class LLMProvider:
 
     def get_llm(
         self,
-        provider: Optional[Literal["gemini", "ollama"]] = None,
+        provider: Optional[Literal["gemini", "ollama", "groq"]] = None,
         temperature: float = 0.7,
         timeout: float = 60.0,
         max_retries: int = 3
@@ -35,7 +37,7 @@ class LLMProvider:
         Get an LLM instance for the specified provider.
 
         Args:
-            provider: LLM provider to use ("gemini" or "ollama").
+            provider: LLM provider to use ("gemini", "ollama", or "groq").
                      If None, uses DEFAULT_LLM_PROVIDER from env
             temperature: Sampling temperature (0-1)
             timeout: Request timeout in seconds
@@ -53,8 +55,10 @@ class LLMProvider:
             return self._get_gemini_llm(temperature, timeout, max_retries)
         elif provider == "ollama":
             return self._get_ollama_llm(temperature, timeout, max_retries)
+        elif provider == "groq":
+            return self._get_groq_llm(temperature, timeout, max_retries)
         else:
-            raise ValueError(f"Unsupported LLM provider: {provider}. Use 'gemini' or 'ollama'")
+            raise ValueError(f"Unsupported LLM provider: {provider}. Use 'gemini', 'ollama', or 'groq'")
 
     def _get_gemini_llm(
         self,
@@ -113,10 +117,42 @@ class LLMProvider:
             max_retries=max_retries
         )
 
+    def _get_groq_llm(
+        self,
+        temperature: float,
+        timeout: float,
+        max_retries: int
+    ) -> LLM:
+        """
+        Get a Groq LLM instance (2nd online LLM - fast inference).
+
+        Returns:
+            Configured Groq LLM
+
+        Raises:
+            ValueError: If GROQ_API_KEY is not set
+
+        Note:
+            Get API key from: https://console.groq.com/
+            Models: moonshotai/kimi-k2-instruct (default), llama-3.3-70b-versatile, mixtral-8x7b-32768
+        """
+        if not self.groq_api_key:
+            raise ValueError("GROQ_API_KEY environment variable not set")
+
+        logging.info(f"Initializing Groq LLM with model: {self.groq_model}")
+
+        return LLM(
+            model=f"groq/{self.groq_model}",
+            api_key=self.groq_api_key,
+            temperature=temperature,
+            timeout=timeout,
+            max_retries=max_retries
+        )
+
     def get_llm_for_agent(
         self,
         agent_type: Literal["medical_researcher", "patient_researcher", "risk_calculator", "summarizer"],
-        provider: Optional[Literal["gemini", "ollama"]] = None
+        provider: Optional[Literal["gemini", "ollama", "groq"]] = None
     ) -> LLM:
         """
         Get an LLM instance optimized for a specific agent type.
@@ -124,6 +160,7 @@ class LLMProvider:
         This method allows you to assign different LLMs to different agents based on their needs.
         For example:
         - Use Gemini for medical research (more powerful, cloud-based)
+        - Use Groq for summarization (fast inference, structured output)
         - Use Ollama for patient news (privacy-focused, local)
 
         Args:
@@ -159,7 +196,7 @@ class LLMProvider:
             max_retries=3
         )
 
-    def test_connection(self, provider: Optional[Literal["gemini", "ollama"]] = None) -> bool:
+    def test_connection(self, provider: Optional[Literal["gemini", "ollama", "groq"]] = None) -> bool:
         """
         Test connection to the specified LLM provider.
 
