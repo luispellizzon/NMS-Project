@@ -16,7 +16,13 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -44,23 +50,26 @@ import com.example.nms_mobile.ui.feature.memory.MemoryTestScreen
 import com.example.nms_mobile.ui.feature.memory.MemoryTestViewModel
 import com.example.nms_mobile.ui.feature.news.NewsScreen
 import com.example.nms_mobile.ui.feature.news.NewsViewModel
-import com.example.nms_mobile.ui.feature.speech.SpeechAssessmentEvent
-import com.example.nms_mobile.ui.feature.speech.SpeechAssessmentViewModel
-import com.example.nms_mobile.ui.feature.speech.SpeechTaskEvent
-import com.example.nms_mobile.ui.feature.speech.SpeechTaskScreen
-import com.example.nms_mobile.ui.feature.speech.SpeechTaskViewModel
-import com.example.nms_mobile.ui.feature.speech.results.SpeechResultsScreen
 import com.example.nms_mobile.ui.feature.personal_details.PersonalInfoEvent
 import com.example.nms_mobile.ui.feature.personal_details.PersonalInfoScreen
 import com.example.nms_mobile.ui.feature.personal_details.PersonalInfoViewModel
 import com.example.nms_mobile.ui.feature.results.ResultsScreen
 import com.example.nms_mobile.ui.feature.results.ResultsViewModel
 import com.example.nms_mobile.ui.feature.signup.SignUpViewModel
+import com.example.nms_mobile.ui.feature.speech.SpeechAssessmentEvent
+import com.example.nms_mobile.ui.feature.speech.SpeechAssessmentViewModel
+import com.example.nms_mobile.ui.feature.speech.SpeechTaskEvent
+import com.example.nms_mobile.ui.feature.speech.SpeechTaskScreen
+import com.example.nms_mobile.ui.feature.speech.SpeechTaskViewModel
+import com.example.nms_mobile.ui.feature.speech.results.SpeechResultsScreen
 import com.example.nms_mobile.ui.questionnaire.SectionedQuestionnaireEvent
 import com.example.nms_mobile.ui.questionnaire.SectionedQuestionnaireScreen
 import com.example.nms_mobile.ui.questionnaire.SectionedQuestionnaireViewModel
 import com.example.nms_mobile.ui.signup.SignUpScreen
 import com.example.nms_mobile.ui.speech.SpeechAssessmentScreen
+import com.example.nms_mobile.ui.feature.contact_doctor.ContactDoctorRoute
+
+
 
 // The starting screen: checks if the user is logged in and if they have a profile.
 @Composable
@@ -213,6 +222,7 @@ fun DashboardRoute(
     onLoggedOut: () -> Unit = {},
     onOpenFeedback: () -> Unit = {},
     onOpenAddPatient: () -> Unit = {},
+    onOpenContactDoctor: () -> Unit = {},
     onOpenResults: () -> Unit = {}
 ) {
     val vm = remember { DashboardViewModel() }
@@ -263,8 +273,10 @@ fun DashboardRoute(
             onSelectPatient = vm::selectPatient,
             onDeselectPatient = vm::deselectPatient,
             onFeedbackClick = onOpenFeedback,
-            onOpenResults = onOpenResults
-        )
+            onOpenResults = onOpenResults,
+            onOpenContactDoctor = onOpenContactDoctor,
+
+            )
 
         // Overlay the managed mode banner at the top if in managed mode
         ManagedModeBanner(

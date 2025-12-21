@@ -21,6 +21,7 @@ import com.example.nms_mobile.navigation.routes.SpeechResultsRoute
 import com.example.nms_mobile.navigation.routes.SpeechTaskRoute
 import com.example.nms_mobile.navigation.routes.StartRoute
 import com.example.nms_mobile.ui.feature.cognitive.CognitiveIntroScreen
+import com.example.nms_mobile.ui.feature.contact_doctor.ContactDoctorRoute
 import com.example.nms_mobile.ui.questionnaire.QuestionnaireIntroScreen
 import com.example.nms_mobile.ui.feature.feedback.FeedbackScreen
 
@@ -317,13 +318,14 @@ fun AppNavigation(
         composable(Screen.Results.route) {
             ResultsRoute(
                 onBack = { navController.popBackStack() },
-                onContactDoctor = { navController.popBackStack() }
-//                onContactDoctor = {
-//                    navController.navigate(Screen.Dashboard.route) {
-//                        popUpTo(Screen.AddPatient.route) { inclusive = true }
-//                        launchSingleTop = true
-//                    }
-//                }
+                onContactDoctor = {
+                    navController.navigate(Screen.ContactDoctor.route)
+                }
+            )
+        }
+        composable(Screen.ContactDoctor.route) {
+            ContactDoctorRoute(
+                onBack = { navController.popBackStack() }
             )
         }
     }

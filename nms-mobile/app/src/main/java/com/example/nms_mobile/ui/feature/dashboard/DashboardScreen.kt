@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,9 +55,9 @@ fun DashboardScreen(
     onLogoutClick: () -> Unit,
     onAddPatient: () -> Unit,
     onSelectPatient: (PatientReference) -> Unit,
-
     onDeselectPatient: () -> Unit,
-    onFeedbackClick: () -> Unit
+    onFeedbackClick: () -> Unit,
+    onOpenContactDoctor: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -134,7 +135,8 @@ fun DashboardScreen(
                         onOpenMemory = onOpenMemory,
                         onOpenCognitive = onOpenCognitive,
                         onOpenImageDescription = onOpenImageDescription,
-                        onOpenResults = onOpenResults
+                        onOpenResults = onOpenResults,
+                        onOpenContactDoctor = onOpenContactDoctor
                     )
                 }
             }
@@ -439,7 +441,8 @@ private fun PatientAssessmentsView(
         onOpenMemory: () -> Unit,
         onOpenCognitive: () -> Unit,
         onOpenImageDescription: () -> Unit,
-        onOpenResults: () -> Unit
+        onOpenResults: () -> Unit,
+        onOpenContactDoctor: () -> Unit = {}
     ) {
         var showWarning by remember { mutableStateOf(false) }
         var prevTask by remember { mutableStateOf("") }
@@ -572,11 +575,25 @@ private fun PatientAssessmentsView(
                     )
                 }
             }
+            Spacer(Modifier.height(12.dp))
+
+            // Contact Doctor Tile - Always available
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                TestTile(
+                    title = "Contact Doctor",
+                    onClick = onOpenContactDoctor,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(140.dp),
+                    pendingColor = TealPrimary,
+                    isCompleted = false
+                )
+                Spacer(modifier = Modifier.weight(1f))
+            }
         }
-
-
-
-
     }
 @Composable
 private fun ResultTile(
