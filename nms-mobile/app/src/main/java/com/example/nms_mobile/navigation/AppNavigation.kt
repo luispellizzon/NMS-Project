@@ -24,6 +24,8 @@ import com.example.nms_mobile.ui.feature.cognitive.CognitiveIntroScreen
 import com.example.nms_mobile.ui.feature.contact_doctor.ContactDoctorRoute
 import com.example.nms_mobile.ui.questionnaire.QuestionnaireIntroScreen
 import com.example.nms_mobile.ui.feature.feedback.FeedbackScreen
+import com.example.nms_mobile.ui.feature.support.SupportScreen
+import com.example.nms_mobile.ui.feature.support.SupportHistoryScreen
 
 // This is the central file that defines all the app screens and how to move between them.
 @Composable
@@ -149,6 +151,9 @@ fun AppNavigation(
                 },
                 onOpenResults = {
                     navController.navigate(Screen.Results.route)
+                },
+                onOpenSupport = {
+                    navController.navigate(Screen.Support.route)
                 }
             )
         }
@@ -326,6 +331,29 @@ fun AppNavigation(
         composable(Screen.ContactDoctor.route) {
             ContactDoctorRoute(
                 onBack = { navController.popBackStack() }
+            )
+        }
+
+        // SUPPORT (Submit support requests)
+        composable(Screen.Support.route) {
+            SupportScreen(
+                onBackClick = { navController.popBackStack() },
+                onViewHistory = {
+                    navController.navigate(Screen.SupportHistory.route)
+                }
+            )
+        }
+
+        // SUPPORT HISTORY (View past support requests)
+        composable(Screen.SupportHistory.route) {
+            SupportHistoryScreen(
+                onBackClick = { navController.popBackStack() },
+                onNewRequest = {
+                    navController.navigate(Screen.Support.route) {
+                        popUpTo(Screen.SupportHistory.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
     }

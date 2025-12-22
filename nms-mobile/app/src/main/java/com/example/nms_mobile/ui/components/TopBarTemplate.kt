@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Help
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
@@ -27,7 +28,9 @@ fun NmsTopAppBar(
     onLogoutClick: () -> Unit,
     onFeedbackClick: () -> Unit,
     // Add optional parameter for back navigation
-    onBackClick: (() -> Unit)? = null 
+    onBackClick: (() -> Unit)? = null,
+    // Add optional parameter for support navigation
+    onSupportClick: (() -> Unit)? = null
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
@@ -109,6 +112,22 @@ fun NmsTopAppBar(
                                 )
                             }
                         )
+                        if (onSupportClick != null) {
+                            DropdownMenuItem(
+                                text = { Text("Support") },
+                                onClick = {
+                                    showMenu = false
+                                    onSupportClick()
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Help,
+                                        contentDescription = null,
+                                        tint = TealPrimary
+                                    )
+                                }
+                            )
+                        }
                         DropdownMenuItem(
                             text = { Text("Logout") },
                             onClick = {

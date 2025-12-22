@@ -5,6 +5,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
 
 /* ---------- Data models ---------- */
@@ -22,6 +23,7 @@ data class UserProfile(
     val hasCompletedSpeechAssessment: Boolean = false,
     val hasCompletedMemoryAssessment: Boolean = false,
     val hasCompletedCognitiveAssessment: Boolean = false,
+    val hasPaidForResults: Boolean = false,
     val mmseScore: Int = 0,
     val location: String = "",
     val dementiaRisk: String = "",
@@ -171,5 +173,60 @@ class FirestoreRepository private constructor(
             "timestamp" to FieldValue.serverTimestamp()
         )
         db.collection("feedback").add(feedback).await()
+    }
+
+    /* ---------- Support Requests ---------- */
+
+    private val supportRequestsCollection = db.collection("support_requests")
+
+    /**
+     * Submit a new support request
+     * @return The document ID of the created support request
+     */
+    suspend fun submitSupportRequest(
+        subject: String,
+        message: String,
+        priority: SupportRequestPriority = SupportRequestPriority.MEDIUM
+    ): String {
+        val uid = uidOrThrow()
+        val userProfile = getUserProfile()
+
+        val requestData = hashMapOf(
+            "userId" to uid,
+            "subject" to subject,
+            "message" to message,
+            "status" to SupportRequestStatus.OPEN.name.lowercase(),
+            "priority" to priority.name.lowercase(),
+            "createdAt" to FieldValue.serverTimestamp(),
+            "patientName" to (userProfile?.fullName ?: ""),
+            "patientEmail" to (userProfile?.email ?: "")
+        )
+
+        val docRef = supportRequestsCollection.add(requestData).await()
+        return docRef.id
+    }
+
+    /**
+     * Get all support requests for the current user
+     */
+    suspend fun getUserSupportRequests(): List<SupportRequest> {
+        val uid = uidOrThrow()
+        val snapshot = supportRequestsCollection
+            .whereEqualTo("userId", uid)
+            .orderBy("createdAt", Query.Direction.DESCENDING)
+            .get()
+            .await()
+
+        return snapshot.documents.mapNotNull { doc ->
+            doc.data?.let { SupportRequest.fromMap(doc.id, it) }
+        }
+    }
+
+    /**
+     * Get a single support request by ID
+     */
+    suspend fun getSupportRequest(requestId: String): SupportRequest? {
+        val doc = supportRequestsCollection.document(requestId).get().await()
+        return doc.data?.let { SupportRequest.fromMap(doc.id, it) }
     }
 }

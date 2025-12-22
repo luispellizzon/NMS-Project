@@ -223,7 +223,8 @@ fun DashboardRoute(
     onOpenFeedback: () -> Unit = {},
     onOpenAddPatient: () -> Unit = {},
     onOpenContactDoctor: () -> Unit = {},
-    onOpenResults: () -> Unit = {}
+    onOpenResults: () -> Unit = {},
+    onOpenSupport: () -> Unit = {}
 ) {
     val vm = remember { DashboardViewModel() }
     val state by vm.ui.collectAsState()
@@ -275,8 +276,8 @@ fun DashboardRoute(
             onFeedbackClick = onOpenFeedback,
             onOpenResults = onOpenResults,
             onOpenContactDoctor = onOpenContactDoctor,
-
-            )
+            onSupportClick = onOpenSupport
+        )
 
         // Overlay the managed mode banner at the top if in managed mode
         ManagedModeBanner(
@@ -708,7 +709,7 @@ fun ResultsRoute(
     val vm = remember { ResultsViewModel() }
     val state by vm.ui.collectAsState()
     ResultsScreen(
-        state = state,
+//        state = state,
         onNavigateHome = onBack,
         onContactDoctor = onContactDoctor,
         onLoadResults = vm::loadResults

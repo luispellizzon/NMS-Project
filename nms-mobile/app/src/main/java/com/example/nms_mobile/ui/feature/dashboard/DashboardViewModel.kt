@@ -87,7 +87,10 @@ class DashboardViewModel(
     init {
         viewModelScope.launch {
             repo.session.collect { s ->
-                val userRole = db.getUserProfile()?.role
+                val userProfile = db.getUserProfile()
+                _ui.update { it.copy(profile = userProfile) }
+
+                val userRole = userProfile?.role
                 val name = s.displayName?.takeIf { it.isNotBlank() } ?: "NMS"
                 _ui.update { it.copy(displayName = name, greeting = computeGreeting(), role = userRole) }
 
