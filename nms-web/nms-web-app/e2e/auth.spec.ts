@@ -6,7 +6,7 @@ test.describe('Authentication and Authorization Flows', () => {
 
   test('should allow a user to sign in and redirect to the dashboard', async ({ page }) => {
     await signIn(page);
-    const newsHeader = page.getByRole('heading', { name: 'News' });
+    const newsHeader = page.getByRole('heading', { name: /Agent News/i });
     await expect(newsHeader).toBeVisible();
   });
 

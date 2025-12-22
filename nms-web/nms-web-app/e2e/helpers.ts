@@ -14,33 +14,68 @@ if (!E2E_TEST_USER_EMAIL || !E2E_TEST_USER_PASSWORD) {
  * clicks the sign-in button, and waits for the dashboard to load.
  *
  * Handles browser-specific timing differences and live Firebase data loading.
+ * NOTE: The test user MUST have the 'doctor' role in Firebase, otherwise
+ * they will be redirected to the homepage instead of the dashboard.
  */
 export const signIn = async (page: Page) => {
   await page.goto('/signin');
 
   // Wait for the sign-in form to be fully loaded
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
 
-  await page.getByLabel('Email address').fill(E2E_TEST_USER_EMAIL);
-  await page.getByLabel('Password').fill(E2E_TEST_USER_PASSWORD);
+  // Wait for form elements to be ready
+  const emailInput = page.getByLabel('Email address');
+  const passwordInput = page.getByLabel('Password');
+  const signInButton = page.getByRole('button', { name: /^sign in$/i });
 
-  // Click sign in and wait for navigation
-  await page.getByRole('button', { name: /^sign in$/i }).click();
+  await expect(emailInput).toBeVisible({ timeout: 15000 });
+  await expect(passwordInput).toBeVisible({ timeout: 15000 });
+  await expect(signInButton).toBeVisible({ timeout: 15000 });
+  await expect(signInButton).toBeEnabled({ timeout: 15000 });
 
-  // Wait for navigation away from sign-in page
-  await page.waitForURL((url) => !url.pathname.includes('/signin'), { timeout: 90000 });
+  await emailInput.fill(E2E_TEST_USER_EMAIL);
+  await passwordInput.fill(E2E_TEST_USER_PASSWORD);
 
-  // Wait for dashboard to load - give more time for live Firebase data
-  // Wait for either the News heading or the loading spinner to disappear
-  await page.waitForFunction(
-    () => {
-      const newsHeading = document.querySelector('h1');
-      const loadingSpinner = document.querySelector('[class*="animate-spin"]');
-      return (newsHeading && newsHeading.textContent === 'News') || !loadingSpinner;
-    },
-    { timeout: 90000 }
-  );
+  // Click sign in button and wait for navigation simultaneously
+  // This prevents race conditions where navigation completes before waitForURL starts listening
+  try {
+    await Promise.all([
+      page.waitForURL('**/dashboard', { timeout: 45000 }),
+      signInButton.click(),
+    ]);
+  } catch {
+    // If URL wait times out, check if we're still on signin page
+    const currentUrl = page.url();
+    if (currentUrl.includes('/signin')) {
+      // Check for error message on the sign-in page
+      const errorMsg = page.getByTestId('error-message');
+      const hasError = await errorMsg.isVisible().catch(() => false);
+      if (hasError) {
+        const errorText = await errorMsg.textContent();
+        throw new Error(`Sign-in failed with error: ${errorText}`);
+      }
+      throw new Error(
+        `Sign-in did not redirect to dashboard. Current URL: ${currentUrl}. ` +
+        `The test user (${E2E_TEST_USER_EMAIL}) may not have the 'doctor' role in Firebase, ` +
+        `or the authentication failed. Please check Firebase user data.`
+      );
+    }
+    if (currentUrl.endsWith('/') && !currentUrl.includes('/dashboard')) {
+      throw new Error(
+        `Sign-in redirected to homepage instead of dashboard. Current URL: ${currentUrl}. ` +
+        `The test user may not have the 'doctor' role in Firebase.`
+      );
+    }
+    // If we're somewhere else, it might be okay - continue
+  }
 
-  // Final verification that we're on the dashboard
-  await expect(page.getByRole('heading', { name: 'News' })).toBeVisible({ timeout: 30000 });
+  // Wait for the dashboard to fully render (auth context and role check to complete)
+  // Look for a dashboard-specific element
+  await expect(page.getByRole('heading', { name: /Agent News/i })).toBeVisible({ timeout: 45000 });
+
+  // Final verification that we're on dashboard
+  const dashboardUrl = page.url();
+  if (!dashboardUrl.includes('/dashboard')) {
+    throw new Error(`Expected to be on dashboard but current URL is: ${dashboardUrl}`);
+  }
 };

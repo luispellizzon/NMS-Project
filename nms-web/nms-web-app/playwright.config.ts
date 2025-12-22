@@ -6,22 +6,23 @@ const baseURL = `http://localhost:${PORT}`;
 
 export default defineConfig({
   // Timeout for each test in milliseconds (increased for Firebase operations)
-  timeout: 120 * 1000,
+  timeout: 180 * 1000,
   
   // The directory where tests are located
   testDir: './e2e',
   
   // Whether to run tests in parallel
   fullyParallel: true,
-  
+
   // Fail the build on CI if you accidentally left test.only in the source code.
   forbidOnly: !!process.env.CI,
-  
-  // Retry on CI only
+
+  // Retry failed tests to handle flaky Firebase/network issues
   retries: process.env.CI ? 2 : 1,
-  
-  // Opt out of parallel tests on CI.
-  workers: process.env.CI ? 1 : 3,
+
+  // Reduce workers to prevent overwhelming the dev server
+  // Too many parallel browser sessions can cause connection refused errors
+  workers: process.env.CI ? 1 : 2,
   
   // Reporter to use. See https://playwright.dev/docs/test-reporters
   reporter: 'html',

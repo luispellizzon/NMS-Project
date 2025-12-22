@@ -24,16 +24,17 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Redirect admins to the admin dashboard
-    if (!loading && user  && userRole !== "doctor") {
+    // Redirect non-doctors to the homepage
+    // Only redirect if userRole has been determined (not null) to avoid race conditions
+    if (!loading && user && userRole !== null && userRole !== "doctor") {
           router.push('/');
           return;
         }
   }, [user, loading, userRole, isAdmin, router]);
 
   // While the authentication state is being checked, display a full-screen loader.
-  // Also, if there's no user, continue showing the loader until the redirect kicks in.
-  if (loading || !user) {
+  // Also, if there's no user or userRole hasn't been determined, continue showing the loader.
+  if (loading || !user || userRole === null) {
     return <FullScreenLoader />;
   }
 

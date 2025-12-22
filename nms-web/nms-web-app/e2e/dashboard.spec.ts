@@ -9,7 +9,7 @@ test.describe('Dashboard Functionality', () => {
 
   test('should display all main dashboard cards after login', async ({ page }) => {
     const cardTitles = [
-      'News', 'Geographic Distribution', 'Score Range', 'Avg Scores',
+      'Agent News & Research', 'Geographic Distribution', 'Score Range', 'Avg Scores',
       'Patients', 'Avg Risk Assessment', 'Overall Appointments',
       'Upcoming Appointments', 'Previous Appointments',
     ];

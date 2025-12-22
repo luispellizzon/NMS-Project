@@ -56,7 +56,7 @@ export default function DoctorDetailPage() {
           // Fetch patients
           const patientIds = await getDoctorPatients(doctorId);
           const patientDetails = await Promise.all(
-            patientIds.map(async (id) => {
+            patientIds.map(async (id): Promise<PatientSummary | null> => {
               const patient = await getPatientById(id);
               if (patient) {
                 return {
