@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -24,19 +25,18 @@ import com.example.nms_mobile.ui.NMSmobileTheme
 import kotlinx.coroutines.delay
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.example.nms_mobile.utils.KeyLoader
 
 /**
- * MainActivity - Simplified version
- *
- * Firebase and AppCheck are initialized in MyApplication.kt
- * so we don't need to initialize them here.
+ * MainActivity
  */
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        KeyLoader.stripe_key = getString(R.string.STRIPE_PUBLISHABLE_KEY)
+        KeyLoader.stripe_base_url = getString(R.string.STRIPE_BASE_URL)
+        Log.d("MainActivity", "KEY LOADED: ${KeyLoader.stripe_key}")
 
-        // Firebase is initialized in MyApplication.kt
-        // No need to initialize here
 
         enableEdgeToEdge()
 
@@ -54,10 +54,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-/**
- * Compose component that checks and requests exact alarm permission
- * Only needed on Android 12 (API 31) and above
- */
 @Composable
 fun AlarmPermissionCheck() {
     val context = LocalContext.current
@@ -65,7 +61,6 @@ fun AlarmPermissionCheck() {
     var showDialog by remember { mutableStateOf(false) }
     var permissionChecked by remember { mutableStateOf(false) }
 
-    // 🔧 FIX: Monitor lifecycle state without collectAsState
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     var isResumed by remember { mutableStateOf(false) }
 
@@ -82,8 +77,7 @@ fun AlarmPermissionCheck() {
     // Check permission only once on startup with safeguards
     LaunchedEffect(isResumed) {
         if (isResumed && !permissionChecked) {
-            // 🔧 FIX: Wait for activity to be fully initialized
-            delay(500) // 500ms delay to ensure stable state
+            delay(500)
 
             permissionChecked = true
             try {
@@ -92,12 +86,11 @@ fun AlarmPermissionCheck() {
                     showDialog = true
                 }
             } catch (e: Exception) {
-                android.util.Log.e("AlarmPermission", "Error checking alarm permission", e)
+                Log.e("AlarmPermission", "Error checking alarm permission", e)
             }
         }
     }
 
-    // 🔧 FIX: Only show dialog if activity is in valid state
     if (showDialog && activity?.isFinishing == false && isResumed) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
@@ -113,7 +106,7 @@ fun AlarmPermissionCheck() {
                         }
                         context.startActivity(intent)
                     } catch (e: Exception) {
-                        android.util.Log.e("AlarmPermission", "Error opening settings", e)
+                       Log.e("AlarmPermission", "Error opening settings", e)
                     }
                     showDialog = false
                 }) {

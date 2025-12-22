@@ -1,5 +1,6 @@
 package com.example.nms_mobile.ui.feature.results
 
+import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -8,20 +9,39 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.nms_mobile.ui.BackgroundGray
+import com.example.nms_mobile.ui.components.PaymentDialog
+import com.example.nms_mobile.ui.components.PredictionCard
 
 @Composable
 fun ResultsScreen(
-    state: ResultsUi,
     onNavigateHome: () -> Unit,
     onContactDoctor: () -> Unit,
     onLoadResults: () -> Unit,
+    viewModel: ResultsViewModel = viewModel()
 ) {
+    val state by viewModel.ui.collectAsState()
+
+
+    var showPaymentDialog by remember { mutableStateOf(false) }
+    var clientSecret by remember { mutableStateOf<String?>(null) }
+
+
     LaunchedEffect(Unit) {
         onLoadResults()
+    }
+
+    if (state.paymentError != null) {
+        LaunchedEffect(state.paymentError) {
+            viewModel.clearPaymentError()
+        }
     }
 
     Box(
@@ -56,7 +76,7 @@ fun ResultsScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
-                        onClick = { onLoadResults() },
+                        onClick = { viewModel.loadResults() },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF008B8B)
                         )
@@ -68,23 +88,44 @@ fun ResultsScreen(
             else -> {
                 ResultsContent(
                     results = state.results,
+                    hasPaid = state.hasPaid,
                     onNavigateHome = onNavigateHome,
-                    onContactDoctor = onContactDoctor
+                    onContactDoctor = onContactDoctor,
+                    onPayClick = { showPaymentDialog = true }
                 )
             }
         }
+    }
+
+    if (showPaymentDialog) {
+        PaymentDialog(
+            clientSecret = clientSecret,
+            onConfirmPayment = { _, _ ->
+                viewModel.createPaymentIntent(
+                    onSuccess = { secret, intentId ->
+                        clientSecret = secret
+                    },
+                )
+            },
+            onDismiss = {
+                showPaymentDialog = false
+                clientSecret = null
+            },
+            isProcessing = state.isProcessingPayment,
+        )
     }
 }
 
 @Composable
 private fun ResultsContent(
     results: Results?,
+    hasPaid: Boolean = false,
     onNavigateHome: () -> Unit,
-    onContactDoctor: () -> Unit
+    onContactDoctor: () -> Unit,
+    onPayClick: () -> Unit
 ) {
     Scaffold(
-        topBar = {
-        }
+        topBar = {}
     ) { padding ->
         Column(
             modifier = Modifier
@@ -116,7 +157,6 @@ private fun ResultsContent(
                 )
             }
 
-            // Scrollable content section - Takes available space
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -124,66 +164,53 @@ private fun ResultsContent(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top
             ) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFF008B8B)
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "Mini Mental State Exam Score",
-                            fontSize = 16.sp,
-                            color = Color.White,
-                            fontWeight = FontWeight.Medium,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "${results?.mmseScore ?: 0}",
-                            fontSize = 48.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    }
-                }
+                PredictionCard(
+                    dementiaRisk = results?.dementiaRisk,
+                    hasPaid = hasPaid,
+                    onPayClick = onPayClick
+                )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Score breakdown cards
                 ScoreCard(
-                    title = "Speech",
-                    score = results?.speechScore ?: 0,
-                    maxScore = results?.speechMaxScore ?: 17
+                    title = "Mini Mental State Exam Score",
+                    fontSize = 16.sp,
+                    score = results?.mmseScore ?: 0,
+                    maxScore = results?.mmseScoreMaxScore ?: 30
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                ScoreCard(
-                    title = "Cognitive",
-                    score = results?.cognitiveScore ?: 0,
-                    maxScore = results?.cognitiveMaxScore ?: 7
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    ScoreCard(
+                        title = "Speech",
+                        score = results?.speechScore ?: 0,
+                        maxScore = results?.speechMaxScore ?: 17
+                    )
 
-                Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                ScoreCard(
-                    title = "Memory",
-                    score = results?.memoryScore ?: 0,
-                    maxScore = results?.memoryMaxScore ?: 6
-                )
+                    ScoreCard(
+                        title = "Cognitive",
+                        score = results?.cognitiveScore ?: 0,
+                        maxScore = results?.cognitiveMaxScore ?: 7
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    ScoreCard(
+                        title = "Memory",
+                        score = results?.memoryScore ?: 0,
+                        maxScore = results?.memoryMaxScore ?: 6
+                    )
+                }
             }
 
-            // Action buttons - Fixed at bottom
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -207,10 +234,16 @@ private fun ResultsContent(
                 }
 
                 Button(
-                    onClick = onContactDoctor,
+                    onClick = {
+                        if (hasPaid) {
+                            onContactDoctor()
+                        } else {
+                            onPayClick()
+                        }
+                    },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF008B8B)
+                        containerColor = if (hasPaid) Color(0xFF008B8B) else BackgroundGray
                     ),
                     shape = RoundedCornerShape(12.dp),
                     contentPadding = PaddingValues(vertical = 14.dp)
@@ -230,6 +263,7 @@ private fun ResultsContent(
 @Composable
 private fun ScoreCard(
     title: String,
+    fontSize: TextUnit = 12.sp,
     score: Int,
     maxScore: Int
 ) {
@@ -250,7 +284,7 @@ private fun ScoreCard(
         ) {
             Text(
                 text = title,
-                fontSize = 18.sp,
+                fontSize = fontSize,
                 fontWeight = FontWeight.Medium,
                 color = Color.White
             )

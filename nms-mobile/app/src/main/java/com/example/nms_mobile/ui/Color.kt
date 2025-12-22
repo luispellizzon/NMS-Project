@@ -8,7 +8,7 @@ val TealLight   = Color(0xFF008B8F)
 val TealDark    = Color(0xFF005557)
 
 // Neutrals / text / borders
-val White          = Color(0xFFFFFFFF)
+val White  = Color(0xFFFFFFFF)
 
 val Green = Color(0xFF4CAF50)
 
@@ -16,6 +16,12 @@ val Orange =  Color(0xFFFF9800)
 
 val Red = Color(0xFFF44336)
 
+// Prediction Card colors by AI results
+
+val Yellow = Color(0xFFFFFF00)
+val Fallback = Color(0xFF005557)
+
+// Theme colors
 val TextPrimary    = Color(0xFF000000)
 val TextSecondary  = Color(0xFF414040)
 val TextHint       = Color(0xFFD1C2C2)
