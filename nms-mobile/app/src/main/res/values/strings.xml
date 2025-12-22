@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">NMS-mobile</string>
+    <string name="facebook_app_id">_</string>
+    <string name="facebook_client_token">_</string>
+    <string name="fb_login_protocol_scheme">fbYOUR_FB_APP_ID</string>
+    <string name="default_web_client_id">316091399555-h93sg9lkv2rkvm9a111hgk08igmnb2uj.apps.googleusercontent.com</string>
+</resources>

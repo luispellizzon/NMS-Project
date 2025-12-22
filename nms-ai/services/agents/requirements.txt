@@ -1,0 +1,33 @@
+# FastAPI and server
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+pydantic==2.9.0
+
+# CrewAI and LangChain
+crewai==0.86.0
+crewai-tools==0.17.0
+langchain==0.3.7
+
+# Google GenAI + LangChain Integration
+google-generativeai==0.7.2
+google-ai-generativelanguage==0.6.6
+langchain-google-genai==2.0.0
+
+# Groq Integration (2nd online LLM - fast inference)
+langchain-groq==0.2.0
+
+# Firebase
+firebase-admin==6.5.0
+
+# HTTP requests
+requests==2.32.3
+httpx==0.27.2
+
+# YAML parsing
+pyyaml==6.0.2
+
+# Utilities
+python-dotenv==1.0.1
+
+# Ollama support
+ollama==0.4.4

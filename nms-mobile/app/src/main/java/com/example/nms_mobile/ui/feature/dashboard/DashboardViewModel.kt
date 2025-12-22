@@ -1,0 +1,400 @@
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.nms_mobile.data.AuthRepository
+import com.example.nms_mobile.data.FirestoreRepository
+import com.example.nms_mobile.data.SpeechAssessmentsTasksRepository
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import java.time.LocalTime
+import android.util.Log
+import com.example.nms_mobile.data.AIRepository
+import com.example.nms_mobile.data.ManagedModeManager
+import com.example.nms_mobile.data.PatientReference
+import com.example.nms_mobile.data.PatientRepository
+import com.example.nms_mobile.data.PatientSessionManager
+import com.example.nms_mobile.data.UserProfile
+import com.example.nms_mobile.data.UserTasks
+import kotlinx.coroutines.Dispatchers
+
+// Data model for the Dashboard screen's state (what the user sees).
+data class DashboardUiState(
+    val profile: UserProfile? = null,
+    val displayName: String = "NMS",
+    val role: String? = null,
+    val greeting: String = "Good morning",
+    val riskScore: Double? = null,
+    val isLoadingScore: Boolean = false,
+    val error: String? = null,
+    // Status tracking for assessments
+    val currentTask: String? = "risk_assessment",
+    val hasCompletedRiskAssessment: Boolean? = false,
+    val hasCompletedImageDescription: Boolean? = false,
+    val hasCompletedSpeechAssessment: Boolean? = false,
+    val hasCompletedMemoryAssessment: Boolean? = false,
+    val hasCompletedCognitiveAssessment: Boolean? = false,
+    val hasCompletedAiAnalysis: Boolean? = false,
+    val dementiaRisk: String? = null,
+
+    // Speech assessment status tracking
+    val speechAnalysisStatus: SpeechAnalysisStatus = SpeechAnalysisStatus.NOT_STARTED,
+//    val isSpeechAssessmentCompleted: Boolean = false,
+    val speechUserScore: Int? = null,
+    val speechTotalScore: Int? = null,
+
+    // Caregiver stuff for now
+    val patients: List<PatientReference> = emptyList(),
+    val isLoadingPatients: Boolean = false,
+    val selectedPatient: PatientReference? = null,  // Currently selected patient reference
+    val selectedPatientProfile: UserProfile? = null,  // Full patient profile when viewing details
+    val isManagingPatient: Boolean = false
+)
+
+// Single events for the UI (like navigation commands).
+sealed class DashboardEvent {
+    data object LoggedOut : DashboardEvent()
+}
+
+class DashboardViewModel(
+    private val repo: AuthRepository = AuthRepository.instance,
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
+    private val db: FirestoreRepository = FirestoreRepository.instance,
+    private val speechRepo: SpeechAssessmentsTasksRepository = SpeechAssessmentsTasksRepository.instance,
+    private val patientRepo: PatientRepository = PatientRepository.instance,
+    private val aiRepo: AIRepository = AIRepository.instance
+) : ViewModel() {
+
+    companion object {
+        private const val TAG = "DashboardViewModel"
+    }
+
+    // The current data for the UI, which can be changed internally.
+    private val _ui = MutableStateFlow(DashboardUiState())
+    // The state that the UI watches for changes.
+    val ui: StateFlow<DashboardUiState> = _ui.asStateFlow()
+
+    // Events used for one-time actions like navigation.
+    private val _events = Channel<DashboardEvent>(Channel.BUFFERED)
+    val events: Flow<DashboardEvent> = _events.receiveAsFlow()
+
+
+    init {
+        viewModelScope.launch {
+            repo.session.collect { s ->
+                val userProfile = db.getUserProfile()
+                _ui.update { it.copy(profile = userProfile) }
+
+                val userRole = userProfile?.role
+                val name = s.displayName?.takeIf { it.isNotBlank() } ?: "NMS"
+                _ui.update { it.copy(displayName = name, greeting = computeGreeting(), role = userRole) }
+
+                // Load data based on role
+                if (userRole == "caregiver") {
+                    loadCaregiverPatients()
+                } else if (userRole == "patient") {
+                    loadPatientDetails()
+//                    checkLifestyleQuestionaryStatus()
+//                    checkSpeechAssessmentStatus()
+                }
+            }
+        }
+    }
+
+    // NEW: Load patients for caregiver
+    fun loadCaregiverPatients() = viewModelScope.launch {
+        _ui.update { it.copy(isLoadingPatients = true) }
+        try {
+            val patients = patientRepo.getCaregiverPatients()
+            Log.d("Caregiver", patients.toString())
+            _ui.update {
+                it.copy(
+                    patients = patients,
+                    isLoadingPatients = false
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error loading patients", e)
+            _ui.update { it.copy(isLoadingPatients = false) }
+        }
+    }
+
+    // NEW: Select a patient to manage
+    // AC-1: Interaction - Allows caregiver to tap on patient to initiate context switch
+    // AC-2: App State Change - Sets patient ID as active context
+    fun selectPatient(patient: PatientReference) = viewModelScope.launch {
+        try {
+            // Set the managed patient context in both managers
+            PatientSessionManager.setManagedPatient(patient.patientId)
+            ManagedModeManager.enterManagedMode(patient.patientId, patient.fullName)
+
+            // Fetch the full patient profile
+            val profile = patientRepo.getPatientProfile(patient.patientId)
+
+            _ui.update {
+                it.copy(
+                    selectedPatient = patient,
+                    selectedPatientProfile = profile,
+                    isManagingPatient = true
+                )
+            }
+
+            Log.d(TAG, "Entered managed mode for patient: ${patient.fullName} (${patient.patientId})")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error loading patient profile", e)
+            _ui.update {
+                it.copy(
+                    selectedPatient = patient,
+                    selectedPatientProfile = null,
+                    isManagingPatient = true
+                )
+            }
+        }
+    }
+
+    // NEW: Go back to patient list
+    // AC-4: Return Navigation - Provides function to exit managed mode
+    fun deselectPatient() {
+        // Clear the managed patient context from both managers
+        PatientSessionManager.clearManagedPatient()
+        ManagedModeManager.exitManagedMode()
+
+        _ui.update {
+            it.copy(
+                selectedPatient = null,
+                selectedPatientProfile = null,
+                isManagingPatient = false
+            )
+        }
+
+        Log.d(TAG, "Exited managed mode")
+    }
+
+    // NEW: Refresh patient list
+    fun refreshPatients() {
+        loadCaregiverPatients()
+    }
+
+    // Calculates "Good morning," "Good afternoon," or "Good evening" based on the time.
+    private fun computeGreeting(): String {
+        val hour = try {
+            LocalTime.now().hour
+        } catch (_: Throwable) {
+            9
+        }
+        return when (hour) {
+            in 5..11 -> "Good morning"
+            in 12..17 -> "Good afternoon"
+            else -> "Good evening"
+        }
+    }
+
+    // Tells the AuthRepository to sign the user out and sends a navigation event.
+    fun logout() = viewModelScope.launch {
+        repo.logout()
+        _events.send(DashboardEvent.LoggedOut)
+    }
+
+    // Fetches the completion status of the questionnaire from the database.
+    private fun loadPatientDetails() = viewModelScope.launch {
+        val userId = auth.currentUser?.uid
+
+        if (userId != null) {
+            try {
+                // Call the repository to check if the status is true/false.
+                val profile = db.getUserProfile()
+
+                // Update the UI state with the result.
+                _ui.update { it.copy(
+                    currentTask = profile?.currentTask,
+                    hasCompletedRiskAssessment = profile?.hasCompletedRiskAssessment,
+                    hasCompletedImageDescription = profile?.hasCompletedImageDescription,
+                    hasCompletedSpeechAssessment = profile?.hasCompletedSpeechAssessment,
+                    hasCompletedMemoryAssessment = profile?.hasCompletedMemoryAssessment,
+                    hasCompletedCognitiveAssessment = profile?.hasCompletedCognitiveAssessment,
+                    hasCompletedAiAnalysis = profile?.hasCompletedAiAnalysis,
+                    dementiaRisk = profile?.dementiaRisk
+                ) }
+
+                if (profile?.currentTask == UserTasks.AI_ASSESSMENT.taskName) {
+                    viewModelScope.launch {
+                        try {
+                            val mmse = aiRepo.calculateAndStoreMmseScore()
+                            val risk = aiRepo.getLatestRiskAssessment() ?: return@launch
+
+                            val riskPrediction = aiRepo.calcRiskPrediction(mmse, risk)
+
+                            db.updateUserDoc("dementiaRisk", riskPrediction)
+
+                            _ui.update { it.copy(
+                                currentTask = UserTasks.COMPLETED.taskName,
+                                hasCompletedAiAnalysis = true,
+                                dementiaRisk = riskPrediction
+                            ) }
+
+                            Log.d("HF", "Final Model Output: $riskPrediction")
+
+                        } catch (e: Exception) {
+                            Log.e("HF", "Error calling Hugging Face: ${e.message}", e)
+                        }
+                    }
+
+                }
+
+
+            } catch (e: Exception) {
+                // Log the error if fetching the status fails (e.g., no internet).
+                Log.e(TAG, "Error checking current user task: $e")
+            }
+        }
+    }
+
+    /**
+     * Checks the speech assessment status and starts polling if processing
+     */
+    private fun checkSpeechAssessmentStatus() = viewModelScope.launch {
+        val userId = auth.currentUser?.uid
+
+        if (userId != null) {
+            try {
+                // Get the most recent completed assessment
+                val recentAssessment = speechRepo.getMostRecentCompletedAssessment()
+
+                if (recentAssessment != null) {
+                    _ui.update { it.copy(hasCompletedSpeechAssessment = true) }
+
+                    // Calculate max score from all tasks
+                    val maxScore = recentAssessment.content.values.sumOf { it.maxScore }
+
+                    // Check the AI analysis status
+                    when (recentAssessment.aiAnalysis) {
+                        "processing" -> {
+                            _ui.update {
+                                it.copy(
+                                    speechAnalysisStatus = SpeechAnalysisStatus.PROCESSING,
+                                    speechUserScore = null,
+                                    speechTotalScore = null
+                                )
+                            }
+                            // Start polling for completion
+                            startPollingForAnalysis(recentAssessment.id)
+                        }
+                        "processed" -> {
+                            _ui.update {
+                                it.copy(
+                                    speechAnalysisStatus = SpeechAnalysisStatus.COMPLETED,
+                                    speechUserScore = recentAssessment.totalScore,
+                                    speechTotalScore = maxScore
+                                )
+                            }
+                        }
+                        "error" -> {
+                            _ui.update {
+                                it.copy(
+                                    speechAnalysisStatus = SpeechAnalysisStatus.ERROR,
+                                    speechUserScore = null,
+                                    speechTotalScore = null
+                                )
+                            }
+                        }
+                        else -> {
+                            _ui.update {
+                                it.copy(
+                                    speechAnalysisStatus = SpeechAnalysisStatus.NOT_STARTED,
+                                    speechUserScore = null,
+                                    speechTotalScore = null
+                                )
+                            }
+                        }
+                    }
+
+                    Log.d(TAG, "Speech assessment status: ${recentAssessment.aiAnalysis}, Score: ${recentAssessment.totalScore}/$maxScore")
+                } else {
+                    _ui.update {
+                        it.copy(
+                            hasCompletedSpeechAssessment = false,
+                            speechAnalysisStatus = SpeechAnalysisStatus.NOT_STARTED,
+                            speechUserScore = null,
+                            speechTotalScore = null
+                        )
+                    }
+                }
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Error checking speech assessment status: $e")
+            }
+        }
+    }
+
+    /**
+     * Starts polling for analysis completion every 30 seconds
+     */
+    private fun startPollingForAnalysis(assessmentId: String) = viewModelScope.launch {
+        try {
+            speechRepo.pollForAnalysisCompletion(assessmentId).collect { status ->
+                Log.d(TAG, "Polling result - Analysis status: $status")
+
+                // Fetch the latest assessment to get updated scores
+                val updatedAssessment = speechRepo.getMostRecentCompletedAssessment()
+                val maxScore = updatedAssessment?.content?.values?.sumOf { it.maxScore } ?: 0
+
+                when (status) {
+                    "processing" -> {
+                        _ui.update {
+                            it.copy(
+                                speechAnalysisStatus = SpeechAnalysisStatus.PROCESSING,
+                                speechUserScore = null,
+                                speechTotalScore = null
+                            )
+                        }
+                    }
+                    "processed" -> {
+                        _ui.update {
+                            it.copy(
+                                speechAnalysisStatus = SpeechAnalysisStatus.COMPLETED,
+                                speechUserScore = updatedAssessment?.totalScore,
+                                speechTotalScore = maxScore
+                            )
+                        }
+                        Log.d(TAG, "Analysis completed! Score: ${updatedAssessment?.totalScore}/$maxScore")
+                    }
+                    "error" -> {
+                        _ui.update {
+                            it.copy(
+                                speechAnalysisStatus = SpeechAnalysisStatus.ERROR,
+                                speechUserScore = null,
+                                speechTotalScore = null
+                            )
+                        }
+                        Log.e(TAG, "Analysis error detected")
+                    }
+                    else -> {
+                        Log.d(TAG, "Unknown analysis status: $status")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during polling: $e")
+            _ui.update {
+                it.copy(
+                    speechAnalysisStatus = SpeechAnalysisStatus.ERROR,
+                    speechUserScore = null,
+                    speechTotalScore = null
+                )
+            }
+        }
+    }
+
+    /**
+     * Manually refresh the speech assessment status
+     * Can be called when user returns to dashboard
+     */
+    fun refreshSpeechAssessmentStatus() {
+        checkSpeechAssessmentStatus()
+    }
+}

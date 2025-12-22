@@ -1,0 +1,90 @@
+# docker-compose.yml
+services:
+  # Transcription Service - Handles speech-to-text processing
+  transcription:
+    container_name: nms_transcription_service
+    build:
+      context: ./services/transcription
+    ports:
+      - "8001:8000"  # Expose on port 8001
+    volumes:
+      # Mount serviceAccountKey.json from ROOT directory
+      - ./serviceAccountKey.json:/app/secrets/serviceAccountKey.json:ro
+    environment:
+      - FIREBASE_SERVICE_ACCOUNT_KEY_PATH=/app/secrets/serviceAccountKey.json
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # Ollama Service - Local LLM hosting
+  ollama:
+    container_name: nms_ollama_service
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"  # Ollama API port
+    volumes:
+      # Persist Ollama models
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    # Optional: Automatically pull a model on startup
+    # Uncomment the lines below to auto-pull llama3.2
+    # command: >
+    #   sh -c "ollama serve & sleep 5 && ollama pull llama3.2 && wait"
+
+  # Agents Service - Handles news aggregation and risk assessment
+  agents:
+    container_name: nms_agents_service
+    build:
+      context: ./services/agents
+    ports:
+      - "8002:8000"  # Expose on port 8002
+    volumes:
+      # Mount serviceAccountKey.json from ROOT directory
+      - ./serviceAccountKey.json:/app/secrets/serviceAccountKey.json:ro
+    environment:
+      - FIREBASE_SERVICE_ACCOUNT_KEY_PATH=/app/secrets/serviceAccountKey.json
+      - GEMINI_API_KEY=${GEMINI_API_KEY}  # From .env file
+      # Groq configuration (2nd online LLM - Kimi K2)
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GROQ_MODEL=${GROQ_MODEL:-moonshotai/kimi-k2-instruct}
+      # Ollama configuration - connect to ollama service
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2}
+      - DEFAULT_LLM_PROVIDER=${DEFAULT_LLM_PROVIDER:-gemini}
+    restart: unless-stopped
+    depends_on:
+      - transcription
+      - ollama  # Wait for Ollama to be ready
+
+  # Backend Service (placeholder for future development)
+  # backend:
+  #   container_name: nms_ai_backend
+  #   build:
+  #     context: ./services/backend
+  #   ports:
+  #     - "8003:8000"
+  #   volumes:
+  #     - ./serviceAccountKey.json:/app/secrets/serviceAccountKey.json:ro
+  #   environment:
+  #     - FIREBASE_SERVICE_ACCOUNT_KEY_PATH=/app/secrets/serviceAccountKey.json
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - transcription
+  #     - agents
+
+# Named volumes for persistent data
+volumes:
+  ollama_data:
+    driver: local

@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "316091399555",
+    "project_id": "nms-app-4aa89",
+    "storage_bucket": "nms-app-4aa89.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:316091399555:android:4c22e3484b3f5e4f838ab6",
+        "android_client_info": {
+          "package_name": "com.example.nms_mobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "316091399555-1m9gbpvm0047f5aqe67k0648gfpnerh9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.nms_mobile",
+            "certificate_hash": "26db3b81fe7ef9a8961c5585a54c951b346a26a3"
+          }
+        },
+        {
+          "client_id": "316091399555-iggsa80hine0gtkcsej3tmmhgcdsf0er.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD1pq3DlmOf9oBjNlm4j88kSuNnU5Rxzuw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "316091399555-iggsa80hine0gtkcsej3tmmhgcdsf0er.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

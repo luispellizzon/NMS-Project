@@ -1,0 +1,36 @@
+package com.example.nms_mobile.ui
+
+import androidx.compose.ui.graphics.Color
+
+// Core brand
+val TealPrimary = Color(0xFF006F72)
+val TealLight   = Color(0xFF008B8F)
+val TealDark    = Color(0xFF005557)
+
+// Neutrals / text / borders
+val White  = Color(0xFFFFFFFF)
+
+val Green = Color(0xFF4CAF50)
+
+val Orange =  Color(0xFFFF9800)
+
+val Red = Color(0xFFF44336)
+
+// Prediction Card colors by AI results
+
+val Yellow = Color(0xFFFFFF00)
+val Fallback = Color(0xFF005557)
+
+// Theme colors
+val TextPrimary    = Color(0xFF000000)
+val TextSecondary  = Color(0xFF414040)
+val TextHint       = Color(0xFFD1C2C2)
+val BorderNormal   = Color(0xFFA9A3A3)
+val BorderActive   = Color(0xFF006F72)
+val BackgroundColor = Color(0xFFFFFFFF)
+
+val BackgroundGray = Color(0xFFD3D3D3)
+
+// Optional surfaces (used by the theme below)
+val SurfaceLight   = Color(0xFFFFFFFF)
+val SurfaceDark    = Color(0xFF121212)
