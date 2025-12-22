@@ -2,6 +2,7 @@ package com.example.nms_mobile.ui.feature.dashboard
 
 import DashboardUiState
 import SpeechAnalysisStatus
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
@@ -59,6 +60,7 @@ fun DashboardScreen(
     onFeedbackClick: () -> Unit,
     onOpenContactDoctor: () -> Unit
 ) {
+    Log.d("Dashboard", state.profile.toString())
     Scaffold(
         topBar = {
             // Display the custom top bar with user info.
@@ -565,7 +567,10 @@ private fun PatientAssessmentsView(
                 if(state.currentTask == UserTasks.COMPLETED.taskName ){
                     ResultTile(
                         title = "Dementia Level",
-                        content = state.dementiaRisk ?: "Pending...",
+                        content = if (state.profile?.hasPaidForResults == true)
+                           ""
+                        else
+                            "Pending Payment...",
                         onClick = onOpenResults,
                         pendingColor = Color.Magenta,
                         modifier = Modifier
@@ -604,29 +609,18 @@ private fun ResultTile(
     pendingColor: Color = Color.LightGray,
     isCompleted: Boolean? = false,
 ) {
-    // The color used when the assessment IS completed (fixed gray).
     val completedColor = Green
 
-    // Decide the card's final color.
     val cardColor = if (isCompleted!!) {
         completedColor
     } else {
         pendingColor
     }
 
-    // Change the text if the assessment is completed.
-
-
-    // Stop click action if the assessment is completed.
-//    val clickAction: (() -> Unit)? = if (isCompleted) null else onClick
-//    val clickAction: (() -> Unit)? = if (null) null else onClick
-
     ElevatedCard(
-        // Clicks run only if clickAction is not null (i.e., not completed).
         onClick = onClick,
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        // Apply the chosen color.
         colors = CardDefaults.elevatedCardColors(containerColor = cardColor),
         elevation = CardDefaults.elevatedCardElevation(6.dp)
     ) {
@@ -655,12 +649,14 @@ private fun ResultTile(
                     color = Color.White
                 )
                 Spacer(Modifier.height(8.dp))
-                Text(
+                if(content != "") {
+                    Text(
                     text = content,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = Color.White
                 )
                 Spacer(Modifier.height(8.dp))
+                }
 
                 Text(
                     text = "Click here to view results",

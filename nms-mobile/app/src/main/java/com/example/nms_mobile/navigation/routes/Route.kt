@@ -708,7 +708,7 @@ fun ResultsRoute(
     val vm = remember { ResultsViewModel() }
     val state by vm.ui.collectAsState()
     ResultsScreen(
-        state = state,
+//        state = state,
         onNavigateHome = onBack,
         onContactDoctor = onContactDoctor,
         onLoadResults = vm::loadResults

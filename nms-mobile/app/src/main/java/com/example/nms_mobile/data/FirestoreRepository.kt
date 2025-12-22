@@ -22,6 +22,7 @@ data class UserProfile(
     val hasCompletedSpeechAssessment: Boolean = false,
     val hasCompletedMemoryAssessment: Boolean = false,
     val hasCompletedCognitiveAssessment: Boolean = false,
+    val hasPaidForResults: Boolean = false,
     val mmseScore: Int = 0,
     val location: String = "",
     val dementiaRisk: String = "",

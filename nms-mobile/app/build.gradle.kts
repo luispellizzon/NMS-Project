@@ -1,9 +1,16 @@
+
+import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
+
 plugins {
     id("com.android.application")
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.services)
 }
+
+val STRIPE_WEBHOOK_URL = gradleLocalProperties(rootDir, providers).getProperty("STRIPE_WEBHOOK_URL")
+val STRIPE_PUBLISHABLE_KEY = gradleLocalProperties(rootDir, providers).getProperty("STRIPE_PUBLISHABLE_KEY")
+val STRIPE_BASE_URL = gradleLocalProperties(rootDir, providers).getProperty("STRIPE_BASE_URL", "http://192.168.0.90:8000")
 
 android {
     namespace = "com.example.nms_mobile"
@@ -16,6 +23,9 @@ android {
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        resValue("string", "STRIPE_WEBHOOK_URL", "\"" + STRIPE_WEBHOOK_URL + "\"" )
+        resValue("string", "STRIPE_PUBLISHABLE_KEY", "\"" +STRIPE_PUBLISHABLE_KEY + "\"" )
+        resValue("string", "STRIPE_BASE_URL", "\"" + STRIPE_BASE_URL + "\"" )
     }
 
     buildTypes {
@@ -41,6 +51,8 @@ android {
         compose = true
         viewBinding = true
     }
+
+
 }
 
 dependencies {
@@ -121,6 +133,9 @@ dependencies {
     // COMPUTER VISION
     // ========================================
     implementation("org.opencv:opencv:4.10.0")
+    implementation(libs.androidx.compose.runtime)
+    implementation(libs.androidx.material3)
+    implementation(libs.androidx.foundation)
 
     // ========================================
     // TESTING
@@ -133,4 +148,9 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
+
+    // Stripe Android SDK
+    implementation("com.stripe:stripe-android:22.5.0")
+    // Include the financial connections SDK to support US bank account as a payment method
+    implementation("com.stripe:financial-connections:22.5.0")
 }
