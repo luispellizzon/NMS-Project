@@ -46,16 +46,18 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 if not STRIPE_WEBHOOK_SECRET:
     raise ValueError("STRIPE_WEBHOOK_SECRET environment variable not set.")
 
-FIREBASE_CREDENTIALS_PATH = os.getenv("FIREBASE_CREDENTIALS_PATH")
-if not FIREBASE_CREDENTIALS_PATH:
-    raise ValueError("FIREBASE_CREDENTIALS_PATH environment variable not set.")
 
+import json
+firebase_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
+if not firebase_json:
+    raise ValueError("FIREBASE_SERVICE_ACCOUNT_JSON environment variable not set.")
 
-# Initialize Firebase Admin SDK
+cred_dict = json.loads(firebase_json)
+cred = credentials.Certificate(cred_dict)
+
 if not firebase_admin._apps:
-    cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
-    
     firebase_admin.initialize_app(cred)
+
 
 db = firestore.client()
 
